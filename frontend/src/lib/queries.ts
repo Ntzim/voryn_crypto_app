@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api/client";
+import { useHydrationSafe } from "@/lib/use-hydrated";
 import type {
   AssetDetail,
   AssetList,
@@ -26,11 +27,13 @@ export const queryKeys = {
 };
 
 export function useMe() {
-  return useQuery({
-    queryKey: queryKeys.me,
-    queryFn: ({ signal }) => api<User>("/me", { signal }),
-    staleTime: 5 * 60_000,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: queryKeys.me,
+      queryFn: ({ signal }) => api<User>("/me", { signal }),
+      staleTime: 5 * 60_000,
+    }),
+  );
 }
 
 export type Preferences = { currency: Currency; locale: Locale; timeZone: string };
@@ -52,19 +55,23 @@ export function usePreferences(): Preferences {
 }
 
 export function useSessions() {
-  return useQuery({
-    queryKey: queryKeys.sessions,
-    queryFn: ({ signal }) => api<Session[]>("/me/sessions", { signal }),
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: queryKeys.sessions,
+      queryFn: ({ signal }) => api<Session[]>("/me/sessions", { signal }),
+    }),
+  );
 }
 
 export function useMarketOverview(currency: Currency) {
-  return useQuery({
-    queryKey: queryKeys.marketOverview(currency),
-    queryFn: ({ signal }) =>
-      api<MarketOverview>("/market/overview", { query: { currency }, signal }),
-    refetchInterval: MARKET_REFETCH_MS,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: queryKeys.marketOverview(currency),
+      queryFn: ({ signal }) =>
+        api<MarketOverview>("/market/overview", { query: { currency }, signal }),
+      refetchInterval: MARKET_REFETCH_MS,
+    }),
+  );
 }
 
 export type AssetListParams = {
@@ -78,34 +85,38 @@ export type AssetListParams = {
 };
 
 export function useAssets(params: AssetListParams) {
-  return useQuery({
-    queryKey: queryKeys.assets(params),
-    queryFn: ({ signal }) =>
-      api<AssetList>("/market/assets", {
-        query: {
-          currency: params.currency,
-          q: params.q,
-          sort: params.sort,
-          order: params.order,
-          page: params.page,
-          page_size: params.pageSize,
-          watchlist_id: params.watchlistId,
-        },
-        signal,
-      }),
-    placeholderData: keepPreviousData,
-    refetchInterval: MARKET_REFETCH_MS,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: queryKeys.assets(params),
+      queryFn: ({ signal }) =>
+        api<AssetList>("/market/assets", {
+          query: {
+            currency: params.currency,
+            q: params.q,
+            sort: params.sort,
+            order: params.order,
+            page: params.page,
+            page_size: params.pageSize,
+            watchlist_id: params.watchlistId,
+          },
+          signal,
+        }),
+      placeholderData: keepPreviousData,
+      refetchInterval: MARKET_REFETCH_MS,
+    }),
+  );
 }
 
 export function useAsset(slug: string, currency: Currency) {
-  return useQuery({
-    queryKey: queryKeys.asset(slug, currency),
-    queryFn: ({ signal }) =>
-      api<AssetDetail>(`/market/assets/${encodeURIComponent(slug)}`, {
-        query: { currency },
-        signal,
-      }),
-    refetchInterval: MARKET_REFETCH_MS,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: queryKeys.asset(slug, currency),
+      queryFn: ({ signal }) =>
+        api<AssetDetail>(`/market/assets/${encodeURIComponent(slug)}`, {
+          query: { currency },
+          signal,
+        }),
+      refetchInterval: MARKET_REFETCH_MS,
+    }),
+  );
 }

@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api/client";
+import { useHydrationSafe } from "@/lib/use-hydrated";
 import type {
   AssetBrief,
   CsvCommit,
@@ -46,80 +47,94 @@ export const TX_LABELS: Record<TxType, string> = {
 
 /** The user's default portfolio (created server-side on first access). */
 export function usePortfolio() {
-  return useQuery({
-    queryKey: portfolioKeys.list,
-    queryFn: ({ signal }) => api<Portfolio[]>("/portfolios", { signal }),
-    select: (portfolios) => portfolios[0],
-    staleTime: Infinity,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: portfolioKeys.list,
+      queryFn: ({ signal }) => api<Portfolio[]>("/portfolios", { signal }),
+      select: (portfolios) => portfolios[0],
+      staleTime: Infinity,
+    }),
+  );
 }
 
 export function useSummary(portfolioId: string | undefined, currency?: Currency) {
   const prefs = usePreferences();
   const c = currency ?? prefs.currency;
-  return useQuery({
-    queryKey: portfolioKeys.summary(portfolioId ?? "", c),
-    queryFn: ({ signal }) =>
-      api<PortfolioSummary>(`/portfolios/${portfolioId}/summary`, { query: { currency: c }, signal }),
-    enabled: Boolean(portfolioId),
-    refetchInterval: VALUATION_REFETCH_MS,
-    placeholderData: keepPreviousData,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: portfolioKeys.summary(portfolioId ?? "", c),
+      queryFn: ({ signal }) =>
+        api<PortfolioSummary>(`/portfolios/${portfolioId}/summary`, { query: { currency: c }, signal }),
+      enabled: Boolean(portfolioId),
+      refetchInterval: VALUATION_REFETCH_MS,
+      placeholderData: keepPreviousData,
+    }),
+  );
 }
 
 export function usePerformance(portfolioId: string | undefined, currency?: Currency) {
   const prefs = usePreferences();
   const c = currency ?? prefs.currency;
-  return useQuery({
-    queryKey: portfolioKeys.performance(portfolioId ?? "", c),
-    queryFn: ({ signal }) =>
-      api<Performance>(`/portfolios/${portfolioId}/performance`, { query: { currency: c }, signal }),
-    enabled: Boolean(portfolioId),
-    refetchInterval: 5 * VALUATION_REFETCH_MS,
-    placeholderData: keepPreviousData,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: portfolioKeys.performance(portfolioId ?? "", c),
+      queryFn: ({ signal }) =>
+        api<Performance>(`/portfolios/${portfolioId}/performance`, { query: { currency: c }, signal }),
+      enabled: Boolean(portfolioId),
+      refetchInterval: 5 * VALUATION_REFETCH_MS,
+      placeholderData: keepPreviousData,
+    }),
+  );
 }
 
 export function useInsights(portfolioId: string | undefined) {
   const { currency } = usePreferences();
-  return useQuery({
-    queryKey: portfolioKeys.insights(portfolioId ?? "", currency),
-    queryFn: ({ signal }) =>
-      api<InsightList>(`/portfolios/${portfolioId}/insights`, { query: { currency }, signal }),
-    enabled: Boolean(portfolioId),
-    refetchInterval: 5 * VALUATION_REFETCH_MS,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: portfolioKeys.insights(portfolioId ?? "", currency),
+      queryFn: ({ signal }) =>
+        api<InsightList>(`/portfolios/${portfolioId}/insights`, { query: { currency }, signal }),
+      enabled: Boolean(portfolioId),
+      refetchInterval: 5 * VALUATION_REFETCH_MS,
+    }),
+  );
 }
 
 export function useTransactions(portfolioId: string | undefined, filters: TransactionFilters) {
-  return useQuery({
-    queryKey: portfolioKeys.transactions(portfolioId ?? "", filters),
-    queryFn: ({ signal }) =>
-      api<TransactionList>(`/portfolios/${portfolioId}/transactions`, {
-        query: { type: filters.type, page: filters.page, page_size: filters.pageSize },
-        signal,
-      }),
-    enabled: Boolean(portfolioId),
-    placeholderData: keepPreviousData,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: portfolioKeys.transactions(portfolioId ?? "", filters),
+      queryFn: ({ signal }) =>
+        api<TransactionList>(`/portfolios/${portfolioId}/transactions`, {
+          query: { type: filters.type, page: filters.page, page_size: filters.pageSize },
+          signal,
+        }),
+      enabled: Boolean(portfolioId),
+      placeholderData: keepPreviousData,
+    }),
+  );
 }
 
 export function useExchanges() {
-  return useQuery({
-    queryKey: ["exchanges"],
-    queryFn: ({ signal }) => api<Exchange[]>("/exchanges", { signal }),
-    staleTime: Infinity,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: ["exchanges"],
+      queryFn: ({ signal }) => api<Exchange[]>("/exchanges", { signal }),
+      staleTime: Infinity,
+    }),
+  );
 }
 
 export function useAssetSearch(q: string) {
-  return useQuery({
-    queryKey: ["market", "search", q],
-    queryFn: ({ signal }) => api<AssetBrief[]>("/market/search", { query: { q }, signal }),
-    enabled: q.trim().length > 0,
-    staleTime: 5 * 60_000,
-    placeholderData: keepPreviousData,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: ["market", "search", q],
+      queryFn: ({ signal }) => api<AssetBrief[]>("/market/search", { query: { q }, signal }),
+      enabled: q.trim().length > 0,
+      staleTime: 5 * 60_000,
+      placeholderData: keepPreviousData,
+    }),
+  );
 }
 
 /** Any write invalidates every derived figure (positions, returns, insights, lists). */

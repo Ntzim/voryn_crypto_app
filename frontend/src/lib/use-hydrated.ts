@@ -17,3 +17,14 @@ export function useHydrated(): boolean {
     () => false,
   );
 }
+
+/**
+ * Wrap a TanStack Query result so the component's hydration render matches the server
+ * (no data yet), even if the query cache was filled by an earlier-hydrated component.
+ * After hydration the real result is returned unchanged.
+ */
+export function useHydrationSafe<T extends { data: unknown }>(result: T): T {
+  const hydrated = useHydrated();
+  if (hydrated) return result;
+  return { ...result, data: undefined, isPending: true, isSuccess: false, isPlaceholderData: false };
+}

@@ -4,15 +4,12 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
 import { Logo } from "@/components/brand/logo";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useHydrated } from "@/lib/use-hydrated";
 
 import { MobileNav } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const hydrated = useHydrated();
   return (
     <div className="flex min-h-dvh">
       {/* Navigation reads the pathname (request-time URL data); the fallback reserves its width. */}
@@ -28,8 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <UserMenu />
         </header>
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-28 md:px-6 md:pt-8 md:pb-10 xl:px-8">
-          {/* Pages render user-specific data; see useHydrated for why they wait for hydration. */}
-          {hydrated ? children : <ContentSkeleton />}
+          {children}
         </main>
       </div>
       <Suspense>
@@ -39,15 +35,3 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function ContentSkeleton() {
-  return (
-    <div aria-busy="true" aria-label="Carregando">
-      <Skeleton className="mb-2 h-8 w-48" />
-      <Skeleton className="mb-8 h-4 w-72" />
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl lg:col-span-2" />
-      </div>
-    </div>
-  );
-}

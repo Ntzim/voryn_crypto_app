@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api/client";
+import { useHydrationSafe } from "@/lib/use-hydrated";
 import type { Analysis, Timeframe, Watchlist } from "@/lib/api/types";
 
 export const TIMEFRAMES: { value: Timeframe; label: string }[] = [
@@ -23,24 +24,28 @@ const REFRESH_MS: Record<Timeframe, number> = {
 };
 
 export function useAnalysis(slug: string, timeframe: Timeframe) {
-  return useQuery({
-    queryKey: ["analysis", slug, timeframe],
-    queryFn: ({ signal }) =>
-      api<Analysis>(`/market/assets/${encodeURIComponent(slug)}/analysis`, { query: { timeframe }, signal }),
-    refetchInterval: REFRESH_MS[timeframe],
-    placeholderData: keepPreviousData,
-    staleTime: 30_000,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: ["analysis", slug, timeframe],
+      queryFn: ({ signal }) =>
+        api<Analysis>(`/market/assets/${encodeURIComponent(slug)}/analysis`, { query: { timeframe }, signal }),
+      refetchInterval: REFRESH_MS[timeframe],
+      placeholderData: keepPreviousData,
+      staleTime: 30_000,
+    }),
+  );
 }
 
 const WATCHLISTS = ["watchlists"] as const;
 
 export function useWatchlists() {
-  return useQuery({
-    queryKey: WATCHLISTS,
-    queryFn: ({ signal }) => api<Watchlist[]>("/watchlists", { signal }),
-    staleTime: 5 * 60_000,
-  });
+  return useHydrationSafe(
+    useQuery({
+      queryKey: WATCHLISTS,
+      queryFn: ({ signal }) => api<Watchlist[]>("/watchlists", { signal }),
+      staleTime: 5 * 60_000,
+    }),
+  );
 }
 
 export function useWatchlistMutations() {
