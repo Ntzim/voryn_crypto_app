@@ -1,0 +1,37 @@
+# Registro de decisões técnicas (ADR resumido)
+
+### ADR-001 — Monólito modular
+**Decisão:** um backend FastAPI com módulos de domínio (`app/modules/*`) e um worker Celery do mesmo código.
+**Motivo:** time pequeno, domínio ainda em descoberta; microsserviços adicionariam rede, deploy e consistência distribuída sem ganho mensurável. Fronteiras de módulo permitem extração futura.
+
+### ADR-002 — Sessões opacas no servidor em vez de JWT
+**Decisão:** token aleatório em cookie `HttpOnly`, HMAC no banco, consulta por requisição.
+**Motivo:** revogação imediata (logout, troca de senha, "encerrar outras sessões"), listagem de dispositivos, sem segredo de assinatura exposto a riscos de algoritmo. O custo (1 consulta indexada por requisição) é irrelevante nesta escala e pode ganhar cache em Redis se necessário.
+
+### ADR-003 — BFF no Next.js via route handler (não `rewrites`)
+**Decisão:** `src/app/api/[...path]/route.ts` repassa as chamadas à API lendo `API_INTERNAL_URL` em tempo de execução.
+**Motivo:** cookies first-party e sem CORS; `rewrites` são resolvidos no build, o que impediria usar a mesma imagem em ambientes diferentes.
+
+### ADR-004 — Cotações em USD como fonte única; BRL derivado
+**Decisão:** ingerir mercado só em USD e converter com `fx_rates` armazenado.
+**Motivo:** metade das chamadas ao provedor (cota limitada), consistência entre telas, e transparência (a resposta informa a taxa e o horário usados). Limitação documentada: variações percentuais são em base USD.
+
+### ADR-005 — CoinGecko como provedor inicial, atrás de `MarketDataProvider`
+**Decisão:** CoinGecko (API pública/Demo) para catálogo e cotações.
+**Motivo:** cobertura ampla, ATH/supply/market cap no mesmo endpoint, plano gratuito para desenvolvimento. Para produção comercial, avaliar plano pago (licença de redistribuição) ou combinação com feeds de exchange para candles intradiários (Fase 3).
+
+### ADR-006 — Celery + Redis para jobs
+**Decisão:** Celery (broker Redis), `beat` para agendamento; tarefas são wrappers síncronos de serviços async com engine `NullPool` por execução.
+**Motivo:** maduro, retries/backoff nativos, amplamente suportado no Railway. Alternativas async (arq) têm manutenção limitada.
+
+### ADR-007 — Decimal ponta a ponta
+**Decisão:** `NUMERIC` no banco, `Decimal` no Python (inclusive parsing JSON do provedor com `parse_float=Decimal`), strings no JSON da API.
+**Motivo:** evitar erros de arredondamento em valores financeiros; o frontend só formata.
+
+### ADR-008 — Tipos do frontend gerados do OpenAPI
+**Decisão:** `openapi-typescript` gera `schema.d.ts` a partir de `backend` (`npm run gen:api`).
+**Motivo:** contratos únicos; mudanças quebradas no backend aparecem como erro de compilação no frontend.
+
+### ADR-009 — Indicadores e sinais determinísticos; IA apenas interpreta
+**Decisão (para Fases 3–5):** indicadores, scores e métricas de risco são calculados por código testado; o LLM recebe resultados estruturados e nunca gera números.
+**Motivo:** auditabilidade, reprodutibilidade e o princípio do produto de não apresentar previsões como certezas.
