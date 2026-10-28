@@ -131,6 +131,38 @@ class DailyPrice(Base):
     )
 
 
+class HistoricalCandle(Base):
+    """Closed OHLCV candles (USDT-quoted) persisted for analysis and future backtests.
+
+    Only closed candles are stored, so stored history never changes after the fact.
+    """
+
+    __tablename__ = "historical_candles"
+    __table_args__ = (
+        UniqueConstraint("cryptocurrency_id", "timeframe", "open_time"),
+        CheckConstraint("high >= low AND low > 0 AND volume >= 0", name="ohlc_consistent"),
+        CheckConstraint("timeframe IN ('15m', '1h', '4h', '1d', '1w')", name="timeframe_supported"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    cryptocurrency_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cryptocurrencies.id", ondelete="CASCADE"), nullable=False
+    )
+    timeframe: Mapped[str] = mapped_column(String(3), nullable=False)
+    open_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    open: Mapped[Decimal] = mapped_column(Price, nullable=False)
+    high: Mapped[Decimal] = mapped_column(Price, nullable=False)
+    low: Mapped[Decimal] = mapped_column(Price, nullable=False)
+    close: Mapped[Decimal] = mapped_column(Price, nullable=False)
+    volume: Mapped[Decimal] = mapped_column(Amount, nullable=False)
+    quote_volume: Mapped[Decimal] = mapped_column(Amount, nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_symbol: Mapped[str] = mapped_column(String(32), nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class FxRate(Base):
     __tablename__ = "fx_rates"
     __table_args__ = (

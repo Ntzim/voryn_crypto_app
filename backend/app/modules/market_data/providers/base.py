@@ -7,7 +7,7 @@ Business logic depends only on these types, so CoinGecko can be swapped or compl
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Protocol
+from typing import Literal, Protocol
 
 
 class ProviderError(Exception):
@@ -52,6 +52,39 @@ class FxQuote:
 class DailyClose:
     day: date
     close: Decimal
+
+
+Timeframe = Literal["15m", "1h", "4h", "1d", "1w"]
+
+TIMEFRAME_SECONDS: dict[str, int] = {
+    "15m": 15 * 60,
+    "1h": 3600,
+    "4h": 4 * 3600,
+    "1d": 86400,
+    "1w": 7 * 86400,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class Candle:
+    open_time: datetime
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    #: volume in units of the base asset
+    volume: Decimal
+    #: volume in the quote currency (USDT)
+    quote_volume: Decimal
+    closed: bool
+
+
+class CandleProvider(Protocol):
+    name: str
+
+    def pair_for(self, symbol: str) -> str | None: ...
+
+    async def fetch_candles(self, pair: str, timeframe: Timeframe, limit: int) -> list[Candle]: ...
 
 
 class MarketDataProvider(Protocol):

@@ -20,6 +20,7 @@ from app.core.db import build_engine
 from app.core.email import EmailMessage, send_email
 from app.core.logging import configure_logging, get_logger
 from app.modules.auth.service import purge_expired
+from app.modules.market_data import candles
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import ProviderError
 from app.modules.market_data.providers.bcb import BcbPtaxProvider
@@ -49,6 +50,7 @@ celery_app.conf.update(
         "purge-auth": {"task": "auth.purge_expired", "schedule": 24 * 3600.0},
         # Daily closes are published after 00:00 UTC; refresh a little later.
         "portfolio-history": {"task": "portfolio.refresh_history", "schedule": 6 * 3600.0},
+        "prune-candles": {"task": "market.prune_candles", "schedule": 24 * 3600.0},
     },
 )
 
@@ -137,6 +139,11 @@ def sync_fx_task() -> str | None:
 @celery_app.task(name="market.prune_history")
 def prune_history_task() -> int:
     return _run(market.prune_history)
+
+
+@celery_app.task(name="market.prune_candles")
+def prune_candles_task() -> None:
+    _run(candles.prune_intraday)
 
 
 @celery_app.task(name="auth.purge_expired")

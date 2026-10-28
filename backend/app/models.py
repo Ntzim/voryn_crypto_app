@@ -7,11 +7,13 @@ from app.modules.market_data.models import (
     Cryptocurrency,
     DailyPrice,
     FxRate,
+    HistoricalCandle,
     MarketPrice,
     MarketTicker,
 )
 from app.modules.portfolio.models import Exchange, Portfolio, Transaction
 from app.modules.users.models import User, UserSettings
+from app.modules.watchlists.models import Watchlist, WatchlistAsset
 
 __all__ = [
     "AuditLog",
@@ -21,6 +23,7 @@ __all__ = [
     "DailyPrice",
     "Exchange",
     "FxRate",
+    "HistoricalCandle",
     "MarketPrice",
     "MarketTicker",
     "MfaRecoveryCode",
@@ -29,4 +32,6 @@ __all__ = [
     "User",
     "UserSession",
     "UserSettings",
+    "Watchlist",
+    "WatchlistAsset",
 ]

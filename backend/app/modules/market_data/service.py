@@ -318,9 +318,21 @@ async def list_assets(
     order: str,
     page: int,
     page_size: int,
+    only_ids: Sequence[uuid.UUID] | None = None,
 ) -> AssetListOut:
     status, multiplier = await _status(db, currency)
-    query = _base_query()
+    if only_ids is None:
+        query = _base_query()
+    else:
+        # A watchlist may hold assets outside the top-N listing.
+        query = (
+            select(Cryptocurrency, MarketTicker)
+            .join(MarketTicker, MarketTicker.cryptocurrency_id == Cryptocurrency.id)
+            .where(
+                MarketTicker.quote_currency == BASE_QUOTE,
+                Cryptocurrency.id.in_(list(only_ids)),
+            )
+        )
     if q:
         pattern = f"%{_escape_like(q.strip())}%"
         query = query.where(

@@ -403,6 +403,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/assets/{slug}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Asset Analysis
+         * @description Candles + deterministic indicators, trend classification and support/resistance.
+         */
+        get: operations["asset_analysis_api_v1_market_assets__slug__analysis_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/watchlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Watchlists
+         * @description The user's lists; the default "Favoritos" list is created on first access.
+         */
+        get: operations["list_watchlists_api_v1_watchlists_get"];
+        put?: never;
+        /** Create Watchlist */
+        post: operations["create_watchlist_api_v1_watchlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/watchlists/{watchlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Watchlist */
+        delete: operations["delete_watchlist_api_v1_watchlists__watchlist_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Watchlist */
+        patch: operations["rename_watchlist_api_v1_watchlists__watchlist_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/watchlists/{watchlist_id}/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Add Asset */
+        put: operations["add_asset_api_v1_watchlists__watchlist_id__assets__asset_id__put"];
+        post?: never;
+        /** Remove Asset */
+        delete: operations["remove_asset_api_v1_watchlists__watchlist_id__assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolios": {
         parameters: {
             query?: never;
@@ -622,6 +699,45 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisOut */
+        AnalysisOut: {
+            /** Asset Slug */
+            asset_slug: string;
+            /** Symbol */
+            symbol: string;
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "15m" | "1h" | "4h" | "1d" | "1w";
+            /** Source */
+            source: string;
+            /** Pair */
+            pair: string;
+            /**
+             * Quote
+             * @constant
+             */
+            quote: "USDT";
+            /**
+             * Fetched At
+             * Format: date-time
+             */
+            fetched_at: string;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Candles */
+            candles: components["schemas"]["CandleOut"][];
+            indicators: components["schemas"]["IndicatorSeries"];
+            snapshot: components["schemas"]["Snapshot"] | null;
+            trend: components["schemas"]["TrendOut"];
+            /** Supports */
+            supports: components["schemas"]["LevelOut"][];
+            /** Resistances */
+            resistances: components["schemas"]["LevelOut"][];
+            /** Methodology Version */
+            methodology_version: string;
+        };
         /** AssetBriefOut */
         AssetBriefOut: {
             /**
@@ -724,6 +840,26 @@ export interface components {
             /** Image Url */
             image_url: string | null;
         };
+        /** CandleOut */
+        CandleOut: {
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /** Open */
+            open: string;
+            /** High */
+            high: string;
+            /** Low */
+            low: string;
+            /** Close */
+            close: string;
+            /** Volume */
+            volume: string;
+            /** Closed */
+            closed: boolean;
+        };
         /** Change24hOut */
         Change24hOut: {
             /** Value Change */
@@ -734,6 +870,18 @@ export interface components {
             net_flows: string;
             /** Pct */
             pct: string | null;
+        };
+        /** CriterionOut */
+        CriterionOut: {
+            /** Name */
+            name: string;
+            /**
+             * Vote
+             * @enum {string}
+             */
+            vote: "bullish" | "bearish" | "neutral";
+            /** Detail */
+            detail: string;
         };
         /** CsrfOut */
         CsrfOut: {
@@ -845,6 +993,36 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * IndicatorSeries
+         * @description Aligned 1:1 with `candles`; null during each indicator's warm-up.
+         */
+        IndicatorSeries: {
+            /** Ema9 */
+            ema9: (string | null)[];
+            /** Ema21 */
+            ema21: (string | null)[];
+            /** Ema50 */
+            ema50: (string | null)[];
+            /** Ema200 */
+            ema200: (string | null)[];
+            /** Sma20 */
+            sma20: (string | null)[];
+            /** Bb Upper */
+            bb_upper: (string | null)[];
+            /** Bb Lower */
+            bb_lower: (string | null)[];
+            /** Rsi */
+            rsi: (string | null)[];
+            /** Macd */
+            macd: (string | null)[];
+            /** Macd Signal */
+            macd_signal: (string | null)[];
+            /** Macd Hist */
+            macd_hist: (string | null)[];
+            /** Volume Sma20 */
+            volume_sma20: (string | null)[];
+        };
         /** InsightOut */
         InsightOut: {
             /** Id */
@@ -873,6 +1051,20 @@ export interface components {
              * Format: date-time
              */
             as_of: string;
+        };
+        /** LevelOut */
+        LevelOut: {
+            /** Price */
+            price: string;
+            /** Touches */
+            touches: number;
+            /**
+             * Last Touch
+             * Format: date-time
+             */
+            last_touch: string;
+            /** Distance Pct */
+            distance_pct: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -1144,6 +1336,61 @@ export interface components {
             /** Timezone */
             timezone?: string | null;
         };
+        /**
+         * Snapshot
+         * @description Latest values computed on the last *closed* candle (no repainting).
+         */
+        Snapshot: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Close */
+            close: string;
+            /** Rsi */
+            rsi: string | null;
+            /** Rsi State */
+            rsi_state: ("overbought" | "oversold" | "neutral") | null;
+            /** Macd */
+            macd: string | null;
+            /** Macd Signal */
+            macd_signal: string | null;
+            /** Macd Hist */
+            macd_hist: string | null;
+            /** Macd Cross */
+            macd_cross: ("bullish" | "bearish") | null;
+            /** Macd Cross Bars Ago */
+            macd_cross_bars_ago: number | null;
+            /** Ema9 */
+            ema9: string | null;
+            /** Ema21 */
+            ema21: string | null;
+            /** Ema50 */
+            ema50: string | null;
+            /** Ema200 */
+            ema200: string | null;
+            /** Sma20 */
+            sma20: string | null;
+            /** Bb Upper */
+            bb_upper: string | null;
+            /** Bb Lower */
+            bb_lower: string | null;
+            /** Bb Percent B */
+            bb_percent_b: string | null;
+            /** Bb Bandwidth Pct */
+            bb_bandwidth_pct: string | null;
+            /** Atr */
+            atr: string | null;
+            /** Atr Pct */
+            atr_pct: string | null;
+            /** Volume */
+            volume: string;
+            /** Volume Ratio */
+            volume_ratio: string | null;
+            /** Volatility Annualized Pct */
+            volatility_annualized_pct: string | null;
+        };
         /** SummaryOut */
         SummaryOut: {
             portfolio: components["schemas"]["PortfolioOut"];
@@ -1298,6 +1545,27 @@ export interface components {
              */
             created_at: string;
         };
+        /** TrendOut */
+        TrendOut: {
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "uptrend" | "downtrend" | "consolidation" | "undefined";
+            /** Score */
+            score: number;
+            /** Available */
+            available: number;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "high" | "moderate" | "low";
+            /** Summary */
+            summary: string;
+            /** Criteria */
+            criteria: components["schemas"]["CriterionOut"][];
+        };
         /**
          * TxType
          * @enum {string}
@@ -1352,6 +1620,25 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WatchlistIn */
+        WatchlistIn: {
+            /** Name */
+            name: string;
+        };
+        /** WatchlistOut */
+        WatchlistOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Default */
+            is_default: boolean;
+            /** Asset Ids */
+            asset_ids: string[];
         };
     };
     responses: never;
@@ -1963,6 +2250,7 @@ export interface operations {
                 order?: "asc" | "desc";
                 page?: number;
                 page_size?: number;
+                watchlist_id?: string | null;
             };
             header?: never;
             path?: never;
@@ -2073,6 +2361,216 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MarketOverviewOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_analysis_api_v1_market_assets__slug__analysis_get: {
+        parameters: {
+            query?: {
+                timeframe?: "15m" | "1h" | "4h" | "1d" | "1w";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_watchlists_api_v1_watchlists_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistOut"][];
+                };
+            };
+        };
+    };
+    create_watchlist_api_v1_watchlists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_watchlist_api_v1_watchlists__watchlist_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_watchlist_api_v1_watchlists__watchlist_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WatchlistIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchlistOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_asset_api_v1_watchlists__watchlist_id__assets__asset_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_asset_api_v1_watchlists__watchlist_id__assets__asset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+                watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -796,6 +796,23 @@
               "default": 50,
               "title": "Page Size"
             }
+          },
+          {
+            "name": "watchlist_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Watchlist Id"
+            }
           }
         ],
         "responses": {
@@ -962,6 +979,310 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/assets/{slug}/analysis": {
+      "get": {
+        "tags": [
+          "technical-analysis"
+        ],
+        "summary": "Asset Analysis",
+        "description": "Candles + deterministic indicators, trend classification and support/resistance.",
+        "operationId": "asset_analysis_api_v1_market_assets__slug__analysis_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9-]+$",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "15m",
+                "1h",
+                "4h",
+                "1d",
+                "1w"
+              ],
+              "type": "string",
+              "default": "1d",
+              "title": "Timeframe"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists": {
+      "get": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "List Watchlists",
+        "description": "The user's lists; the default \"Favoritos\" list is created on first access.",
+        "operationId": "list_watchlists_api_v1_watchlists_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WatchlistOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Watchlists Api V1 Watchlists Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Create Watchlist",
+        "operationId": "create_watchlist_api_v1_watchlists_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists/{watchlist_id}": {
+      "patch": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Rename Watchlist",
+        "operationId": "rename_watchlist_api_v1_watchlists__watchlist_id__patch",
+        "parameters": [
+          {
+            "name": "watchlist_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Watchlist Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchlistIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WatchlistOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Delete Watchlist",
+        "operationId": "delete_watchlist_api_v1_watchlists__watchlist_id__delete",
+        "parameters": [
+          {
+            "name": "watchlist_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Watchlist Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/watchlists/{watchlist_id}/assets/{asset_id}": {
+      "put": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Add Asset",
+        "operationId": "add_asset_api_v1_watchlists__watchlist_id__assets__asset_id__put",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "watchlist_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Watchlist Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "watchlists"
+        ],
+        "summary": "Remove Asset",
+        "operationId": "remove_asset_api_v1_watchlists__watchlist_id__assets__asset_id__delete",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "watchlist_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Watchlist Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1643,6 +1964,111 @@
   },
   "components": {
     "schemas": {
+      "AnalysisOut": {
+        "properties": {
+          "asset_slug": {
+            "type": "string",
+            "title": "Asset Slug"
+          },
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "15m",
+              "1h",
+              "4h",
+              "1d",
+              "1w"
+            ],
+            "title": "Timeframe"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "pair": {
+            "type": "string",
+            "title": "Pair"
+          },
+          "quote": {
+            "type": "string",
+            "const": "USDT",
+            "title": "Quote"
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "candles": {
+            "items": {
+              "$ref": "#/components/schemas/CandleOut"
+            },
+            "type": "array",
+            "title": "Candles"
+          },
+          "indicators": {
+            "$ref": "#/components/schemas/IndicatorSeries"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Snapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "trend": {
+            "$ref": "#/components/schemas/TrendOut"
+          },
+          "supports": {
+            "items": {
+              "$ref": "#/components/schemas/LevelOut"
+            },
+            "type": "array",
+            "title": "Supports"
+          },
+          "resistances": {
+            "items": {
+              "$ref": "#/components/schemas/LevelOut"
+            },
+            "type": "array",
+            "title": "Resistances"
+          },
+          "methodology_version": {
+            "type": "string",
+            "title": "Methodology Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_slug",
+          "symbol",
+          "timeframe",
+          "source",
+          "pair",
+          "quote",
+          "fetched_at",
+          "is_stale",
+          "candles",
+          "indicators",
+          "snapshot",
+          "trend",
+          "supports",
+          "resistances",
+          "methodology_version"
+        ],
+        "title": "AnalysisOut"
+      },
       "AssetBriefOut": {
         "properties": {
           "id": {
@@ -2009,6 +2435,50 @@
         ],
         "title": "AssetRef"
       },
+      "CandleOut": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time"
+          },
+          "open": {
+            "type": "string",
+            "title": "Open"
+          },
+          "high": {
+            "type": "string",
+            "title": "High"
+          },
+          "low": {
+            "type": "string",
+            "title": "Low"
+          },
+          "close": {
+            "type": "string",
+            "title": "Close"
+          },
+          "volume": {
+            "type": "string",
+            "title": "Volume"
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "closed"
+        ],
+        "title": "CandleOut"
+      },
       "Change24hOut": {
         "properties": {
           "value_change": {
@@ -2043,6 +2513,34 @@
           "pct"
         ],
         "title": "Change24hOut"
+      },
+      "CriterionOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "vote": {
+            "type": "string",
+            "enum": [
+              "bullish",
+              "bearish",
+              "neutral"
+            ],
+            "title": "Vote"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "vote",
+          "detail"
+        ],
+        "title": "CriterionOut"
       },
       "CsrfOut": {
         "properties": {
@@ -2355,6 +2853,195 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "IndicatorSeries": {
+        "properties": {
+          "ema9": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Ema9"
+          },
+          "ema21": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Ema21"
+          },
+          "ema50": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Ema50"
+          },
+          "ema200": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Ema200"
+          },
+          "sma20": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Sma20"
+          },
+          "bb_upper": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Bb Upper"
+          },
+          "bb_lower": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Bb Lower"
+          },
+          "rsi": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Rsi"
+          },
+          "macd": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Macd"
+          },
+          "macd_signal": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Macd Signal"
+          },
+          "macd_hist": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Macd Hist"
+          },
+          "volume_sma20": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Volume Sma20"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ema9",
+          "ema21",
+          "ema50",
+          "ema200",
+          "sma20",
+          "bb_upper",
+          "bb_lower",
+          "rsi",
+          "macd",
+          "macd_signal",
+          "macd_hist",
+          "volume_sma20"
+        ],
+        "title": "IndicatorSeries",
+        "description": "Aligned 1:1 with `candles`; null during each indicator's warm-up."
+      },
       "InsightOut": {
         "properties": {
           "id": {
@@ -2415,6 +3102,35 @@
           "as_of"
         ],
         "title": "InsightsOut"
+      },
+      "LevelOut": {
+        "properties": {
+          "price": {
+            "type": "string",
+            "title": "Price"
+          },
+          "touches": {
+            "type": "integer",
+            "title": "Touches"
+          },
+          "last_touch": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Touch"
+          },
+          "distance_pct": {
+            "type": "string",
+            "title": "Distance Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "price",
+          "touches",
+          "last_touch",
+          "distance_pct"
+        ],
+        "title": "LevelOut"
       },
       "LoginIn": {
         "properties": {
@@ -3242,6 +3958,280 @@
         "type": "object",
         "title": "SettingsUpdateIn"
       },
+      "Snapshot": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "close": {
+            "type": "string",
+            "title": "Close"
+          },
+          "rsi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rsi"
+          },
+          "rsi_state": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "overbought",
+                  "oversold",
+                  "neutral"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rsi State"
+          },
+          "macd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macd"
+          },
+          "macd_signal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macd Signal"
+          },
+          "macd_hist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macd Hist"
+          },
+          "macd_cross": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "bullish",
+                  "bearish"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macd Cross"
+          },
+          "macd_cross_bars_ago": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Macd Cross Bars Ago"
+          },
+          "ema9": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ema9"
+          },
+          "ema21": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ema21"
+          },
+          "ema50": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ema50"
+          },
+          "ema200": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ema200"
+          },
+          "sma20": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sma20"
+          },
+          "bb_upper": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bb Upper"
+          },
+          "bb_lower": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bb Lower"
+          },
+          "bb_percent_b": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bb Percent B"
+          },
+          "bb_bandwidth_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bb Bandwidth Pct"
+          },
+          "atr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atr"
+          },
+          "atr_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atr Pct"
+          },
+          "volume": {
+            "type": "string",
+            "title": "Volume"
+          },
+          "volume_ratio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume Ratio"
+          },
+          "volatility_annualized_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volatility Annualized Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "as_of",
+          "close",
+          "rsi",
+          "rsi_state",
+          "macd",
+          "macd_signal",
+          "macd_hist",
+          "macd_cross",
+          "macd_cross_bars_ago",
+          "ema9",
+          "ema21",
+          "ema50",
+          "ema200",
+          "sma20",
+          "bb_upper",
+          "bb_lower",
+          "bb_percent_b",
+          "bb_bandwidth_pct",
+          "atr",
+          "atr_pct",
+          "volume",
+          "volume_ratio",
+          "volatility_annualized_pct"
+        ],
+        "title": "Snapshot",
+        "description": "Latest values computed on the last *closed* candle (no repainting)."
+      },
       "SummaryOut": {
         "properties": {
           "portfolio": {
@@ -3712,6 +4702,58 @@
         ],
         "title": "TransactionOut"
       },
+      "TrendOut": {
+        "properties": {
+          "classification": {
+            "type": "string",
+            "enum": [
+              "uptrend",
+              "downtrend",
+              "consolidation",
+              "undefined"
+            ],
+            "title": "Classification"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "available": {
+            "type": "integer",
+            "title": "Available"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "moderate",
+              "low"
+            ],
+            "title": "Confidence"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/CriterionOut"
+            },
+            "type": "array",
+            "title": "Criteria"
+          }
+        },
+        "type": "object",
+        "required": [
+          "classification",
+          "score",
+          "available",
+          "confidence",
+          "summary",
+          "criteria"
+        ],
+        "title": "TrendOut"
+      },
       "TxType": {
         "type": "string",
         "enum": [
@@ -3839,6 +4881,54 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WatchlistIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WatchlistIn"
+      },
+      "WatchlistOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "is_default": {
+            "type": "boolean",
+            "title": "Is Default"
+          },
+          "asset_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Asset Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "is_default",
+          "asset_ids"
+        ],
+        "title": "WatchlistOut"
       }
     }
   }

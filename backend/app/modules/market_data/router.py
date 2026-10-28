@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query
@@ -12,13 +13,14 @@ from app.modules.market_data.schemas import (
     QuoteCurrency,
     SortKey,
 )
+from app.modules.watchlists import service as watchlists
 
 router = APIRouter(prefix="/market", tags=["market"])
 
 
 @router.get("/assets")
 async def list_assets(
-    _: CurrentAuth,
+    auth: CurrentAuth,
     db: DbSession,
     currency: QuoteCurrency = "USD",
     q: Annotated[str | None, Query(max_length=64)] = None,
@@ -26,9 +28,21 @@ async def list_assets(
     order: Literal["asc", "desc"] = "asc",
     page: Annotated[int, Query(ge=1, le=1000)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+    watchlist_id: uuid.UUID | None = None,
 ) -> AssetListOut:
+    only_ids = None
+    if watchlist_id is not None:
+        watchlist = await watchlists.get_owned(db, auth.user.id, watchlist_id)
+        only_ids = await watchlists.asset_ids(db, watchlist)
     return await service.list_assets(
-        db, currency=currency, q=q, sort=sort, order=order, page=page, page_size=page_size
+        db,
+        currency=currency,
+        q=q,
+        sort=sort,
+        order=order,
+        page=page,
+        page_size=page_size,
+        only_ids=only_ids,
     )
 
 
