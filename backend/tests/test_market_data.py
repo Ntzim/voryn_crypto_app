@@ -11,9 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.market_data import service
 from app.modules.market_data.models import Cryptocurrency, MarketPrice, MarketTicker
 from app.modules.market_data.providers import coingecko
-from app.modules.market_data.providers.base import FxQuote, MarketQuote, ProviderError
+from app.modules.market_data.providers.base import ProviderError
 from app.modules.market_data.providers.coingecko import CoinGeckoProvider
 from tests.conftest import API, Outbox, login, register_verified
+from tests.fakes import FakeProvider, quote
 
 NOW = datetime.now(UTC).replace(microsecond=0)
 
@@ -124,53 +125,10 @@ async def test_provider_derives_usd_brl_from_btc_rates() -> None:
 # --------------------------------------------------------------------------- service
 
 
-def _quote(
-    source_id: str, symbol: str, rank: int, price: str, change: str, cap: str
-) -> MarketQuote:
-    return MarketQuote(
-        source_id=source_id,
-        symbol=symbol,
-        name=source_id.title(),
-        image_url=None,
-        market_cap_rank=rank,
-        quote_currency="USD",
-        price=Decimal(price),
-        market_cap=Decimal(cap),
-        fully_diluted_valuation=None,
-        total_volume=Decimal("1000"),
-        high_24h=None,
-        low_24h=None,
-        change_pct_1h=None,
-        change_pct_24h=Decimal(change),
-        change_pct_7d=None,
-        circulating_supply=None,
-        total_supply=None,
-        max_supply=None,
-        ath=Decimal(price) * 2,
-        ath_change_pct=Decimal("-50"),
-        ath_date=None,
-        source_updated_at=NOW,
-    )
-
-
-class FakeProvider:
-    name = "coingecko"
-
-    def __init__(self, quotes: list[MarketQuote], rate: str = "5.25") -> None:
-        self.quotes = quotes
-        self.rate = Decimal(rate)
-
-    async def fetch_top_markets(self, vs_currency: str, limit: int) -> list[MarketQuote]:
-        return self.quotes[:limit]
-
-    async def fetch_fx_rate(self, base: str, quote: str) -> FxQuote:
-        return FxQuote(base, quote, self.rate, NOW)
-
-
 QUOTES = [
-    _quote("bitcoin", "BTC", 1, "65000.10", "2.5", "600"),
-    _quote("ethereum", "ETH", 2, "3200.55", "-1.2", "300"),
-    _quote("solana", "SOL", 3, "150.00", "7.8", "100"),
+    quote("bitcoin", "BTC", 1, "65000.10", "2.5", "600"),
+    quote("ethereum", "ETH", 2, "3200.55", "-1.2", "300"),
+    quote("solana", "SOL", 3, "150.00", "7.8", "100"),
 ]
 
 

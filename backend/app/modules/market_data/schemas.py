@@ -24,6 +24,14 @@ class DataStatus(BaseModel):
     fx_observed_at: datetime | None = None
 
 
+class AssetBriefOut(BaseModel):
+    id: uuid.UUID
+    slug: str
+    symbol: str
+    name: str
+    image_url: str | None
+
+
 class AssetOut(BaseModel):
     id: uuid.UUID
     slug: str

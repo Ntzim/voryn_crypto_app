@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     # "queue" hands delivery to the Celery worker so request latency never depends on SMTP.
     email_delivery: Literal["queue", "inline"] = "queue"
     email_from: str = "Voryn <no-reply@voryn.app>"
+    # "off" disables enqueuing background jobs (tests).
+    background_tasks: Literal["queue", "off"] = "queue"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_username: str | None = None

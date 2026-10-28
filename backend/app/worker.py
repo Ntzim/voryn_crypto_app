@@ -6,6 +6,7 @@ a NullPool engine, so no connection is shared across loops.
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from datetime import timedelta
 from typing import Any
 
 from celery import Celery
@@ -21,7 +22,9 @@ from app.core.logging import configure_logging, get_logger
 from app.modules.auth.service import purge_expired
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import ProviderError
+from app.modules.market_data.providers.bcb import BcbPtaxProvider
 from app.modules.market_data.providers.coingecko import CoinGeckoProvider
+from app.modules.portfolio import service as portfolio
 
 settings = get_settings()
 configure_logging()
@@ -44,6 +47,8 @@ celery_app.conf.update(
         "sync-fx": {"task": "market.sync_fx", "schedule": float(settings.fx_sync_interval_seconds)},
         "prune-market-history": {"task": "market.prune_history", "schedule": 6 * 3600.0},
         "purge-auth": {"task": "auth.purge_expired", "schedule": 24 * 3600.0},
+        # Daily closes are published after 00:00 UTC; refresh a little later.
+        "portfolio-history": {"task": "portfolio.refresh_history", "schedule": 6 * 3600.0},
     },
 )
 
@@ -70,7 +75,8 @@ def send_email_task(message: dict[str, Any]) -> None:
 async def _sync_markets(db: AsyncSession) -> int:
     provider = CoinGeckoProvider()
     try:
-        return await market.sync_markets(db, provider)
+        held = await portfolio.held_assets(db)
+        return await market.sync_markets(db, provider, extra_source_ids=list(held.values()))
     except ProviderError as exc:
         logger.error("market_sync_failed", error=str(exc))
         await market.record_sync_failure(str(exc))
@@ -88,6 +94,34 @@ async def _sync_fx(db: AsyncSession) -> str | None:
         return None
     finally:
         await provider.aclose()
+
+
+async def _refresh_history(db: AsyncSession) -> int:
+    """Backfill daily closes (held assets + benchmarks) and official PTAX history."""
+    since = await portfolio.earliest_transaction_date(db)
+    if since is None:
+        return 0
+    assets = await portfolio.held_assets(db)
+    for slug in portfolio.BENCHMARKS:
+        crypto = await market.resolve_asset(db, slug)
+        if crypto is not None:
+            assets[crypto.id] = crypto.source_id
+    fx = BcbPtaxProvider()
+    provider = CoinGeckoProvider()
+    try:
+        try:
+            await market.backfill_fx_history(db, fx, since - timedelta(days=7))
+        except ProviderError as exc:
+            logger.error("ptax_backfill_failed", error=str(exc))
+        return await market.backfill_daily_prices(db, provider, assets, since)
+    finally:
+        await provider.aclose()
+        await fx.aclose()
+
+
+@celery_app.task(name="portfolio.refresh_history")
+def refresh_history_task() -> int:
+    return _run(_refresh_history)
 
 
 @celery_app.task(name="market.sync_markets")
@@ -115,3 +149,4 @@ def _bootstrap(**_: Any) -> None:
     # Populate data right away instead of waiting for the first beat tick.
     sync_fx_task.delay()
     sync_markets_task.delay()
+    refresh_history_task.delay()

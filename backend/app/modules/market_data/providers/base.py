@@ -5,7 +5,7 @@ Business logic depends only on these types, so CoinGecko can be swapped or compl
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Protocol
 
@@ -48,9 +48,29 @@ class FxQuote:
     observed_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class DailyClose:
+    day: date
+    close: Decimal
+
+
 class MarketDataProvider(Protocol):
     name: str
 
     async def fetch_top_markets(self, vs_currency: str, limit: int) -> list[MarketQuote]: ...
 
+    async def fetch_markets_by_ids(
+        self, vs_currency: str, source_ids: list[str]
+    ) -> list[MarketQuote]: ...
+
+    async def fetch_daily_closes(self, source_id: str, days: int) -> list[DailyClose]: ...
+
     async def fetch_fx_rate(self, base: str, quote: str) -> FxQuote: ...
+
+
+class FxHistoryProvider(Protocol):
+    """Official historical USD→BRL observations (one per business day)."""
+
+    name: str
+
+    async def fetch_usd_brl(self, start: date, end: date) -> list[FxQuote]: ...

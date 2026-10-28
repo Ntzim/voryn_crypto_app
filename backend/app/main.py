@@ -21,6 +21,8 @@ from app.modules.auth.router import router as auth_router
 from app.modules.auth.router import security_router
 from app.modules.health.router import router as health_router
 from app.modules.market_data.router import router as market_router
+from app.modules.portfolio.router import exchanges_router
+from app.modules.portfolio.router import router as portfolio_router
 from app.modules.users.router import router as users_router
 
 
@@ -72,6 +74,8 @@ def create_app() -> FastAPI:
     api.include_router(users_router)
     api.include_router(security_router)
     api.include_router(market_router)
+    api.include_router(portfolio_router)
+    api.include_router(exchanges_router)
     app.include_router(api)
     app.include_router(health_router)
     return app

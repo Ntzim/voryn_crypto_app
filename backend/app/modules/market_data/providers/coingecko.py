@@ -8,7 +8,7 @@
 
 import asyncio
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -17,7 +17,12 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.modules.market_data.providers.base import FxQuote, MarketQuote, ProviderError
+from app.modules.market_data.providers.base import (
+    DailyClose,
+    FxQuote,
+    MarketQuote,
+    ProviderError,
+)
 
 logger = get_logger(__name__)
 
@@ -119,16 +124,57 @@ class CoinGeckoProvider:
         ) from last_error
 
     async def fetch_top_markets(self, vs_currency: str, limit: int) -> list[MarketQuote]:
+        return await self._markets(vs_currency, {"per_page": min(limit, 250)})
+
+    async def fetch_markets_by_ids(
+        self, vs_currency: str, source_ids: list[str]
+    ) -> list[MarketQuote]:
+        if not source_ids:
+            return []
+        return await self._markets(
+            vs_currency, {"ids": ",".join(source_ids[:250]), "per_page": 250}
+        )
+
+    async def fetch_daily_closes(self, source_id: str, days: int) -> list[DailyClose]:
+        """Daily closes for completed UTC days.
+
+        CoinGecko daily points are stamped at 00:00 UTC; the point at D+1 00:00 is the close
+        of day D. The trailing point is the live price and is dropped.
+        """
+        payload = await self._get(
+            f"/coins/{source_id}/market_chart",
+            {"vs_currency": "usd", "days": min(max(days, 1), 365), "interval": "daily"},
+        )
+        try:
+            points = payload["prices"]
+        except (KeyError, TypeError) as exc:
+            raise ProviderError(f"CoinGecko market_chart for {source_id} is malformed") from exc
+        closes: dict[date, DailyClose] = {}
+        today = datetime.now(UTC).date()
+        for point in points:
+            try:
+                stamp = datetime.fromtimestamp(int(point[0]) / 1000, UTC)
+                price = Decimal(point[1])
+            except (TypeError, ValueError, IndexError, ArithmeticError):
+                continue
+            if stamp.hour or stamp.minute or price < 0:
+                continue  # the live trailing point, or garbage
+            day = stamp.date() - timedelta(days=1)
+            if day < today:
+                closes[day] = DailyClose(day=day, close=price)
+        return sorted(closes.values(), key=lambda c: c.day)
+
+    async def _markets(self, vs_currency: str, extra: dict[str, Any]) -> list[MarketQuote]:
         payload = await self._get(
             "/coins/markets",
             {
                 "vs_currency": vs_currency.lower(),
                 "order": "market_cap_desc",
-                "per_page": min(limit, 250),
                 "page": 1,
                 "sparkline": "false",
                 "price_change_percentage": "1h,24h,7d",
                 "precision": "full",
+                **extra,
             },
         )
         if not isinstance(payload, list):

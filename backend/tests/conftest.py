@@ -12,6 +12,7 @@ os.environ.update(
         ),
         "EMAIL_BACKEND": "memory",
         "EMAIL_DELIVERY": "inline",
+        "BACKGROUND_TASKS": "off",
         "COOKIE_SECURE": "false",
         "LOG_JSON": "false",
         "LOG_LEVEL": "WARNING",
@@ -22,7 +23,7 @@ os.environ.update(
 import fakeredis
 import httpx
 import pytest
-from sqlalchemy import text
+from sqlalchemy import insert, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
@@ -32,8 +33,10 @@ from app.core.email import EmailMessage, MemoryBackend, set_email_backend
 from app.core.redis import set_redis
 from app.main import create_app
 from app.models import Base
+from app.modules.portfolio.models import DEFAULT_EXCHANGES, Exchange
 
 API = "/api/v1"
+SEEDED = {"exchanges"}
 Outbox = list[EmailMessage]
 ClientFactory = Callable[[], Awaitable[httpx.AsyncClient]]
 PASSWORD = "correct-horse-battery"
@@ -57,6 +60,11 @@ async def database() -> AsyncIterator[None]:
     async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+        # Reference data seeded by migrations in real databases.
+        await conn.execute(
+            insert(Exchange),
+            [{"id": i, "name": n, "kind": k} for i, n, k in DEFAULT_EXCHANGES],
+        )
     yield
     await dispose_engine()
 
@@ -66,7 +74,7 @@ async def _clean_state() -> AsyncIterator[None]:
     redis = fakeredis.FakeAsyncRedis(decode_responses=True)
     set_redis(redis)
     yield
-    tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
+    tables = ", ".join(t.name for t in Base.metadata.sorted_tables if t.name not in SEEDED)
     async with get_engine().begin() as conn:
         await conn.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
     await redis.flushall()

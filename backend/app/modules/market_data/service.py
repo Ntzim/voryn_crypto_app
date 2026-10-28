@@ -5,8 +5,10 @@ latest stored USD→BRL rate, and responses say which rate and timestamp were us
 """
 
 import json
+import uuid
+from collections.abc import Sequence
 from dataclasses import asdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 from sqlalchemy import Select, delete, func, select, update
@@ -17,8 +19,19 @@ from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.core.redis import get_redis
-from app.modules.market_data.models import Cryptocurrency, FxRate, MarketPrice, MarketTicker
-from app.modules.market_data.providers.base import MarketDataProvider
+from app.modules.market_data.models import (
+    Cryptocurrency,
+    DailyPrice,
+    FxRate,
+    MarketPrice,
+    MarketTicker,
+)
+from app.modules.market_data.providers.base import (
+    FxHistoryProvider,
+    MarketDataProvider,
+    MarketQuote,
+    ProviderError,
+)
 from app.modules.market_data.schemas import (
     AssetDetailOut,
     AssetListOut,
@@ -82,19 +95,61 @@ def utcnow() -> datetime:
 # --------------------------------------------------------------------------- ingestion
 
 
-async def sync_markets(db: AsyncSession, provider: MarketDataProvider) -> int:
+async def sync_markets(
+    db: AsyncSession, provider: MarketDataProvider, extra_source_ids: Sequence[str] = ()
+) -> int:
+    """Refresh the top-N universe plus any extra assets (e.g. held in portfolios).
+
+    Extra assets get live tickers but stay out of the market listing (`is_active=False`).
+    """
     settings = get_settings()
     quotes = await provider.fetch_top_markets(BASE_QUOTE, settings.market_top_n)
     fetched_at = utcnow()
+    ids = await _store_quotes(db, provider.name, quotes, fetched_at, active=True)
 
+    # Assets that dropped out of the tracked universe keep history but leave the listing.
+    await db.execute(
+        update(Cryptocurrency)
+        .where(
+            Cryptocurrency.source == provider.name,
+            Cryptocurrency.source_id.not_in(list(ids)),
+        )
+        .values(is_active=False, market_cap_rank=None)
+    )
+    missing = sorted(set(extra_source_ids) - set(ids))
+    if missing:
+        extras = await provider.fetch_markets_by_ids(BASE_QUOTE, missing)
+        if extras:
+            await _store_quotes(db, provider.name, extras, fetched_at, active=False)
+    await db.commit()
+
+    await get_redis().set(
+        _SYNC_STATUS_KEY,
+        json.dumps({"at": fetched_at.isoformat(), "count": len(quotes), "ok": True}),
+    )
+    logger.info(
+        "market_sync_completed", provider=provider.name, assets=len(quotes), extra=len(missing)
+    )
+    return len(quotes)
+
+
+async def _store_quotes(
+    db: AsyncSession,
+    source: str,
+    quotes: Sequence[MarketQuote],
+    fetched_at: datetime,
+    *,
+    active: bool,
+) -> dict[str, uuid.UUID]:
     asset_rows = [
         {
-            "source": provider.name,
+            "source": source,
             "source_id": q.source_id,
             "symbol": q.symbol,
             "name": q.name,
             "image_url": q.image_url,
-            "market_cap_rank": q.market_cap_rank,
+            "market_cap_rank": q.market_cap_rank if active else None,
+            "is_active": active,
         }
         for q in quotes
     ]
@@ -106,21 +161,11 @@ async def sync_markets(db: AsyncSession, provider: MarketDataProvider) -> int:
             "name": upsert.excluded.name,
             "image_url": upsert.excluded.image_url,
             "market_cap_rank": upsert.excluded.market_cap_rank,
-            "is_active": True,
+            "is_active": upsert.excluded.is_active,
             "updated_at": func.now(),
         },
     ).returning(Cryptocurrency.id, Cryptocurrency.source_id)
     ids = {source_id: id_ for id_, source_id in (await db.execute(stmt)).all()}
-
-    # Assets that dropped out of the tracked universe keep history but leave the listing.
-    await db.execute(
-        update(Cryptocurrency)
-        .where(
-            Cryptocurrency.source == provider.name,
-            Cryptocurrency.source_id.not_in(list(ids)),
-        )
-        .values(is_active=False, market_cap_rank=None)
-    )
 
     quote_rows = []
     for q in quotes:
@@ -129,12 +174,11 @@ async def sync_markets(db: AsyncSession, provider: MarketDataProvider) -> int:
             {
                 "cryptocurrency_id": ids[q.source_id],
                 "quote_currency": q.quote_currency,
-                "source": provider.name,
+                "source": source,
                 "fetched_at": fetched_at,
                 **{field: data[field] for field in _QUOTE_FIELDS},
             }
         )
-
     ticker_stmt = insert(MarketTicker).values(quote_rows)
     await db.execute(
         ticker_stmt.on_conflict_do_update(
@@ -146,14 +190,7 @@ async def sync_markets(db: AsyncSession, provider: MarketDataProvider) -> int:
         )
     )
     await db.execute(insert(MarketPrice).values(quote_rows).on_conflict_do_nothing())
-    await db.commit()
-
-    await get_redis().set(
-        _SYNC_STATUS_KEY,
-        json.dumps({"at": fetched_at.isoformat(), "count": len(quotes), "ok": True}),
-    )
-    logger.info("market_sync_completed", provider=provider.name, assets=len(quotes))
-    return len(quotes)
+    return ids
 
 
 async def record_sync_failure(error: str) -> None:
@@ -354,3 +391,226 @@ async def overview(db: AsyncSession, currency: QuoteCurrency, movers: int = 5) -
 async def sync_status() -> dict[str, object] | None:
     raw = await get_redis().get(_SYNC_STATUS_KEY)
     return json.loads(raw) if raw else None
+
+
+# --------------------------------------------------------------------------- history
+
+
+async def backfill_daily_prices(
+    db: AsyncSession,
+    provider: MarketDataProvider,
+    assets: dict[uuid.UUID, str],
+    since: date,
+) -> int:
+    """Fetch missing daily closes from `since` (the free API serves at most 365 days).
+
+    Assets already covered from `since` to yesterday are skipped, so the job is cheap to
+    repeat. A failure on one asset is logged and does not stop the others.
+    """
+    yesterday = utcnow().date() - timedelta(days=1)
+    since = max(since, yesterday - timedelta(days=364))
+    if not assets or since > yesterday:
+        return 0
+    bounds = {
+        crypto_id: (first, last)
+        for crypto_id, first, last in (
+            await db.execute(
+                select(
+                    DailyPrice.cryptocurrency_id,
+                    func.min(DailyPrice.day),
+                    func.max(DailyPrice.day),
+                )
+                .where(DailyPrice.cryptocurrency_id.in_(list(assets)))
+                .group_by(DailyPrice.cryptocurrency_id)
+            )
+        ).all()
+    }
+    stored = 0
+    for crypto_id, source_id in assets.items():
+        first, last = bounds.get(crypto_id, (None, None))
+        if first is not None and last is not None and first <= since and last >= yesterday:
+            continue
+        try:
+            closes = await provider.fetch_daily_closes(
+                source_id, (utcnow().date() - since).days + 1
+            )
+        except ProviderError as exc:
+            logger.warning("daily_prices_failed", asset=source_id, error=str(exc))
+            continue
+        rows = [
+            {
+                "cryptocurrency_id": crypto_id,
+                "day": c.day,
+                "close": c.close,
+                "source": provider.name,
+            }
+            for c in closes
+            if c.day >= since
+        ]
+        if rows:
+            stmt = insert(DailyPrice).values(rows)
+            await db.execute(
+                stmt.on_conflict_do_update(
+                    index_elements=[DailyPrice.cryptocurrency_id, DailyPrice.day],
+                    set_={"close": stmt.excluded.close, "fetched_at": func.now()},
+                )
+            )
+            await db.commit()
+            stored += len(rows)
+    logger.info("daily_prices_backfilled", assets=len(assets), rows=stored)
+    return stored
+
+
+async def backfill_fx_history(db: AsyncSession, provider: FxHistoryProvider, since: date) -> int:
+    """Store official PTAX observations from `since` to today (idempotent)."""
+    quotes = await provider.fetch_usd_brl(since, utcnow().date())
+    if not quotes:
+        return 0
+    await db.execute(
+        insert(FxRate)
+        .values(
+            [
+                {
+                    "base_currency": q.base_currency,
+                    "quote_currency": q.quote_currency,
+                    "rate": q.rate,
+                    "source": provider.name,
+                    "observed_at": q.observed_at,
+                }
+                for q in quotes
+            ]
+        )
+        .on_conflict_do_nothing()
+    )
+    await db.commit()
+    return len(quotes)
+
+
+# --------------------------------------------------------------------------- read helpers
+# Consumed by the portfolio module.
+
+FX_MAX_AGE = timedelta(days=7)
+
+
+async def usd_brl_at(db: AsyncSession, when: datetime) -> Decimal | None:
+    """Latest USD→BRL observation at or before `when`, if not older than 7 days."""
+    row = (
+        await db.execute(
+            select(FxRate.rate, FxRate.observed_at)
+            .where(
+                FxRate.base_currency == "USD",
+                FxRate.quote_currency == "BRL",
+                FxRate.observed_at <= when,
+            )
+            .order_by(FxRate.observed_at.desc())
+            .limit(1)
+        )
+    ).one_or_none()
+    if row is None or when - row.observed_at > FX_MAX_AGE:
+        return None
+    rate: Decimal = row.rate
+    return rate
+
+
+async def usd_brl_daily(db: AsyncSession, start: date, end: date) -> dict[date, Decimal]:
+    """USD→BRL at the end of each UTC day in [start, end], carried over weekends/holidays."""
+    rows = (
+        await db.execute(
+            select(FxRate.observed_at, FxRate.rate)
+            .where(
+                FxRate.base_currency == "USD",
+                FxRate.quote_currency == "BRL",
+                FxRate.observed_at < datetime.combine(end + timedelta(days=1), time(), UTC),
+                FxRate.observed_at >= datetime.combine(start, time(), UTC) - FX_MAX_AGE,
+            )
+            .order_by(FxRate.observed_at)
+        )
+    ).all()
+    result: dict[date, Decimal] = {}
+    index, current = 0, None
+    day = start
+    while day <= end:
+        day_end = datetime.combine(day + timedelta(days=1), time(), UTC)
+        while index < len(rows) and rows[index].observed_at < day_end:
+            current = rows[index].rate
+            index += 1
+        if current is not None:
+            result[day] = current
+        day += timedelta(days=1)
+    return result
+
+
+async def daily_closes(
+    db: AsyncSession, crypto_ids: Sequence[uuid.UUID], start: date, end: date
+) -> dict[uuid.UUID, dict[date, Decimal]]:
+    rows = (
+        await db.execute(
+            select(DailyPrice.cryptocurrency_id, DailyPrice.day, DailyPrice.close).where(
+                DailyPrice.cryptocurrency_id.in_(list(crypto_ids)),
+                DailyPrice.day >= start,
+                DailyPrice.day <= end,
+            )
+        )
+    ).all()
+    result: dict[uuid.UUID, dict[date, Decimal]] = {}
+    for crypto_id, day, close in rows:
+        result.setdefault(crypto_id, {})[day] = close
+    return result
+
+
+async def live_tickers(
+    db: AsyncSession, crypto_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, MarketTicker]:
+    rows = (
+        await db.execute(
+            select(MarketTicker).where(
+                MarketTicker.cryptocurrency_id.in_(list(crypto_ids)),
+                MarketTicker.quote_currency == BASE_QUOTE,
+            )
+        )
+    ).scalars()
+    return {t.cryptocurrency_id: t for t in rows}
+
+
+async def cryptos_by_id(
+    db: AsyncSession, crypto_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, Cryptocurrency]:
+    rows = (
+        await db.execute(select(Cryptocurrency).where(Cryptocurrency.id.in_(list(crypto_ids))))
+    ).scalars()
+    return {c.id: c for c in rows}
+
+
+async def resolve_asset(db: AsyncSession, ref: str) -> Cryptocurrency | None:
+    """Resolve a slug ("bitcoin") or a symbol ("BTC"); a symbol picks the best-ranked match."""
+    ref = ref.strip()
+    by_slug = (
+        await db.execute(select(Cryptocurrency).where(Cryptocurrency.source_id == ref.lower()))
+    ).scalar_one_or_none()
+    if by_slug is not None:
+        return by_slug
+    return (
+        await db.execute(
+            select(Cryptocurrency)
+            .where(func.upper(Cryptocurrency.symbol) == ref.upper())
+            .order_by(Cryptocurrency.market_cap_rank.asc().nulls_last())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+
+
+async def search_assets(db: AsyncSession, q: str, limit: int = 10) -> list[Cryptocurrency]:
+    pattern = f"%{_escape_like(q.strip())}%"
+    return list(
+        (
+            await db.execute(
+                select(Cryptocurrency)
+                .where(
+                    Cryptocurrency.symbol.ilike(pattern, escape="\\")
+                    | Cryptocurrency.name.ilike(pattern, escape="\\")
+                )
+                .order_by(Cryptocurrency.market_cap_rank.asc().nulls_last(), Cryptocurrency.name)
+                .limit(limit)
+            )
+        ).scalars()
+    )

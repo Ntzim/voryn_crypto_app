@@ -5,19 +5,23 @@
 - `market_tickers`: latest observed quote per asset (upserted every sync, cheap to query).
 - `market_prices`: append-only history of quotes, deduplicated on the provider timestamp,
   pruned after MARKET_HISTORY_RETENTION_DAYS (long-range history comes from candles).
-- `fx_rates`: fiat conversion rates (USD→BRL) with observation time.
+- `daily_prices`: daily USD close per asset, used for portfolio valuation history and
+  benchmarks. `day` is the UTC calendar day the close belongs to.
+- `fx_rates`: fiat conversion rates (USD→BRL) with observation time — live (CoinGecko)
+  and official daily PTAX (Banco Central do Brasil) observations share the table.
 
 Monetary columns use NUMERIC; floats are never used for financial values.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Identity,
@@ -105,6 +109,25 @@ class MarketPrice(_QuoteColumns, Base):
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     cryptocurrency_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("cryptocurrencies.id", ondelete="CASCADE"), nullable=False
+    )
+
+
+class DailyPrice(Base):
+    __tablename__ = "daily_prices"
+    __table_args__ = (
+        UniqueConstraint("cryptocurrency_id", "day"),
+        CheckConstraint("close >= 0", name="close_non_negative"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    cryptocurrency_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("cryptocurrencies.id", ondelete="CASCADE"), nullable=False
+    )
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    close: Mapped[Decimal] = mapped_column(Price, nullable=False)  # USD
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
 

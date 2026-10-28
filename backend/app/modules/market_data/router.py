@@ -5,6 +5,7 @@ from fastapi import APIRouter, Path, Query
 from app.modules.auth.deps import CurrentAuth, DbSession
 from app.modules.market_data import service
 from app.modules.market_data.schemas import (
+    AssetBriefOut,
     AssetDetailOut,
     AssetListOut,
     MarketOverviewOut,
@@ -29,6 +30,19 @@ async def list_assets(
     return await service.list_assets(
         db, currency=currency, q=q, sort=sort, order=order, page=page, page_size=page_size
     )
+
+
+@router.get("/search")
+async def search_assets(
+    _: CurrentAuth, db: DbSession, q: Annotated[str, Query(min_length=1, max_length=64)]
+) -> list[AssetBriefOut]:
+    """Asset picker: catalogue search by name or symbol, best-ranked first."""
+    return [
+        AssetBriefOut(
+            id=c.id, slug=c.source_id, symbol=c.symbol, name=c.name, image_url=c.image_url
+        )
+        for c in await service.search_assets(db, q)
+    ]
 
 
 @router.get("/assets/{slug}")
