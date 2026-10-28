@@ -32,6 +32,10 @@
 **Decisão:** `openapi-typescript` gera `schema.d.ts` a partir de `backend` (`npm run gen:api`).
 **Motivo:** contratos únicos; mudanças quebradas no backend aparecem como erro de compilação no frontend.
 
+### ADR-010 — Candles da Binance (dados públicos) com verificação de preço
+**Decisão:** candles de `data-api.binance.vision` para o par `ATIVO/USDT`, aceitos só quando o último fechamento está a ≤ 5% do preço da CoinGecko.
+**Motivo:** o plano gratuito da CoinGecko não oferece candles nos intervalos exigidos (15m–1w); a Binance tem a maior cobertura de pares, sem chave e sem bloqueio geográfico nesse host. A verificação de preço protege contra símbolos repetidos entre tokens diferentes. O provedor fica atrás de `CandleProvider`, permitindo trocar ou somar fontes.
+
 ### ADR-009 — Indicadores e sinais determinísticos; IA apenas interpreta
 **Decisão (para Fases 3–5):** indicadores, scores e métricas de risco são calculados por código testado; o LLM recebe resultados estruturados e nunca gera números.
 **Motivo:** auditabilidade, reprodutibilidade e o princípio do produto de não apresentar previsões como certezas.

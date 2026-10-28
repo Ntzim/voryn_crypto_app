@@ -35,14 +35,21 @@ Princípios:
 
 Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots` **não** foram criados. Posições e séries são recalculadas a partir das transações a cada leitura — milissegundos para carteiras pessoais — o que elimina inconsistência ao editar transações antigas. Se o volume exigir, entram como cache invalidado por transação, sem mudar contratos.
 
+## Fase 3 (implementado)
+
+| Tabela | Propósito | Destaques |
+|---|---|---|
+| `historical_candles` | candles fechados (OHLCV, cotados em USDT) | único (`cryptocurrency_id`, `timeframe`, `open_time`); checks de consistência OHLC e timeframe suportado; `source`/`source_symbol` para proveniência |
+| `watchlists` | listas do usuário | único (`user_id`, `name`); índice único parcial garante uma única lista padrão ("Favoritos") por usuário |
+| `watchlist_assets` | ativos de cada lista | PK (`watchlist_id`, `cryptocurrency_id`) — idempotente |
+
+`technical_indicators` não foi criada: indicadores são recalculados a cada leitura e os usados em sinais serão gravados junto ao sinal (Fase 4).
+
 ## Fases seguintes (projeto)
 
 | Tabela | Fase | Chaves e constraints planejadas |
 |---|---|---|
 | `exchange_connections` | 6 | `user_id`, `exchange_id`, `api_key_encrypted`, `api_secret_encrypted`, `permissions` (validado: somente leitura), `last_synced_cursor` |
-| `historical_candles` | 3 | (`cryptocurrency_id`, `timeframe`, `open_time`) único; OHLCV em NUMERIC; candidata a particionamento por mês ou TimescaleDB |
-| `technical_indicators` | 3 | cache de indicadores por (`cryptocurrency_id`, `timeframe`, `indicator`, `params_hash`, `open_time`) |
-| `watchlists`, `watchlist_assets` | 3 | `user_id` FK; único (`watchlist_id`, `cryptocurrency_id`) |
 | `signal_strategies` | 4 | versão da estratégia, pesos (JSONB validado), `is_active` |
 | `analysis_signals` | 4 | ativo, timeframe, `strategy_version`, preço de referência, score 0–100 (check), classificação, indicadores usados (JSONB), justificativa, condições de invalidação, `data_fetched_at`, `data_is_stale` |
 | `alerts` | 4 | `user_id`, tipo, condição (JSONB validado), `cooldown_seconds`, `last_triggered_at` |
@@ -55,7 +62,7 @@ Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots`
 | Dado | Retenção |
 |---|---|
 | `market_prices` | 7 dias (configurável) |
-| `historical_candles` | indefinida (base para backtests) |
+| `historical_candles` | 15m: 60 dias · 1h: 1 ano · 4h/1d/1w: indefinida (base para backtests) |
 | `fx_rates` | 1 ano (observações PTAX e ao vivo) |
 | `daily_prices` | indefinida (valuation histórica) |
 | sessões/tokens expirados | 30 dias após expiração |

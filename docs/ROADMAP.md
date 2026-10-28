@@ -30,9 +30,18 @@ Cada fase termina com: testes automatizados verdes, zero erros de tipos (mypy st
 
 Pendências registradas: mapeadores de extrato Binance/Coinbase, cadastro de ativos fora do catálogo (busca na CoinGecko), histórico de preços > 365 dias (plano pago), múltiplas carteiras na interface (a API já suporta).
 
-## Fase 3 — Inteligência de mercado
+## Fase 3 — Inteligência de mercado ✅
 
-Candles (15m/1h/4h/1d/1w) com provedor apropriado e cache, motor de indicadores determinístico (RSI, MACD, EMA 9/21/50/200, SMA, Bollinger, ATR, volume, suporte/resistência documentado) com testes contra valores de referência, classificação de tendência justificada, gráfico de candles, watchlists/favoritos.
+- [x] Candles 15m/1h/4h/1d/1w (Binance, dados públicos) com validação de par contra o preço de referência, cache Redis, persistência de candles fechados e fallback
+- [x] Motor de indicadores determinístico (SMA, EMA 9/21/50/200, RSI de Wilder, MACD, Bollinger, ATR, volume, volatilidade) validado contra valores de referência publicados
+- [x] Suporte e resistência por pivôs agrupados (metodologia documentada)
+- [x] Classificação de tendência multicritério com justificativa por critério e nível de confiança
+- [x] Página de Análise de Ativos: gráfico de candles com médias, Bollinger, níveis, volume, RSI e MACD; painéis de tendência, indicadores e níveis
+- [x] Gráfico diário e tendência na visão geral do ativo
+- [x] Watchlists: Favoritos + listas personalizadas, filtro no Mercado
+- [x] Metodologia em [TECHNICAL_ANALYSIS.md](TECHNICAL_ANALYSIS.md) (versão `ta-1.0`)
+
+Pendências registradas: notícias e eventos (provedor licenciado), volume agregado entre exchanges.
 
 ## Fase 4 — Oportunidades
 

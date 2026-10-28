@@ -1,6 +1,6 @@
 # Arquitetura da Voryn
 
-> Estado: Fases 1 e 2 concluídas. Este documento descreve a arquitetura alvo e marca o que já existe.
+> Estado: Fases 1, 2 e 3 concluídas. Este documento descreve a arquitetura alvo e marca o que já existe.
 
 ## Visão geral
 
@@ -48,7 +48,8 @@ Regras de dependência:
 | `market_data` — catálogo, cotações, câmbio, provedores | 1 | ✅ (inicial) |
 | `health` — liveness/readiness | 1 | ✅ |
 | `portfolio` — transações, motor de posição, rentabilidade, insights, CSV ([metodologia](PORTFOLIO.md)) | 2 | ✅ |
-| `technical_analysis` | 3 | — |
+| `technical_analysis` — indicadores, tendência, níveis ([metodologia](TECHNICAL_ANALYSIS.md)) | 3 | ✅ |
+| `watchlists` — favoritos e listas | 3 | ✅ |
 | `signals`, `alerts` | 4 | — |
 | `ai_insights` | 5 | — |
 | `risk`, `backtesting`, `exchange_connections` | 6 | — |

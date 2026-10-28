@@ -4,7 +4,7 @@
 
 Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mercado, análise técnica, sinais quantitativos transparentes e um assistente de IA que só interpreta dados calculados pela própria plataforma.
 
-**Estado atual: Fase 2 — Carteira funcional** (transações, importação CSV, preço médio, resultado em BRL/USD, TWR/XIRR, dashboard patrimonial e insights), sobre a fundação da Fase 1. Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado atual: Fase 3 — Inteligência de mercado** (candles 15m–1w, indicadores técnicos determinísticos, tendência, suportes/resistências, watchlists), sobre a carteira funcional (Fase 2) e a fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -13,7 +13,7 @@ Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mer
 | Frontend | Next.js 16 (App Router, Cache Components), TypeScript estrito, Tailwind CSS v4, shadcn/ui (Radix), TanStack Query, Zustand |
 | Backend | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async), Alembic, Celery |
 | Dados | PostgreSQL 17, Redis 7 |
-| Mercado | CoinGecko (atrás de uma interface `MarketDataProvider` substituível) |
+| Mercado | CoinGecko (cotações), Binance dados públicos (candles), BCB PTAX (câmbio) — atrás de interfaces de provedor substituíveis |
 | Infra | Docker / Docker Compose, GitHub Actions, pronto para Railway |
 
 ## Rodando localmente
@@ -95,6 +95,7 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Modelo de dados](docs/DATA_MODEL.md)
 - [Carteira: metodologia de cálculo](docs/PORTFOLIO.md)
+- [Análise técnica: metodologia](docs/TECHNICAL_ANALYSIS.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)
