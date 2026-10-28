@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Wallet } from "lucide-react";
+import { ArrowRight, Plus, Wallet } from "lucide-react";
 import Link from "next/link";
 
 import { DataStatus } from "@/components/common/data-status";
@@ -8,9 +8,16 @@ import { PageHeader } from "@/components/common/page-header";
 import { StatCard } from "@/components/common/stat-card";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { AssetList } from "@/components/market/asset-list";
+import { AllocationChart } from "@/components/portfolio/allocation-chart";
+import { EquityChart } from "@/components/portfolio/equity-chart";
+import { InsightsPanel } from "@/components/portfolio/insights-panel";
+import { PositionsTable } from "@/components/portfolio/positions-table";
+import { SummaryCards } from "@/components/portfolio/summary-cards";
+import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime, formatMoney, formatNumber } from "@/lib/format";
+import { useInsights, usePerformance, usePortfolio, useSummary } from "@/lib/portfolio-queries";
 import { useAssets, useMarketOverview, useMe, usePreferences } from "@/lib/queries";
 
 const UNIVERSE_HINT =
@@ -23,6 +30,11 @@ export function DashboardView() {
   const top = useAssets({ currency, q: "", sort: "rank", order: "asc", page: 1, pageSize: 8 });
   const data = overview.data;
   const firstName = user?.full_name.split(" ")[0];
+  const portfolio = usePortfolio();
+  const summary = useSummary(portfolio.data?.id, currency);
+  const performance = usePerformance(portfolio.data?.id, currency);
+  const insights = useInsights(portfolio.data?.id);
+  const hasPortfolio = (summary.data?.transaction_count ?? 0) > 0;
 
   const breadth =
     data && data.advancers_24h + data.decliners_24h > 0
@@ -36,27 +48,65 @@ export function DashboardView() {
         description={formatDateTime(new Date().toISOString(), locale, timeZone, { dateStyle: "full" })}
       />
 
+      {hasPortfolio && (
+        <section aria-label="Sua carteira" className="mb-10 space-y-4">
+          <SummaryCards summary={summary.data} performance={performance.data} locale={locale} loading={!summary.data} />
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <EquityChart performance={performance.data} locale={locale} />
+            </div>
+            <AllocationChart summary={summary.data} locale={locale} />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card className="gap-0 pb-0 lg:col-span-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-sm font-medium">Principais posições</CardTitle>
+                <CardAction>
+                  <Link href="/carteira" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                    Ver carteira <ArrowRight className="size-3.5" />
+                  </Link>
+                </CardAction>
+              </CardHeader>
+              <PositionsTable positions={summary.data?.positions.slice(0, 6)} currency={currency} locale={locale} compact />
+            </Card>
+            <InsightsPanel items={insights.data?.items} loading={insights.isPending} />
+          </div>
+        </section>
+      )}
+
+      {hasPortfolio && <h2 className="mb-4 font-heading text-lg font-semibold">Mercado</h2>}
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:row-span-2">
-          <CardHeader>
-            <CardTitle className="font-heading text-sm font-medium text-muted-foreground">Patrimônio</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-1 items-center justify-center">
-            <EmptyState
-              icon={Wallet}
-              title="Sua carteira aparece aqui"
-              description="Em breve você poderá registrar transações e importar extratos para acompanhar patrimônio, resultado e rentabilidade."
-              className="py-6"
-            />
-          </CardContent>
-        </Card>
+        {!hasPortfolio && (
+          <Card className="lg:row-span-2">
+            <CardHeader>
+              <CardTitle className="font-heading text-sm font-medium text-muted-foreground">Patrimônio</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-1 items-center justify-center">
+              {summary.isPending ? (
+                <Skeleton className="h-32 w-full rounded-lg" />
+              ) : (
+                <EmptyState
+                  icon={Wallet}
+                  title="Comece pela sua carteira"
+                  description="Registre suas compras e vendas ou importe um CSV para acompanhar patrimônio, resultado e rentabilidade."
+                  className="py-6"
+                  action={
+                    <Button asChild>
+                      <Link href="/carteira?nova=1"><Plus /> Registrar transação</Link>
+                    </Button>
+                  }
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {overview.isError ? (
           <Card className="lg:col-span-2 lg:row-span-2">
             <ErrorState error={overview.error} onRetry={() => overview.refetch()} />
           </Card>
         ) : (
-          <div className="grid grid-cols-2 gap-4 lg:col-span-2 lg:row-span-2">
+          <div className={hasPortfolio ? "grid grid-cols-2 gap-4 lg:col-span-3 lg:grid-cols-4" : "grid grid-cols-2 gap-4 lg:col-span-2 lg:row-span-2"}>
             <StatCard
               label="Capitalização"
               hint={UNIVERSE_HINT}

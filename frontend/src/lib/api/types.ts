@@ -22,3 +22,19 @@ export type Locale = UserSettings["locale"];
 export type SortKey = NonNullable<
   NonNullable<import("./schema").operations["list_assets_api_v1_market_assets_get"]["parameters"]["query"]>["sort"]
 >;
+
+export type AssetBrief = Schemas["AssetBriefOut"];
+export type Exchange = Schemas["ExchangeOut"];
+export type Portfolio = Schemas["PortfolioOut"];
+export type TxType = Schemas["TxType"];
+export type Transaction = Schemas["TransactionOut"];
+export type TransactionInput = Schemas["TransactionIn"];
+export type TransactionList = Schemas["TransactionListOut"];
+export type PortfolioSummary = Schemas["SummaryOut"];
+export type Position = Schemas["PositionOut"];
+export type Performance = Schemas["PerformanceOut"];
+export type SeriesPoint = Schemas["SeriesPoint"];
+export type Insight = Schemas["InsightOut"];
+export type InsightList = Schemas["InsightsOut"];
+export type CsvPreview = Schemas["CsvPreviewOut"];
+export type CsvCommit = Schemas["CsvCommitOut"];

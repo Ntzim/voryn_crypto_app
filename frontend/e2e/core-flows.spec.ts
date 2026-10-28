@@ -29,7 +29,7 @@ test("dashboard, market and asset pages show real market data", async ({ page },
 
   await expect(page.getByRole("heading", { name: "Olá, Ana" })).toBeVisible();
   await expect(page.getByText("Dados fornecidos por CoinGecko").first()).toBeVisible();
-  await expect(page.getByText("Sua carteira aparece aqui")).toBeVisible();
+  await expect(page.getByText("Comece pela sua carteira")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("dashboard.png"), fullPage: true });
 
   await page.goto("/mercado");

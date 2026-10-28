@@ -29,7 +29,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Visão geral",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, available: true, mobilePrimary: true },
-      { href: "/carteira", label: "Minha Carteira", icon: Wallet, available: false, mobilePrimary: true },
+      { href: "/carteira", label: "Minha Carteira", icon: Wallet, available: true, mobilePrimary: true },
     ],
   },
   {
