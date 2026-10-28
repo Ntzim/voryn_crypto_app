@@ -1,11 +1,12 @@
 "use client";
 
 import { cn } from "cn";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search, Star } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { FavoriteStar } from "@/components/analysis/watchlist-button";
 import { AssetIcon } from "@/components/common/asset-icon";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { DataStatus } from "@/components/common/data-status";
@@ -20,9 +21,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Asset, Currency, Locale, SortKey } from "@/lib/api/types";
 import { formatMoney, formatNumber, formatPercent, formatPrice } from "@/lib/format";
+import { useWatchlists } from "@/lib/analysis-queries";
 import { usePreferences, useAssets } from "@/lib/queries";
 
 const PAGE_SIZE = 50;
+const ALL_ASSETS = "all";
 
 const SORT_LABELS: Record<SortKey, string> = {
   rank: "Ranking",
@@ -88,7 +91,10 @@ export function MarketView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const query = useAssets({ currency, q, sort, order, page, pageSize: PAGE_SIZE });
+  const watchlists = useWatchlists();
+  const listParam = searchParams.get("lista");
+  const watchlistId = watchlists.data?.some((w) => w.id === listParam) ? (listParam ?? undefined) : undefined;
+  const query = useAssets({ currency, q, sort, order, page, pageSize: PAGE_SIZE, watchlistId });
   const data = query.data;
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
 
@@ -118,6 +124,19 @@ export function MarketView() {
             maxLength={64}
           />
         </div>
+        <Select value={watchlistId ?? ALL_ASSETS} onValueChange={(v) => update({ lista: v === ALL_ASSETS ? null : v, pagina: null })}>
+          <SelectTrigger className="h-10 w-full bg-surface sm:w-48" aria-label="Lista">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_ASSETS}>Todos os ativos</SelectItem>
+            {watchlists.data?.map((w) => (
+              <SelectItem key={w.id} value={w.id}>
+                {w.name} ({w.asset_ids.length})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <div className="md:hidden">
           <Select value={`${sort}:${order}`} onValueChange={(v) => {
             const [key, ord] = v.split(":") as [SortKey, "asc" | "desc"];
@@ -143,7 +162,11 @@ export function MarketView() {
         {query.isError ? (
           <ErrorState error={query.error} onRetry={() => query.refetch()} />
         ) : data && data.items.length === 0 ? (
-          <EmptyState icon={Search} title="Nenhum ativo encontrado" description={`Nada corresponde a “${q}”. Tente outro nome ou símbolo.`} />
+          watchlistId && !q ? (
+            <EmptyState icon={Star} title="Lista vazia" description="Toque na estrela de um ativo para acompanhá-lo nesta lista." />
+          ) : (
+            <EmptyState icon={Search} title="Nenhum ativo encontrado" description={`Nada corresponde a “${q}”. Tente outro nome ou símbolo.`} />
+          )
         ) : (
           <>
             <div className="px-4 md:hidden">
@@ -193,6 +216,12 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
+  {
+    key: "fav",
+    label: "",
+    className: "w-10",
+    render: (a) => <FavoriteStar assetId={a.id} />,
+  },
   {
     key: "rank",
     label: "#",

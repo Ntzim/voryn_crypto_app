@@ -38,3 +38,10 @@ export type Insight = Schemas["InsightOut"];
 export type InsightList = Schemas["InsightsOut"];
 export type CsvPreview = Schemas["CsvPreviewOut"];
 export type CsvCommit = Schemas["CsvCommitOut"];
+
+export type Analysis = Schemas["AnalysisOut"];
+export type AnalysisSnapshot = Schemas["Snapshot"];
+export type Trend = Schemas["TrendOut"];
+export type Level = Schemas["LevelOut"];
+export type Timeframe = Analysis["timeframe"];
+export type Watchlist = Schemas["WatchlistOut"];

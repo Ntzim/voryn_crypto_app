@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChartCandlestick, SearchX } from "lucide-react";
+import { ArrowLeft, SearchX } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -8,6 +8,8 @@ import { AssetIcon } from "@/components/common/asset-icon";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { DataStatus } from "@/components/common/data-status";
 import { EmptyState, ErrorState } from "@/components/common/states";
+import { AssetMiniAnalysis } from "@/components/analysis/asset-mini-analysis";
+import { WatchlistMenu } from "@/components/analysis/watchlist-button";
 import { CurrencyToggle } from "@/components/market/currency-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,7 +97,10 @@ function AssetDetail({
             </div>
           </div>
         </div>
-        <CurrencyToggle value={currency} onChange={onCurrencyChange} />
+        <div className="flex items-center gap-2">
+          <WatchlistMenu assetId={asset.id} />
+          <CurrencyToggle value={currency} onChange={onCurrencyChange} />
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -110,10 +115,7 @@ function AssetDetail({
               <Metric label="7 dias" value={<ChangeBadge value={asset.change_pct_7d} locale={locale} />} />
             </div>
             <RangeBar low={asset.low_24h} high={asset.high_24h} current={asset.price} format={price} />
-            <div className="flex items-center gap-3 rounded-lg border border-dashed border-border-strong bg-surface px-4 py-3 text-sm text-muted-foreground">
-              <ChartCandlestick className="size-4 shrink-0 text-subtle-foreground" />
-              Gráfico de candles e indicadores técnicos chegam com o módulo de Análise de Ativos.
-            </div>
+            <AssetMiniAnalysis slug={asset.slug} />
           </CardContent>
         </Card>
 

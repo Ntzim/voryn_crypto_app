@@ -25,6 +25,8 @@ export async function tokenFromMail(email: string, path: string): Promise<string
 
 export async function registerAndVerify(page: Page, email: string, name = "Ana Souza"): Promise<void> {
   await page.goto("/criar-conta");
+  // Typing before hydration finishes would be reset by React (seen on cold dev compiles).
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("Nome").fill(name);
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(PASSWORD);
@@ -38,6 +40,7 @@ export async function registerAndVerify(page: Page, email: string, name = "Ana S
 
 export async function login(page: Page, email: string): Promise<void> {
   await page.goto("/entrar");
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();

@@ -36,7 +36,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Mercado",
     items: [
       { href: "/mercado", label: "Mercado", icon: ChartLine, available: true, mobilePrimary: true },
-      { href: "/analise", label: "Análise de Ativos", icon: ChartCandlestick, available: false },
+      { href: "/analise", label: "Análise de Ativos", icon: ChartCandlestick, available: true },
       { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: false, mobilePrimary: true },
     ],
   },

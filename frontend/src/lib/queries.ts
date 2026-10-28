@@ -74,6 +74,7 @@ export type AssetListParams = {
   order: "asc" | "desc";
   page: number;
   pageSize: number;
+  watchlistId?: string;
 };
 
 export function useAssets(params: AssetListParams) {
@@ -88,6 +89,7 @@ export function useAssets(params: AssetListParams) {
           order: params.order,
           page: params.page,
           page_size: params.pageSize,
+          watchlist_id: params.watchlistId,
         },
         signal,
       }),

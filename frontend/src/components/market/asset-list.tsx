@@ -16,6 +16,7 @@ export function AssetList({
   loading,
   rows = 5,
   showRank = false,
+  hrefBase = "/mercado",
 }: {
   assets: Asset[] | undefined;
   currency: Currency;
@@ -23,6 +24,7 @@ export function AssetList({
   loading?: boolean;
   rows?: number;
   showRank?: boolean;
+  hrefBase?: string;
 }) {
   if (loading || !assets) {
     return (
@@ -45,7 +47,7 @@ export function AssetList({
       {assets.map((asset) => (
         <li key={asset.id}>
           <Link
-            href={`/mercado/${asset.slug}`}
+            href={`${hrefBase}/${asset.slug}`}
             className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-card-hover"
           >
             {showRank && (
