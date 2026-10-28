@@ -4,7 +4,7 @@
 
 Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mercado, análise técnica, sinais quantitativos transparentes e um assistente de IA que só interpreta dados calculados pela própria plataforma.
 
-**Estado atual: Fase 1 — Fundação** (autenticação completa, design system, layout responsivo e dados de mercado reais). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado atual: Fase 2 — Carteira funcional** (transações, importação CSV, preço médio, resultado em BRL/USD, TWR/XIRR, dashboard patrimonial e insights), sobre a fundação da Fase 1. Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -94,6 +94,7 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Modelo de dados](docs/DATA_MODEL.md)
+- [Carteira: metodologia de cálculo](docs/PORTFOLIO.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)

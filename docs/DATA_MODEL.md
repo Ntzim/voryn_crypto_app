@@ -24,15 +24,21 @@ Princípios:
 | `market_prices` | histórico intradiário de cotações | append-only, deduplicado por (`cryptocurrency_id`, `quote_currency`, `source_updated_at`); retenção 7 dias |
 | `fx_rates` | câmbio (USD→BRL) | único por (`base`, `quote`, `observed_at`); `rate > 0` (check) |
 
+## Fase 2 (implementado)
+
+| Tabela | Propósito | Destaques |
+|---|---|---|
+| `portfolios` | carteiras do usuário | `user_id` FK cascade; a padrão é criada no primeiro acesso |
+| `transactions` | fonte da verdade da carteira | `type` enum (buy, sell, deposit, withdrawal, transfer, fee, conversion); `quantity > 0`; `unit_price`, `gross_amount`, `fee_amount` (moeda de cotação), `fee_quantity` (unidades do ativo); `to_cryptocurrency_id`/`to_quantity` obrigatórios só em conversões (check); `fx_usd_brl` da data da operação (`> 0`); `user_id` desnormalizado para isolamento; único (`portfolio_id`, `source`, `external_id`) para deduplicação de importações |
+| `exchanges` | catálogo de exchanges/carteiras | seed na migration; FK opcional nas transações (origem e destino) |
+| `daily_prices` | fechamento diário em USD por ativo | único (`cryptocurrency_id`, `day`); `day` = dia UTC do fechamento |
+
+Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots` **não** foram criados. Posições e séries são recalculadas a partir das transações a cada leitura — milissegundos para carteiras pessoais — o que elimina inconsistência ao editar transações antigas. Se o volume exigir, entram como cache invalidado por transação, sem mudar contratos.
+
 ## Fases seguintes (projeto)
 
 | Tabela | Fase | Chaves e constraints planejadas |
 |---|---|---|
-| `portfolios` | 2 | `user_id` FK; um usuário pode ter várias carteiras; `base_currency` |
-| `transactions` | 2 | `portfolio_id` FK, `type` enum (buy, sell, deposit, withdrawal, transfer_in, transfer_out, fee, conversion), `cryptocurrency_id`, `quantity NUMERIC(38,18) > 0`, `unit_price`, `quote_currency`, `fee_amount`, `fee_currency`, `executed_at`, `exchange_id`, `external_id` (único por conexão, para deduplicação de sync), `transfer_group_id` (liga as pernas de uma transferência interna para não contar como aporte/lucro), `notes` |
-| `portfolio_assets` | 2 | posição materializada por (`portfolio_id`, `cryptocurrency_id`): quantidade, custo total, preço médio, resultado realizado — recalculável a partir de `transactions` (fonte da verdade) |
-| `portfolio_snapshots` | 2 | (`portfolio_id`, `as_of`) único; valor de mercado, fluxos externos do período — base para TWR/XIRR e gráficos |
-| `exchanges` | 2 | catálogo (Binance, Coinbase, Kraken, manual, CSV) |
 | `exchange_connections` | 6 | `user_id`, `exchange_id`, `api_key_encrypted`, `api_secret_encrypted`, `permissions` (validado: somente leitura), `last_synced_cursor` |
 | `historical_candles` | 3 | (`cryptocurrency_id`, `timeframe`, `open_time`) único; OHLCV em NUMERIC; candidata a particionamento por mês ou TimescaleDB |
 | `technical_indicators` | 3 | cache de indicadores por (`cryptocurrency_id`, `timeframe`, `indicator`, `params_hash`, `open_time`) |
@@ -50,7 +56,8 @@ Princípios:
 |---|---|
 | `market_prices` | 7 dias (configurável) |
 | `historical_candles` | indefinida (base para backtests) |
-| `fx_rates` | 1 ano |
+| `fx_rates` | 1 ano (observações PTAX e ao vivo) |
+| `daily_prices` | indefinida (valuation histórica) |
 | sessões/tokens expirados | 30 dias após expiração |
 | `notifications` lidas | 90 dias (planejado) |
 | `audit_logs` | indefinida até definição da política LGPD |
