@@ -65,6 +65,18 @@ class Settings(BaseSettings):
     market_stale_after_seconds: int = Field(default=900, ge=60)
     market_history_retention_days: int = Field(default=7, ge=1)
 
+    # Voryn AI. "disabled" (or a missing key) turns the assistant off gracefully.
+    ai_provider: Literal["anthropic", "disabled"] = "anthropic"
+    anthropic_api_key: SecretStr | None = None
+    ai_model: str = "claude-opus-5-5"
+    ai_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    ai_max_tokens: int = Field(default=64000, ge=1024)
+    ai_max_tool_rounds: int = Field(default=8, ge=1, le=20)
+    ai_messages_per_hour: int = Field(default=30, ge=1)
+    ai_messages_per_day: int = Field(default=150, ge=1)
+    #: History is append-only (never trimmed), so long chats are capped instead.
+    ai_max_turns_per_conversation: int = Field(default=30, ge=2)
+
     sentry_dsn: SecretStr | None = None
 
     @field_validator("database_url")
@@ -75,6 +87,14 @@ class Settings(BaseSettings):
             if value.startswith(prefix):
                 return "postgresql+asyncpg://" + value.removeprefix(prefix)
         return value
+
+    @field_validator(
+        "anthropic_api_key", "coingecko_api_key", "smtp_password", "sentry_dsn", mode="before"
+    )
+    @classmethod
+    def _blank_secret_is_none(cls, value: object) -> object:
+        # docker compose passes unset optional variables as empty strings.
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("encryption_keys", "cors_origins", mode="before")
     @classmethod

@@ -117,6 +117,11 @@ async def list_exchanges(db: AsyncSession) -> list[Exchange]:
     return list((await db.execute(select(Exchange).order_by(Exchange.name))).scalars())
 
 
+async def transactions(db: AsyncSession, portfolio_id: uuid.UUID) -> list[Transaction]:
+    """All transactions in replay order (executed_at, created_at)."""
+    return await _transactions(db, portfolio_id)
+
+
 async def _transactions(db: AsyncSession, portfolio_id: uuid.UUID) -> list[Transaction]:
     return list(
         (

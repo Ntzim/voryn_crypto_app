@@ -19,6 +19,8 @@ x-backend-env: &backend-env
   SMTP_PORT: "1025"
   COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
   COINGECKO_API_PLAN: ${COINGECKO_API_PLAN:-public}
+  # Voryn AI (optional). Without a key the assistant is shown as unavailable.
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
 services:
   postgres:

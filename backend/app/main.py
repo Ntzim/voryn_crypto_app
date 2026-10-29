@@ -17,6 +17,7 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.redis import close_redis
+from app.modules.ai.router import router as ai_router
 from app.modules.alerts.router import notifications_router
 from app.modules.alerts.router import router as alerts_router
 from app.modules.auth.router import router as auth_router
@@ -84,6 +85,7 @@ def create_app() -> FastAPI:
     api.include_router(signals_router)
     api.include_router(alerts_router)
     api.include_router(notifications_router)
+    api.include_router(ai_router)
     api.include_router(portfolio_router)
     api.include_router(exchanges_router)
     app.include_router(api)

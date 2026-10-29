@@ -50,7 +50,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -91,7 +91,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -132,7 +132,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -269,7 +269,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -310,7 +310,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -520,7 +520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageOut"
+                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
                 }
               }
             }
@@ -1800,6 +1800,200 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/status": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ai Status",
+        "operationId": "ai_status_api_v1_ai_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/conversations": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "List Conversations",
+        "operationId": "list_conversations_api_v1_ai_conversations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Conversations Api V1 Ai Conversations Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Create Conversation",
+        "operationId": "create_conversation_api_v1_ai_conversations_post",
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/conversations/{conversation_id}": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Get Conversation",
+        "operationId": "get_conversation_api_v1_ai_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Delete Conversation",
+        "operationId": "delete_conversation_api_v1_ai_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/conversations/{conversation_id}/messages": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Send Message",
+        "description": "Stream the reply as Server-Sent Events: start, status, delta, notice, error, done.",
+        "operationId": "send_message_api_v1_ai_conversations__conversation_id__messages_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -3254,6 +3448,101 @@
         ],
         "title": "ComponentOut"
       },
+      "ConversationDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/app__modules__ai__router__MessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "can_continue": {
+            "type": "boolean",
+            "title": "Can Continue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "model",
+          "turns",
+          "created_at",
+          "updated_at",
+          "messages",
+          "can_continue"
+        ],
+        "title": "ConversationDetailOut"
+      },
+      "ConversationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "model",
+          "turns",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationOut"
+      },
       "CriterionOut": {
         "properties": {
           "name": {
@@ -4012,18 +4301,20 @@
         "title": "MarketOverviewOut",
         "description": "Aggregates over the tracked universe (top-N by market cap), not the whole market."
       },
-      "MessageOut": {
+      "MessageIn": {
         "properties": {
-          "message": {
+          "content": {
             "type": "string",
-            "title": "Message"
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
           }
         },
         "type": "object",
         "required": [
-          "message"
+          "content"
         ],
-        "title": "MessageOut"
+        "title": "MessageIn"
       },
       "MfaCodeIn": {
         "properties": {
@@ -5285,6 +5576,49 @@
         "title": "Snapshot",
         "description": "Latest values computed on the last *closed* candle (no repainting)."
       },
+      "StatusOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "messages_per_hour": {
+            "type": "integer",
+            "title": "Messages Per Hour"
+          },
+          "max_turns_per_conversation": {
+            "type": "integer",
+            "title": "Max Turns Per Conversation"
+          },
+          "usage_today": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Usage Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "model",
+          "messages_per_hour",
+          "max_turns_per_conversation",
+          "usage_today"
+        ],
+        "title": "StatusOut"
+      },
       "StrategyOut": {
         "properties": {
           "key": {
@@ -6023,6 +6357,65 @@
           "asset_ids"
         ],
         "title": "WatchlistOut"
+      },
+      "app__modules__ai__router__MessageOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "tool_calls": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "text",
+          "sources",
+          "tool_calls",
+          "created_at"
+        ],
+        "title": "MessageOut"
+      },
+      "app__modules__auth__schemas__MessageOut": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "MessageOut"
       }
     }
   }

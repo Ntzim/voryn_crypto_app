@@ -59,3 +59,10 @@ def test_recovery_codes_are_unique_and_normalized() -> None:
     assert len(set(codes)) == mfa.RECOVERY_CODE_COUNT
     code = codes[0]
     assert mfa.hash_recovery_code(code) == mfa.hash_recovery_code(code.upper().replace("-", ""))
+
+
+def test_blank_optional_secrets_are_treated_as_missing() -> None:
+    from app.core.config import Settings
+
+    settings = Settings(anthropic_api_key="", coingecko_api_key="  ")
+    assert settings.anthropic_api_key is None and settings.coingecko_api_key is None
