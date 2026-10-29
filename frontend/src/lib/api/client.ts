@@ -89,19 +89,44 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
 
   if (response.status === 204) return undefined as T;
+  if (!response.ok) throw await toApiError(response);
+  return (await response.json().catch(() => null)) as T;
+}
+
+async function toApiError(response: Response): Promise<ApiError> {
   const payload = (await response.json().catch(() => null)) as
     | { error?: { code: string; message: string; details?: unknown }; request_id?: string }
     | null;
-  if (!response.ok) {
-    throw new ApiError(
-      response.status,
-      payload?.error?.code ?? "http_error",
-      payload?.error?.message ?? "Algo deu errado. Tente novamente.",
-      payload?.error?.details ?? null,
-      payload?.request_id ?? null,
-    );
+  return new ApiError(
+    response.status,
+    payload?.error?.code ?? "http_error",
+    payload?.error?.message ?? "Algo deu errado. Tente novamente.",
+    payload?.error?.details ?? null,
+    payload?.request_id ?? null,
+  );
+}
+
+/** POST whose response is a Server-Sent Events stream; errors before the stream are ApiErrors. */
+export async function apiStream(path: string, body: unknown, signal?: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/v1${path}`, {
+      method: "POST",
+      headers: {
+        Accept: "text/event-stream",
+        "Content-Type": "application/json",
+        "X-CSRF-Token": await csrfToken(),
+      },
+      body: JSON.stringify(body),
+      credentials: "same-origin",
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ApiError(0, "network_error", "Sem conexão com o servidor. Verifique sua internet.");
   }
-  return payload as T;
+  if (!response.ok || !response.body) throw await toApiError(response);
+  return response.body;
 }
 
 export function isApiError(error: unknown, code?: string): error is ApiError {

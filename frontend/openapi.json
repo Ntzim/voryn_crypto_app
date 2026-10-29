@@ -50,7 +50,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -91,7 +91,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -132,7 +132,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -269,7 +269,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -310,7 +310,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -520,7 +520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__modules__auth__schemas__MessageOut"
+                  "$ref": "#/components/schemas/MessageOut"
                 }
               }
             }
@@ -1827,7 +1827,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StatusOut"
+                  "$ref": "#/components/schemas/AIStatusOut"
                 }
               }
             }
@@ -1849,7 +1849,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/ConversationOut"
+                    "$ref": "#/components/schemas/AIConversationOut"
                   },
                   "type": "array",
                   "title": "Response List Conversations Api V1 Ai Conversations Get"
@@ -1871,7 +1871,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConversationOut"
+                  "$ref": "#/components/schemas/AIConversationOut"
                 }
               }
             }
@@ -1904,7 +1904,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConversationDetailOut"
+                  "$ref": "#/components/schemas/AIConversationDetailOut"
                 }
               }
             }
@@ -1981,7 +1981,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MessageIn"
+                "$ref": "#/components/schemas/AIMessageIn"
               }
             }
           }
@@ -2675,6 +2675,205 @@
   },
   "components": {
     "schemas": {
+      "AIConversationDetailOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/AIMessageOut"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "can_continue": {
+            "type": "boolean",
+            "title": "Can Continue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "model",
+          "turns",
+          "created_at",
+          "updated_at",
+          "messages",
+          "can_continue"
+        ],
+        "title": "AIConversationDetailOut"
+      },
+      "AIConversationOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "turns": {
+            "type": "integer",
+            "title": "Turns"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "model",
+          "turns",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AIConversationOut"
+      },
+      "AIMessageIn": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "AIMessageIn"
+      },
+      "AIMessageOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "tool_calls": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Tool Calls"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "role",
+          "text",
+          "sources",
+          "tool_calls",
+          "created_at"
+        ],
+        "title": "AIMessageOut"
+      },
+      "AIStatusOut": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "messages_per_hour": {
+            "type": "integer",
+            "title": "Messages Per Hour"
+          },
+          "max_turns_per_conversation": {
+            "type": "integer",
+            "title": "Max Turns Per Conversation"
+          },
+          "usage_today": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Usage Today"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "model",
+          "messages_per_hour",
+          "max_turns_per_conversation",
+          "usage_today"
+        ],
+        "title": "AIStatusOut"
+      },
       "AlertIn": {
         "properties": {
           "type": {
@@ -3448,101 +3647,6 @@
         ],
         "title": "ComponentOut"
       },
-      "ConversationDetailOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "turns": {
-            "type": "integer",
-            "title": "Turns"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          },
-          "messages": {
-            "items": {
-              "$ref": "#/components/schemas/app__modules__ai__router__MessageOut"
-            },
-            "type": "array",
-            "title": "Messages"
-          },
-          "can_continue": {
-            "type": "boolean",
-            "title": "Can Continue"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "model",
-          "turns",
-          "created_at",
-          "updated_at",
-          "messages",
-          "can_continue"
-        ],
-        "title": "ConversationDetailOut"
-      },
-      "ConversationOut": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "model": {
-            "type": "string",
-            "title": "Model"
-          },
-          "turns": {
-            "type": "integer",
-            "title": "Turns"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "title",
-          "model",
-          "turns",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "ConversationOut"
-      },
       "CriterionOut": {
         "properties": {
           "name": {
@@ -4301,20 +4405,18 @@
         "title": "MarketOverviewOut",
         "description": "Aggregates over the tracked universe (top-N by market cap), not the whole market."
       },
-      "MessageIn": {
+      "MessageOut": {
         "properties": {
-          "content": {
+          "message": {
             "type": "string",
-            "maxLength": 4000,
-            "minLength": 1,
-            "title": "Content"
+            "title": "Message"
           }
         },
         "type": "object",
         "required": [
-          "content"
+          "message"
         ],
-        "title": "MessageIn"
+        "title": "MessageOut"
       },
       "MfaCodeIn": {
         "properties": {
@@ -5576,49 +5678,6 @@
         "title": "Snapshot",
         "description": "Latest values computed on the last *closed* candle (no repainting)."
       },
-      "StatusOut": {
-        "properties": {
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model"
-          },
-          "messages_per_hour": {
-            "type": "integer",
-            "title": "Messages Per Hour"
-          },
-          "max_turns_per_conversation": {
-            "type": "integer",
-            "title": "Max Turns Per Conversation"
-          },
-          "usage_today": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Usage Today"
-          }
-        },
-        "type": "object",
-        "required": [
-          "enabled",
-          "model",
-          "messages_per_hour",
-          "max_turns_per_conversation",
-          "usage_today"
-        ],
-        "title": "StatusOut"
-      },
       "StrategyOut": {
         "properties": {
           "key": {
@@ -6357,65 +6416,6 @@
           "asset_ids"
         ],
         "title": "WatchlistOut"
-      },
-      "app__modules__ai__router__MessageOut": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role"
-          },
-          "text": {
-            "type": "string",
-            "title": "Text"
-          },
-          "sources": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Sources"
-          },
-          "tool_calls": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Tool Calls"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "role",
-          "text",
-          "sources",
-          "tool_calls",
-          "created_at"
-        ],
-        "title": "MessageOut"
-      },
-      "app__modules__auth__schemas__MessageOut": {
-        "properties": {
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "message"
-        ],
-        "title": "MessageOut"
       }
     }
   }

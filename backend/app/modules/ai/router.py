@@ -29,7 +29,7 @@ def require_provider(
 Provider = Annotated[LLMProvider, Depends(require_provider)]
 
 
-class StatusOut(BaseModel):
+class AIStatusOut(BaseModel):
     enabled: bool
     model: str | None
     messages_per_hour: int
@@ -37,7 +37,7 @@ class StatusOut(BaseModel):
     usage_today: dict[str, int]
 
 
-class ConversationOut(BaseModel):
+class AIConversationOut(BaseModel):
     id: uuid.UUID
     title: str
     model: str
@@ -46,7 +46,7 @@ class ConversationOut(BaseModel):
     updated_at: datetime
 
 
-class MessageOut(BaseModel):
+class AIMessageOut(BaseModel):
     id: int
     role: str
     text: str
@@ -55,12 +55,12 @@ class MessageOut(BaseModel):
     created_at: datetime
 
 
-class ConversationDetailOut(ConversationOut):
-    messages: list[MessageOut]
+class AIConversationDetailOut(AIConversationOut):
+    messages: list[AIMessageOut]
     can_continue: bool
 
 
-class MessageIn(BaseModel):
+class AIMessageIn(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
 
     @field_validator("content")
@@ -77,9 +77,9 @@ async def ai_status(
     auth: CurrentAuth,
     db: DbSession,
     provider: Annotated[LLMProvider | None, Depends(get_llm_provider)],
-) -> StatusOut:
+) -> AIStatusOut:
     settings = get_settings()
-    return StatusOut(
+    return AIStatusOut(
         enabled=provider is not None,
         model=provider.model if provider else None,
         messages_per_hour=settings.ai_messages_per_hour,
@@ -88,8 +88,8 @@ async def ai_status(
     )
 
 
-def _conv_out(c: Any) -> ConversationOut:
-    return ConversationOut(
+def _conv_out(c: Any) -> AIConversationOut:
+    return AIConversationOut(
         id=c.id,
         title=c.title,
         model=c.model,
@@ -100,28 +100,28 @@ def _conv_out(c: Any) -> ConversationOut:
 
 
 @router.get("/conversations")
-async def list_conversations(auth: CurrentAuth, db: DbSession) -> list[ConversationOut]:
+async def list_conversations(auth: CurrentAuth, db: DbSession) -> list[AIConversationOut]:
     return [_conv_out(c) for c in await service.list_conversations(db, auth.user.id)]
 
 
 @router.post("/conversations", status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     auth: CurrentAuth, db: DbSession, provider: Provider
-) -> ConversationOut:
+) -> AIConversationOut:
     return _conv_out(await service.create_conversation(db, auth.user.id, provider))
 
 
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(
     conversation_id: uuid.UUID, auth: CurrentAuth, db: DbSession
-) -> ConversationDetailOut:
+) -> AIConversationDetailOut:
     conv = await service.get_owned(db, auth.user.id, conversation_id)
     messages = await service.visible_messages(db, conv)
-    return ConversationDetailOut(
+    return AIConversationDetailOut(
         **_conv_out(conv).model_dump(),
         can_continue=conv.turns < get_settings().ai_max_turns_per_conversation,
         messages=[
-            MessageOut(
+            AIMessageOut(
                 id=m.id,
                 role="user" if m.role == "user" else "assistant",
                 text=m.display_text or "",
@@ -144,7 +144,7 @@ async def delete_conversation(conversation_id: uuid.UUID, auth: CurrentAuth, db:
 @router.post("/conversations/{conversation_id}/messages")
 async def send_message(
     conversation_id: uuid.UUID,
-    data: MessageIn,
+    data: AIMessageIn,
     auth: CurrentAuth,
     db: DbSession,
     provider: Provider,

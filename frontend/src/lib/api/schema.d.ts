@@ -933,6 +933,98 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AIConversationDetailOut */
+        AIConversationDetailOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Model */
+            model: string;
+            /** Turns */
+            turns: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Messages */
+            messages: components["schemas"]["AIMessageOut"][];
+            /** Can Continue */
+            can_continue: boolean;
+        };
+        /** AIConversationOut */
+        AIConversationOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title: string;
+            /** Model */
+            model: string;
+            /** Turns */
+            turns: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** AIMessageIn */
+        AIMessageIn: {
+            /** Content */
+            content: string;
+        };
+        /** AIMessageOut */
+        AIMessageOut: {
+            /** Id */
+            id: number;
+            /** Role */
+            role: string;
+            /** Text */
+            text: string;
+            /** Sources */
+            sources: string[];
+            /** Tool Calls */
+            tool_calls: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** AIStatusOut */
+        AIStatusOut: {
+            /** Enabled */
+            enabled: boolean;
+            /** Model */
+            model: string | null;
+            /** Messages Per Hour */
+            messages_per_hour: number;
+            /** Max Turns Per Conversation */
+            max_turns_per_conversation: number;
+            /** Usage Today */
+            usage_today: {
+                [key: string]: number;
+            };
+        };
         /** AlertIn */
         AlertIn: {
             type: components["schemas"]["AlertType"];
@@ -1185,58 +1277,6 @@ export interface components {
             /** Detail */
             detail: string;
         };
-        /** ConversationDetailOut */
-        ConversationDetailOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Title */
-            title: string;
-            /** Model */
-            model: string;
-            /** Turns */
-            turns: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-            /** Messages */
-            messages: components["schemas"]["app__modules__ai__router__MessageOut"][];
-            /** Can Continue */
-            can_continue: boolean;
-        };
-        /** ConversationOut */
-        ConversationOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Title */
-            title: string;
-            /** Model */
-            model: string;
-            /** Turns */
-            turns: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
         /** CriterionOut */
         CriterionOut: {
             /** Name */
@@ -1476,10 +1516,10 @@ export interface components {
             top_losers: components["schemas"]["AssetOut"][];
             status: components["schemas"]["DataStatus"];
         };
-        /** MessageIn */
-        MessageIn: {
-            /** Content */
-            content: string;
+        /** MessageOut */
+        MessageOut: {
+            /** Message */
+            message: string;
         };
         /** MfaCodeIn */
         MfaCodeIn: {
@@ -1884,21 +1924,6 @@ export interface components {
             /** Volatility Annualized Pct */
             volatility_annualized_pct: string | null;
         };
-        /** StatusOut */
-        StatusOut: {
-            /** Enabled */
-            enabled: boolean;
-            /** Model */
-            model: string | null;
-            /** Messages Per Hour */
-            messages_per_hour: number;
-            /** Max Turns Per Conversation */
-            max_turns_per_conversation: number;
-            /** Usage Today */
-            usage_today: {
-                [key: string]: number;
-            };
-        };
         /** StrategyOut */
         StrategyOut: {
             /** Key */
@@ -2165,31 +2190,6 @@ export interface components {
             /** Asset Ids */
             asset_ids: string[];
         };
-        /** MessageOut */
-        app__modules__ai__router__MessageOut: {
-            /** Id */
-            id: number;
-            /** Role */
-            role: string;
-            /** Text */
-            text: string;
-            /** Sources */
-            sources: string[];
-            /** Tool Calls */
-            tool_calls: {
-                [key: string]: unknown;
-            }[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** MessageOut */
-        app__modules__auth__schemas__MessageOut: {
-            /** Message */
-            message: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -2238,7 +2238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
             /** @description Validation Error */
@@ -2271,7 +2271,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
             /** @description Validation Error */
@@ -2304,7 +2304,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
             /** @description Validation Error */
@@ -2421,7 +2421,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
             /** @description Validation Error */
@@ -2454,7 +2454,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
             /** @description Validation Error */
@@ -2640,7 +2640,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__modules__auth__schemas__MessageOut"];
+                    "application/json": components["schemas"]["MessageOut"];
                 };
             };
         };
@@ -3465,7 +3465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StatusOut"];
+                    "application/json": components["schemas"]["AIStatusOut"];
                 };
             };
         };
@@ -3485,7 +3485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationOut"][];
+                    "application/json": components["schemas"]["AIConversationOut"][];
                 };
             };
         };
@@ -3505,7 +3505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationOut"];
+                    "application/json": components["schemas"]["AIConversationOut"];
                 };
             };
         };
@@ -3527,7 +3527,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConversationDetailOut"];
+                    "application/json": components["schemas"]["AIConversationDetailOut"];
                 };
             };
             /** @description Validation Error */
@@ -3581,7 +3581,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MessageIn"];
+                "application/json": components["schemas"]["AIMessageIn"];
             };
         };
         responses: {

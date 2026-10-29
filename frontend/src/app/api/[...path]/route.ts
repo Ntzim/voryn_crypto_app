@@ -45,6 +45,10 @@ async function forward(request: NextRequest, ctx: RouteContext<"/api/[...path]">
   });
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
+  // The timeout covers the wait for response headers only: streamed bodies (Voryn AI replies)
+  // may legitimately take longer. A client disconnect cancels the upstream request too.
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), UPSTREAM_TIMEOUT_MS);
   let upstream: Response;
   try {
     upstream = await fetch(target, {
@@ -53,7 +57,7 @@ async function forward(request: NextRequest, ctx: RouteContext<"/api/[...path]">
       body: hasBody ? await request.arrayBuffer() : undefined,
       redirect: "manual",
       cache: "no-store",
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      signal: AbortSignal.any([timeout.signal, request.signal]),
     });
   } catch {
     return errorResponse(
@@ -61,6 +65,8 @@ async function forward(request: NextRequest, ctx: RouteContext<"/api/[...path]">
       "upstream_unavailable",
       "Não foi possível conectar aos servidores da Voryn. Tente novamente em instantes.",
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   const responseHeaders = new Headers();

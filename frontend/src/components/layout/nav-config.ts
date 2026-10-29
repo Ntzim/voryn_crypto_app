@@ -43,7 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Inteligência",
     items: [
-      { href: "/voryn-ai", label: "Voryn AI", icon: Sparkles, available: false },
+      { href: "/voryn-ai", label: "Voryn AI", icon: Sparkles, available: true },
       { href: "/risco", label: "Risco", icon: ShieldHalf, available: false },
       { href: "/estrategias", label: "Estratégias", icon: FlaskConical, available: false },
     ],

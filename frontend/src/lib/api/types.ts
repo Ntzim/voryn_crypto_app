@@ -56,3 +56,8 @@ export type AlertInput = Schemas["AlertIn"];
 export type AlertType = Schemas["AlertType"];
 export type NotificationItem = Schemas["NotificationOut"];
 export type NotificationList = Schemas["NotificationListOut"];
+
+export type AIStatus = Schemas["AIStatusOut"];
+export type AIConversation = Schemas["AIConversationOut"];
+export type AIConversationDetail = Schemas["AIConversationDetailOut"];
+export type AIMessage = Schemas["AIMessageOut"];
