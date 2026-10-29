@@ -51,6 +51,14 @@ DISCLAIMER = (
 )
 
 
+def looks_pegged(close: Decimal, volatility_pct: Decimal | None) -> bool:
+    """Dollar-pegged by behaviour: within 2% of US$ 1 with annualized volatility under 5%.
+
+    Complements the symbol list, which can never be complete.
+    """
+    return volatility_pct is not None and volatility_pct < 5 and abs(close - 1) <= Decimal("0.02")
+
+
 class StablecoinError(AppError):
     status_code = 404
     code = "signal_not_applicable"
@@ -182,6 +190,8 @@ async def generate(
     result = analyze(closed, timeframe)
     if not closed or result.snapshot is None or result.trend is None:
         raise SignalUnavailableError()
+    if looks_pegged(result.snapshot.close, result.snapshot.volatility_annualized_pct):
+        raise StablecoinError()
     weights, thresholds = strategy_params(strategy)
     last = closed[-1]
     signal = engine.evaluate(

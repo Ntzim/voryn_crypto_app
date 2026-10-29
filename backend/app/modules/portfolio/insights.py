@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from app.modules.portfolio.schemas import InsightOut, PositionOut, SummaryOut
 
-#: Heuristic list of USD-pegged stablecoins (by symbol) for exposure insights.
+#: Known USD-pegged stablecoins (by symbol). Signals also detect pegs by behaviour.
 STABLECOINS = frozenset(
     {
         "USDT",
@@ -26,6 +26,14 @@ STABLECOINS = frozenset(
         "USD1",
         "USDD",
         "GUSD",
+        "RLUSD",
+        "USDG",
+        "USDTB",
+        "USDP",
+        "FRAX",
+        "LUSD",
+        "USDX",
+        "USDB",
     }
 )
 CONCENTRATION_ATTENTION = Decimal(50)

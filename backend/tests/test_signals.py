@@ -199,3 +199,10 @@ async def test_stablecoins_get_no_signal(db: AsyncSession) -> None:
     with pytest.raises(signals.StablecoinError):
         await signals.generate(db, usdc, "1d", provider, strategy, GOOD_MARKET)
     assert usdc.id not in await signals.universe(db)
+
+
+def test_unknown_stablecoins_are_detected_by_behaviour() -> None:
+    assert signals.looks_pegged(D("1.0003"), D("0.8"))
+    assert not signals.looks_pegged(D("1.0003"), D("45"))  # volatile coin that happens to be near 1
+    assert not signals.looks_pegged(D("2.5"), D("1"))
+    assert not signals.looks_pegged(D("1"), None)
