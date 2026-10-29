@@ -4,7 +4,7 @@
 
 Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mercado, análise técnica, sinais quantitativos transparentes e um assistente de IA que só interpreta dados calculados pela própria plataforma.
 
-**Estado atual: Fase 3 — Inteligência de mercado** (candles 15m–1w, indicadores técnicos determinísticos, tendência, suportes/resistências, watchlists), sobre a carteira funcional (Fase 2) e a fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado atual: Fase 4 — Oportunidades** (sinais quantitativos com score, justificativa e invalidação; alertas e notificações), sobre inteligência de mercado (Fase 3), carteira (Fase 2) e fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -96,6 +96,7 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 - [Modelo de dados](docs/DATA_MODEL.md)
 - [Carteira: metodologia de cálculo](docs/PORTFOLIO.md)
 - [Análise técnica: metodologia](docs/TECHNICAL_ANALYSIS.md)
+- [Oportunidades e alertas: metodologia](docs/SIGNALS.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)

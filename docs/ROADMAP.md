@@ -43,9 +43,18 @@ Pendências registradas: mapeadores de extrato Binance/Coinbase, cadastro de ati
 
 Pendências registradas: notícias e eventos (provedor licenciado), volume agregado entre exchanges.
 
-## Fase 4 — Oportunidades
+## Fase 4 — Oportunidades ✅
 
-Motor de sinais versionado (pesos configuráveis), score 0–100 (não é probabilidade), classificação, justificativa e condições de invalidação, bloqueio/aviso quando dados estão desatualizados, histórico de sinais, alertas (preço, RSI, cruzamentos, volume, tendência, score, concentração) com deduplicação, cooldown, notificações in-app e e-mail.
+- [x] Motor de sinais por regras: 6 componentes ponderados (pesos configuráveis e versionados), score 0–100 (não é probabilidade)
+- [x] Classificação (potencial de compra, neutro, atenção, potencial de venda) com justificativa, riscos e condições de invalidação
+- [x] Um sinal imutável por candle fechado, com indicadores, fonte, qualidade dos dados e versões gravadas; histórico consultável
+- [x] Dados desatualizados suspendem compra/venda; stablecoins excluídas (lista + detecção por comportamento)
+- [x] Página de Oportunidades com filtros, detalhe com composição do score e histórico; sinal na análise de cada ativo
+- [x] Alertas: preço, RSI, cruzamento de médias, volume, tendência, sinal e concentração — por cruzamento, com cooldown, deduplicação e limites por hora
+- [x] Notificações no aplicativo (sino) e e-mail, atrás de uma interface de canais
+- [x] Metodologia em [SIGNALS.md](SIGNALS.md)
+
+Pendências registradas: edição de pesos pela interface (hoje via nova versão da estratégia), canais push/Telegram, backtest dos próprios sinais (Fase 6).
 
 ## Fase 5 — Voryn AI
 

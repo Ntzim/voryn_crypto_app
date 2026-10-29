@@ -36,6 +36,10 @@
 **Decisão:** candles de `data-api.binance.vision` para o par `ATIVO/USDT`, aceitos só quando o último fechamento está a ≤ 5% do preço da CoinGecko.
 **Motivo:** o plano gratuito da CoinGecko não oferece candles nos intervalos exigidos (15m–1w); a Binance tem a maior cobertura de pares, sem chave e sem bloqueio geográfico nesse host. A verificação de preço protege contra símbolos repetidos entre tokens diferentes. O provedor fica atrás de `CandleProvider`, permitindo trocar ou somar fontes.
 
+### ADR-011 — Sinais imutáveis por candle e alertas por cruzamento
+**Decisão:** um sinal por (ativo, intervalo, versão da estratégia, candle fechado); alertas disparam na transição falso→verdadeiro, com cooldown e chave de deduplicação única.
+**Motivo:** auditabilidade (o histórico mostra o que a estratégia dizia, sem repintura) e notificações úteis — sem repetição enquanto a condição persiste, sem duplicatas sob concorrência.
+
 ### ADR-009 — Indicadores e sinais determinísticos; IA apenas interpreta
 **Decisão (para Fases 3–5):** indicadores, scores e métricas de risco são calculados por código testado; o LLM recebe resultados estruturados e nunca gera números.
 **Motivo:** auditabilidade, reprodutibilidade e o princípio do produto de não apresentar previsões como certezas.

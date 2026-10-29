@@ -45,15 +45,20 @@ Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots`
 
 `technical_indicators` não foi criada: indicadores são recalculados a cada leitura e os usados em sinais serão gravados junto ao sinal (Fase 4).
 
+## Fase 4 (implementado)
+
+| Tabela | Propósito | Destaques |
+|---|---|---|
+| `signal_strategies` | configuração versionada | único (`key`, `version`); pesos e limiares em JSONB; seed `voryn-core` v1 |
+| `analysis_signals` | histórico de sinais | único (`cryptocurrency_id`, `timeframe`, `strategy_id`, `candle_time`); score 0–100 (check); componentes, indicadores, riscos e invalidação em JSONB; proveniência e qualidade dos dados |
+| `alerts` | regras do usuário | `type` enum; `params` validados por tipo; `cooldown_minutes` 15–10080 (check); `last_state` para disparo por cruzamento |
+| `notifications` | entregas no aplicativo | único (`user_id`, `dedupe_key`); `alert_id` SET NULL; canais usados; `read_at` |
+
 ## Fases seguintes (projeto)
 
 | Tabela | Fase | Chaves e constraints planejadas |
 |---|---|---|
 | `exchange_connections` | 6 | `user_id`, `exchange_id`, `api_key_encrypted`, `api_secret_encrypted`, `permissions` (validado: somente leitura), `last_synced_cursor` |
-| `signal_strategies` | 4 | versão da estratégia, pesos (JSONB validado), `is_active` |
-| `analysis_signals` | 4 | ativo, timeframe, `strategy_version`, preço de referência, score 0–100 (check), classificação, indicadores usados (JSONB), justificativa, condições de invalidação, `data_fetched_at`, `data_is_stale` |
-| `alerts` | 4 | `user_id`, tipo, condição (JSONB validado), `cooldown_seconds`, `last_triggered_at` |
-| `notifications` | 4 | `user_id`, canal, `dedupe_key` único por usuário/janela, `read_at` |
 | `ai_analysis` | 5 | `user_id`, intenção, contexto estruturado enviado ao modelo, resposta, provedor/modelo, tokens, `data_as_of` |
 | `backtest_runs` | 6 | `user_id`, estratégia/versão, período de treino e validação, custos/slippage, métricas, resultado |
 
@@ -66,5 +71,6 @@ Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots`
 | `fx_rates` | 1 ano (observações PTAX e ao vivo) |
 | `daily_prices` | indefinida (valuation histórica) |
 | sessões/tokens expirados | 30 dias após expiração |
-| `notifications` lidas | 90 dias (planejado) |
+| `notifications` | lidas: 90 dias · todas: 180 dias |
+| `analysis_signals` | indefinida (auditoria e backtest de sinais) |
 | `audit_logs` | indefinida até definição da política LGPD |
