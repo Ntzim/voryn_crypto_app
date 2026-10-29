@@ -52,7 +52,7 @@ Regras de dependência:
 | `watchlists` — favoritos e listas | 3 | ✅ |
 | `signals` — score, classificação, histórico ([metodologia](SIGNALS.md)) | 4 | ✅ |
 | `alerts` — alertas, notificações, canais | 4 | ✅ |
-| `ai_insights` | 5 | — |
+| `ai` — Voryn AI: provedor de LLM, ferramentas, conversas, SSE ([metodologia](AI.md)) | 5 | ✅ |
 | `risk`, `backtesting`, `exchange_connections` | 6 | — |
 
 ### Dados de mercado

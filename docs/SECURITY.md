@@ -27,6 +27,17 @@
 
 IP do cliente: por padrão `request.client`. Com `TRUST_PROXY_HEADERS=true` (somente atrás de proxy controlado), usa a entrada **mais à direita** de `X-Forwarded-For`, a única que o cliente não consegue forjar.
 
+Voryn AI: 30 mensagens/h e 150/dia por usuário, 30 mensagens por conversa, rodadas de ferramentas limitadas por resposta.
+
+## Voryn AI
+
+- As ferramentas são **somente leitura**. Não existe caminho do modelo para criar, alterar ou apagar dados, nem para enviar ordens.
+- As ferramentas recebem o `user_id` da sessão. O modelo não escolhe de quem são os dados consultados.
+- Resultados de ferramentas e textos do usuário (notas, nomes) são dados, não instruções. O prompt de sistema determina isso, e nenhuma ferramenta tem efeito colateral que uma injeção possa explorar.
+- A entrada das ferramentas é validada por esquema (`extra="forbid"`) antes da execução; entradas inválidas voltam ao modelo como erro.
+- Markdown gerado pelo modelo é renderizado sem HTML bruto.
+- `ANTHROPIC_API_KEY` só existe no backend. Conversas são apagadas com o usuário (CASCADE) ou por ele.
+
 ## Isolamento de dados
 
 Toda consulta a dados do usuário filtra por `user_id` vindo da sessão — nunca de parâmetros da requisição. Recursos de outro usuário respondem **404** (não 403), para não confirmar sua existência. Há teste automatizado cobrindo tentativa de revogar sessão de outro usuário.

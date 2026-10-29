@@ -40,6 +40,10 @@
 **Decisão:** um sinal por (ativo, intervalo, versão da estratégia, candle fechado); alertas disparam na transição falso→verdadeiro, com cooldown e chave de deduplicação única.
 **Motivo:** auditabilidade (o histórico mostra o que a estratégia dizia, sem repintura) e notificações úteis — sem repetição enquanto a condição persiste, sem duplicatas sob concorrência.
 
+### ADR-012 — Voryn AI por ferramentas somente leitura, atrás de `LLMProvider`
+**Decisão:** o modelo consulta os motores por ferramentas tipadas (o próprio modelo escolhe quais, o que faz o roteamento de intenção); o histórico é guardado no formato nativo do provedor e nunca é editado; a resposta é transmitida por SSE via BFF.
+**Motivo:** os números vêm sempre do mesmo código que alimenta as telas (ADR-009), com origem e horário; o histórico intacto preserva o raciocínio do modelo entre mensagens e torna o cache de prompt efetivo; trocar de provedor exige apenas um novo adaptador.
+
 ### ADR-009 — Indicadores e sinais determinísticos; IA apenas interpreta
 **Decisão (para Fases 3–5):** indicadores, scores e métricas de risco são calculados por código testado; o LLM recebe resultados estruturados e nunca gera números.
 **Motivo:** auditabilidade, reprodutibilidade e o princípio do produto de não apresentar previsões como certezas.

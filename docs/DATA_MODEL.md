@@ -54,12 +54,20 @@ Decisão: `portfolio_assets` (posições materializadas) e `portfolio_snapshots`
 | `alerts` | regras do usuário | `type` enum; `params` validados por tipo; `cooldown_minutes` 15–10080 (check); `last_state` para disparo por cruzamento |
 | `notifications` | entregas no aplicativo | único (`user_id`, `dedupe_key`); `alert_id` SET NULL; canais usados; `read_at` |
 
+## Fase 5 (implementado)
+
+A entidade `ai_analysis` do projeto original virou duas tabelas: uma conversa tem várias mensagens.
+
+| Tabela | Propósito | Destaques |
+|---|---|---|
+| `ai_conversations` | conversas do usuário | `user_id` CASCADE; provedor, modelo e `prompt_version` fixados na criação; `turns` |
+| `ai_messages` | histórico somente de acréscimo | `role` (user, assistant, tool_results); `native` JSONB reenviado ao provedor sem alterações; texto exibido, ferramentas chamadas, fontes (com `as_of`), `stop_reason` e tokens |
+
 ## Fases seguintes (projeto)
 
 | Tabela | Fase | Chaves e constraints planejadas |
 |---|---|---|
 | `exchange_connections` | 6 | `user_id`, `exchange_id`, `api_key_encrypted`, `api_secret_encrypted`, `permissions` (validado: somente leitura), `last_synced_cursor` |
-| `ai_analysis` | 5 | `user_id`, intenção, contexto estruturado enviado ao modelo, resposta, provedor/modelo, tokens, `data_as_of` |
 | `backtest_runs` | 6 | `user_id`, estratégia/versão, período de treino e validação, custos/slippage, métricas, resultado |
 
 ## Política de retenção

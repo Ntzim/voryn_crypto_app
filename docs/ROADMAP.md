@@ -56,9 +56,17 @@ Pendências registradas: notícias e eventos (provedor licenciado), volume agreg
 
 Pendências registradas: edição de pesos pela interface (hoje via nova versão da estratégia), canais push/Telegram, backtest dos próprios sinais (Fase 6).
 
-## Fase 5 — Voryn AI
+## Fase 5 — Voryn AI ✅
 
-Camada `LLMProvider` intercambiável, roteamento de intenção, ferramentas que consultam apenas os motores internos, respostas que separam dados observados / interpretação / hipóteses / riscos, com período e horário dos dados. Sem execução de ordens.
+- [x] Camada `LLMProvider` intercambiável; adaptador Anthropic (`claude-opus-5-5`, raciocínio adaptativo, cache de prompt, fallback de recusa)
+- [x] 11 ferramentas somente leitura sobre os motores internos (carteira, rentabilidade, insights, operações realizadas, transações, mercado, análise técnica, sinais), cada uma com origem e horário
+- [x] Roteamento de intenção feito pelo próprio modelo ao escolher ferramentas; laço com número de rodadas limitado
+- [x] Respostas separando dados observados / interpretação / hipóteses / riscos, com período e horário; limitações declaradas quando faltam dados
+- [x] Conversas persistidas com histórico somente de acréscimo; limites por hora, dia e conversa
+- [x] Página Voryn AI com resposta em tempo real (SSE), fontes consultadas e estado indisponível sem chave
+- [x] Metodologia em [AI.md](AI.md)
+
+Pendências registradas: avaliação da qualidade das respostas com o modelo real (exige `ANTHROPIC_API_KEY` e um conjunto de perguntas de referência); acesso a notícias (fora do escopo até haver uma fonte confiável integrada).
 
 ## Fase 6 — Recursos avançados
 

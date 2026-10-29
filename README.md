@@ -4,7 +4,7 @@
 
 Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mercado, análise técnica, sinais quantitativos transparentes e um assistente de IA que só interpreta dados calculados pela própria plataforma.
 
-**Estado atual: Fase 4 — Oportunidades** (sinais quantitativos com score, justificativa e invalidação; alertas e notificações), sobre inteligência de mercado (Fase 3), carteira (Fase 2) e fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado atual: Fase 5 — Voryn AI** (assistente que interpreta os dados da plataforma por ferramentas somente leitura), sobre oportunidades e alertas (Fase 4), inteligência de mercado (Fase 3), carteira (Fase 2) e fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -21,7 +21,7 @@ Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mer
 Pré-requisito: Docker Desktop.
 
 ```bash
-cp .env.example .env        # opcional: chave CoinGecko e portas
+cp .env.example .env        # opcional: chave CoinGecko, ANTHROPIC_API_KEY (Voryn AI) e portas
 docker compose up --build
 ```
 
@@ -33,7 +33,7 @@ docker compose up --build
 
 Crie uma conta em `/criar-conta`; o link de confirmação chega no Mailpit. O worker sincroniza o mercado ao iniciar e depois a cada 5 minutos.
 
-> No Windows/macOS, o hot reload do serviço `web` dentro do Docker pode não detectar alterações (bind mounts não propagam eventos de arquivo). Para desenvolver o frontend, prefira `npm run dev` no host (abaixo) ou `docker compose restart web`.
+> No Windows/macOS, bind mounts não propagam eventos de arquivo; por isso o serviço `web` do Docker observa o código por *polling* (`NEXT_WATCH_POLL_MS`). Para desenvolver o frontend com menos latência, prefira `npm run dev` no host (abaixo).
 
 As portas do host usam valores incomuns (3010, 8010, 5442, 6389, 8035) para não colidir com outros projetos; altere com `VORYN_*_PORT` no `.env`.
 
@@ -88,7 +88,7 @@ Um serviço por processo, a partir dos Dockerfiles do repositório:
 | `worker` | `backend/` | `celery -A app.worker.celery_app worker -Q voryn` |
 | `beat` | `backend/` | `celery -A app.worker.celery_app beat` |
 
-Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela se recusa a iniciar sem elas): `ENVIRONMENT=production`, `SECRET_KEY`, `ENCRYPTION_KEYS`, `DATABASE_URL`, `REDIS_URL`, `FRONTEND_URL`, `EMAIL_BACKEND=smtp` + `SMTP_*`, `TRUST_PROXY_HEADERS=true`. Opcionais: `COINGECKO_API_KEY`, `SENTRY_DSN`.
+Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela se recusa a iniciar sem elas): `ENVIRONMENT=production`, `SECRET_KEY`, `ENCRYPTION_KEYS`, `DATABASE_URL`, `REDIS_URL`, `FRONTEND_URL`, `EMAIL_BACKEND=smtp` + `SMTP_*`, `TRUST_PROXY_HEADERS=true`. Opcionais: `COINGECKO_API_KEY`, `SENTRY_DSN`, `ANTHROPIC_API_KEY` (habilita o Voryn AI; `AI_MODEL`, `AI_EFFORT` e os limites `AI_*` têm padrões).
 
 ## Documentação
 
@@ -97,6 +97,7 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 - [Carteira: metodologia de cálculo](docs/PORTFOLIO.md)
 - [Análise técnica: metodologia](docs/TECHNICAL_ANALYSIS.md)
 - [Oportunidades e alertas: metodologia](docs/SIGNALS.md)
+- [Voryn AI: metodologia](docs/AI.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)
