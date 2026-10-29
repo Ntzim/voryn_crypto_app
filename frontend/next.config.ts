@@ -3,6 +3,9 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+// Docker Desktop bind mounts on Windows/macOS do not forward file events, so the dev
+// container opts into polling; running `npm run dev` on the host keeps native watching.
+const watchPollMs = Number(process.env.NEXT_WATCH_POLL_MS) || undefined;
 
 const csp = [
   "default-src 'self'",
@@ -34,6 +37,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
+  ...(watchPollMs ? { watchOptions: { pollIntervalMs: watchPollMs } } : {}),
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "coin-images.coingecko.com" },
