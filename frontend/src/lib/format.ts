@@ -115,3 +115,35 @@ export function formatDateTime(
   if (!iso) return EMPTY;
   return new Intl.DateTimeFormat(locale, { ...options, timeZone }).format(new Date(iso));
 }
+
+/**
+ * Parse a number typed by the user into a plain decimal string ("1234.56"), or null.
+ *
+ * pt-BR: "." groups thousands and "," is the decimal mark ("250.000" = 250 mil).
+ * en-US: the opposite. A lone separator followed by exactly three digits per group is
+ * read as grouping ("1.000" pt-BR = mil); otherwise as the decimal mark ("0.5" = meio),
+ * so pasted values in the other convention still work in unambiguous cases.
+ */
+export function parseDecimalInput(raw: string, locale: Locale = "pt-BR"): string | null {
+  const value = raw.trim().replace(/\s/g, "");
+  if (!value) return null;
+  if (!/^\d[\d.,]*$/.test(value) && !/^[.,]\d+$/.test(value)) return null;
+  const [group, decimal] = locale === "pt-BR" ? [".", ","] : [",", "."];
+  const isGrouped = (s: string, sep: string) => {
+    const parts = s.split(sep);
+    return parts.length > 1 && parts[0].length >= 1 && parts[0].length <= 3 && parts.slice(1).every((p) => p.length === 3);
+  };
+  let normalized: string;
+  if (value.includes(group) && value.includes(decimal)) {
+    if (value.lastIndexOf(decimal) < value.lastIndexOf(group)) return null;
+    normalized = value.split(group).join("").replace(decimal, ".");
+  } else if (value.includes(decimal)) {
+    normalized = value.split(decimal).length > 2 ? value.split(decimal).join("") : value.replace(decimal, ".");
+  } else if (value.includes(group)) {
+    normalized = isGrouped(value, group) ? value.split(group).join("") : value.split(group).length === 2 ? value.replace(group, ".") : "";
+  } else {
+    normalized = value;
+  }
+  if (normalized.startsWith(".")) normalized = `0${normalized}`;
+  return /^\d+(\.\d+)?$/.test(normalized) ? normalized : null;
+}

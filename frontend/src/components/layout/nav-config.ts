@@ -37,7 +37,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/mercado", label: "Mercado", icon: ChartLine, available: true, mobilePrimary: true },
       { href: "/analise", label: "Análise de Ativos", icon: ChartCandlestick, available: true },
-      { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: false, mobilePrimary: true },
+      { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: true, mobilePrimary: true },
     ],
   },
   {
@@ -51,7 +51,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Conta",
     items: [
-      { href: "/alertas", label: "Alertas", icon: Bell, available: false },
+      { href: "/alertas", label: "Alertas", icon: Bell, available: true },
       { href: "/configuracoes", label: "Configurações", icon: Settings, available: true },
     ],
   },

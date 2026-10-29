@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api/client";
 import type { AssetBrief, Currency, Transaction, TransactionInput, TxType } from "@/lib/api/types";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, parseDecimalInput } from "@/lib/format";
 import { TX_LABELS, useExchanges, useTransactionMutations } from "@/lib/portfolio-queries";
 import { usePreferences } from "@/lib/queries";
 
@@ -32,13 +32,6 @@ const HELP: Record<TxType, string> = {
 };
 
 const PRICED: TxType[] = ["buy", "sell", "deposit", "conversion"];
-
-/** Accepts "1.234,56", "1234,56" or "1234.56". */
-function normalizeDecimal(value: string): string {
-  const v = value.trim().replace(/\s/g, "");
-  if (v.includes(",")) return v.replace(/\./g, "").replace(",", ".");
-  return v;
-}
 
 function toLocalInput(iso: string): string {
   const d = new Date(iso);
@@ -139,8 +132,9 @@ function TransactionForm({
   const showPrice = priced || form.type === "withdrawal";
   const showFee = ["buy", "sell", "deposit", "withdrawal", "conversion"].includes(form.type);
   const showFeeQuantity = ["buy", "transfer", "withdrawal"].includes(form.type);
-  const qty = Number(normalizeDecimal(form.quantity));
-  const price = Number(normalizeDecimal(form.unitPrice));
+  const num = (v: string) => parseDecimalInput(v, locale);
+  const qty = Number(num(form.quantity) ?? 0);
+  const price = Number(num(form.unitPrice) ?? 0);
   // Display-only preview; the server computes and stores the authoritative amount.
   const preview = showPrice && qty > 0 && price > 0 ? qty * price : null;
 
@@ -151,11 +145,20 @@ function TransactionForm({
     if (form.type === "conversion" && !form.toAsset) return setLocalError("Selecione o ativo recebido.");
     const executed = new Date(form.executedAt);
     if (Number.isNaN(executed.getTime())) return setLocalError("Informe a data e o horário.");
-    const opt = (v: string) => (v.trim() ? normalizeDecimal(v) : null);
+    const fields: [string, string][] = [
+      ["Quantidade", form.quantity],
+      ["Preço", form.unitPrice],
+      ["Taxa", form.fee],
+      ["Taxa no ativo", form.feeQuantity],
+      ["Quantidade recebida", form.toQuantity],
+    ];
+    const invalid = fields.find(([, v]) => v.trim() && num(v) === null);
+    if (invalid) return setLocalError(`Número inválido em “${invalid[0]}”.`);
+    const opt = (v: string) => (v.trim() ? num(v) : null);
     const body: TransactionInput = {
       type: form.type,
       asset_id: form.asset.id,
-      quantity: normalizeDecimal(form.quantity),
+      quantity: num(form.quantity) ?? "",
       unit_price: showPrice ? opt(form.unitPrice) : null,
       quote_currency: form.currency,
       fee_amount: showFee ? (opt(form.fee) ?? "0") : "0",
@@ -294,7 +297,7 @@ function TransactionForm({
           <p className="num rounded-lg bg-surface px-3 py-2 text-sm text-muted-foreground">
             Total {form.type === "conversion" ? "entregue" : "da operação"}:{" "}
             <span className="font-medium text-foreground">{formatMoney(preview, form.currency, locale)}</span>
-            {showFee && Number(normalizeDecimal(form.fee)) > 0 && " + taxa"}
+            {showFee && Number(num(form.fee) ?? 0) > 0 && " + taxa"}
           </p>
         )}
 

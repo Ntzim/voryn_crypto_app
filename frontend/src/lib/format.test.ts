@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMoney, formatPercent, formatPrice, formatRelative, trendOf } from "./format";
+import { formatMoney, formatPercent, formatPrice, formatRelative, parseDecimalInput, trendOf } from "./format";
 
 // Intl inserts non-breaking spaces; normalize for readable assertions.
 const n = (s: string) => s.replace(/ | /g, " ");
@@ -49,5 +49,34 @@ describe("formatRelative", () => {
     const now = Date.parse("2026-01-01T12:10:00Z");
     expect(formatRelative("2026-01-01T12:05:00Z", "en-US", now)).toBe("5 minutes ago");
     expect(formatRelative("2026-01-01T12:09:50Z", "pt-BR", now)).toBe("agora");
+  });
+});
+
+
+describe("parseDecimalInput", () => {
+  it("reads Brazilian grouping and decimals", () => {
+    expect(parseDecimalInput("250.000", "pt-BR")).toBe("250000");
+    expect(parseDecimalInput("1.234.567,89", "pt-BR")).toBe("1234567.89");
+    expect(parseDecimalInput("0,5", "pt-BR")).toBe("0.5");
+    expect(parseDecimalInput("380.000,00", "pt-BR")).toBe("380000.00");
+  });
+
+  it("keeps unambiguous dot decimals in pt-BR", () => {
+    expect(parseDecimalInput("0.5", "pt-BR")).toBe("0.5");
+    expect(parseDecimalInput("12000.75", "pt-BR")).toBe("12000.75");
+    expect(parseDecimalInput("0.00012345", "pt-BR")).toBe("0.00012345");
+  });
+
+  it("reads US formatting in en-US", () => {
+    expect(parseDecimalInput("250,000", "en-US")).toBe("250000");
+    expect(parseDecimalInput("1,234.5", "en-US")).toBe("1234.5");
+    expect(parseDecimalInput("0.5", "en-US")).toBe("0.5");
+  });
+
+  it("rejects malformed input", () => {
+    expect(parseDecimalInput("", "pt-BR")).toBeNull();
+    expect(parseDecimalInput("abc", "pt-BR")).toBeNull();
+    expect(parseDecimalInput("1,2.3", "pt-BR")).toBeNull();
+    expect(parseDecimalInput("-5", "pt-BR")).toBeNull();
   });
 });

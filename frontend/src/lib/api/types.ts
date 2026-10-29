@@ -45,3 +45,14 @@ export type Trend = Schemas["TrendOut"];
 export type Level = Schemas["LevelOut"];
 export type Timeframe = Analysis["timeframe"];
 export type Watchlist = Schemas["WatchlistOut"];
+
+export type Signal = Schemas["SignalOut"];
+export type SignalList = Schemas["SignalListOut"];
+export type SignalClass = Signal["classification"];
+export type SignalHistoryPoint = Schemas["SignalHistoryPoint"];
+export type Strategy = Schemas["StrategyOut"];
+export type Alert = Schemas["AlertOut"];
+export type AlertInput = Schemas["AlertIn"];
+export type AlertType = Schemas["AlertType"];
+export type NotificationItem = Schemas["NotificationOut"];
+export type NotificationList = Schemas["NotificationListOut"];

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
+import { NotificationBell } from "@/components/alerts/notification-bell";
 import { Logo } from "@/components/brand/logo";
 
 import { MobileNav } from "./mobile-nav";
@@ -22,7 +23,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Logo />
           </Link>
           <div className="hidden md:block" />
-          <UserMenu />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <UserMenu />
+          </div>
         </header>
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 pt-5 pb-28 md:px-6 md:pt-8 md:pb-10 xl:px-8">
           {children}

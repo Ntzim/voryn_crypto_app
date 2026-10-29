@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { AssetIcon } from "@/components/common/asset-icon";
+import { AssetSignalCard } from "@/components/signals/asset-signal-card";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { Card, CardContent } from "@/components/ui/card";
@@ -154,6 +155,9 @@ export function AnalysisView({ slug }: { slug: string }) {
 
       {data && (
         <>
+          <div className="mt-4">
+            <AssetSignalCard slug={slug} timeframe={timeframe} />
+          </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
             <TrendCard trend={data.trend} />
             <IndicatorsCard analysis={data} locale={locale} timeZone={timeZone} />
