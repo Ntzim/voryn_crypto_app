@@ -59,6 +59,8 @@ class AnalysisResult:
     trend: TrendResult | None
     supports: list[Level]
     resistances: list[Level]
+    #: current Bollinger width as a percentile of the last 100 candles (0–100)
+    bandwidth_percentile: Decimal | None = None
 
 
 def analyze(candles: Sequence[Candle], timeframe: Timeframe) -> AnalysisResult:
@@ -96,6 +98,7 @@ def analyze(candles: Sequence[Candle], timeframe: Timeframe) -> AnalysisResult:
 
     snapshot: Snapshot | None = None
     trend_inputs: TrendInputs | None = None
+    width_percentile: Decimal | None = None
     levels: tuple[list[Level], list[Level]] = ([], [])
     if closed:
         last = closed[-1]
@@ -159,6 +162,9 @@ def analyze(candles: Sequence[Candle], timeframe: Timeframe) -> AnalysisResult:
             volume_ratio=sig(last.volume / vol_avg) if vol_avg else None,
             volatility_annualized_pct=sig(vol * 100) if vol is not None else None,
         )
+        width_percentile = (
+            _percentile_rank(bandwidths, bandwidth) if bandwidth is not None else None
+        )
         trend_inputs = TrendInputs(
             closed_candles=len(closed),
             close=close,
@@ -177,7 +183,7 @@ def analyze(candles: Sequence[Candle], timeframe: Timeframe) -> AnalysisResult:
         levels = detect_levels(closed, atr_now)
 
     trend = classify(trend_inputs) if trend_inputs else None
-    return AnalysisResult(series, snapshot, trend, levels[0], levels[1])
+    return AnalysisResult(series, snapshot, trend, levels[0], levels[1], width_percentile)
 
 
 def _level_out(level: Level, price: Decimal) -> LevelOut:

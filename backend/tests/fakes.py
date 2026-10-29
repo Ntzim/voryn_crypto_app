@@ -1,10 +1,18 @@
 """In-memory market data providers for tests."""
 
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
-from app.modules.market_data.providers.base import DailyClose, FxQuote, MarketQuote
+from app.modules.market_data.providers.base import (
+    Candle,
+    DailyClose,
+    FxQuote,
+    MarketQuote,
+    ProviderError,
+    Timeframe,
+)
+from app.modules.market_data.providers.binance import UnknownPairError
 
 NOW = datetime.now(UTC).replace(microsecond=0)
 
@@ -98,3 +106,62 @@ class FakeFxHistory:
 
 def shifted(q: MarketQuote, **changes: object) -> MarketQuote:
     return replace(q, **changes)  # type: ignore[arg-type]
+
+
+CANDLE_NOW = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+
+
+def daily_candles(n: int, last_close: Decimal, live: bool = True) -> list[Candle]:
+    start = CANDLE_NOW - timedelta(days=n)
+    out = []
+    for i in range(n):
+        close = last_close * (Decimal(1) + Decimal(i - n + 1) / 1000)
+        out.append(
+            Candle(
+                start + timedelta(days=i),
+                close,
+                close * Decimal("1.01"),
+                close * Decimal("0.99"),
+                close,
+                Decimal(10),
+                Decimal(10) * close,
+                True,
+            )
+        )
+    if live:
+        out.append(
+            Candle(
+                CANDLE_NOW,
+                last_close,
+                last_close,
+                last_close,
+                last_close,
+                Decimal(1),
+                last_close,
+                False,
+            )
+        )
+    return out
+
+
+class FakeCandles:
+    name = "binance"
+
+    def __init__(self, data: dict[str, list[Candle]] | None = None, fail: bool = False) -> None:
+        self.data = data or {}
+        self.fail = fail
+        self.calls = 0
+
+    def pair_for(self, symbol: str) -> str | None:
+        return None if symbol == "USDT" else f"{symbol}USDT"
+
+    async def aclose(self) -> None:
+        return None
+
+    async def fetch_candles(self, pair: str, timeframe: Timeframe, limit: int) -> list[Candle]:
+        self.calls += 1
+        if self.fail:
+            raise ProviderError("down")
+        if pair not in self.data:
+            raise UnknownPairError(pair)
+        return self.data[pair]

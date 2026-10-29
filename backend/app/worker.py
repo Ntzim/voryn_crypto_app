@@ -19,13 +19,16 @@ from app.core.config import get_settings
 from app.core.db import build_engine
 from app.core.email import EmailMessage, send_email
 from app.core.logging import configure_logging, get_logger
+from app.modules.alerts import service as alerts
 from app.modules.auth.service import purge_expired
 from app.modules.market_data import candles
 from app.modules.market_data import service as market
-from app.modules.market_data.providers.base import ProviderError
+from app.modules.market_data.providers.base import CandleProvider, ProviderError
 from app.modules.market_data.providers.bcb import BcbPtaxProvider
+from app.modules.market_data.providers.binance import BinanceCandleProvider
 from app.modules.market_data.providers.coingecko import CoinGeckoProvider
 from app.modules.portfolio import service as portfolio
+from app.modules.signals import service as signals
 
 settings = get_settings()
 configure_logging()
@@ -51,6 +54,10 @@ celery_app.conf.update(
         # Daily closes are published after 00:00 UTC; refresh a little later.
         "portfolio-history": {"task": "portfolio.refresh_history", "schedule": 6 * 3600.0},
         "prune-candles": {"task": "market.prune_candles", "schedule": 24 * 3600.0},
+        # Signals are stored once per closed candle; re-runs are no-ops.
+        "generate-signals": {"task": "signals.generate", "schedule": 30 * 60.0},
+        "evaluate-alerts": {"task": "alerts.evaluate", "schedule": 5 * 60.0},
+        "prune-notifications": {"task": "alerts.prune", "schedule": 24 * 3600.0},
     },
 )
 
@@ -141,6 +148,34 @@ def prune_history_task() -> int:
     return _run(market.prune_history)
 
 
+def _with_candles(
+    job: Callable[[AsyncSession, CandleProvider], Awaitable[int]],
+) -> Callable[[AsyncSession], Awaitable[int]]:
+    async def run(db: AsyncSession) -> int:
+        provider = BinanceCandleProvider()
+        try:
+            return await job(db, provider)
+        finally:
+            await provider.aclose()
+
+    return run
+
+
+@celery_app.task(name="signals.generate")
+def generate_signals_task() -> int:
+    return _run(_with_candles(signals.run))
+
+
+@celery_app.task(name="alerts.evaluate")
+def evaluate_alerts_task() -> int:
+    return _run(_with_candles(alerts.evaluate_all))
+
+
+@celery_app.task(name="alerts.prune")
+def prune_notifications_task() -> None:
+    _run(alerts.prune_notifications)
+
+
 @celery_app.task(name="market.prune_candles")
 def prune_candles_task() -> None:
     _run(candles.prune_intraday)
@@ -157,3 +192,4 @@ def _bootstrap(**_: Any) -> None:
     sync_fx_task.delay()
     sync_markets_task.delay()
     refresh_history_task.delay()
+    generate_signals_task.delay()

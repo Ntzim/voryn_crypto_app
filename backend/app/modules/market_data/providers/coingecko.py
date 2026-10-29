@@ -153,12 +153,15 @@ class CoinGeckoProvider:
         today = datetime.now(UTC).date()
         for point in points:
             try:
-                stamp = datetime.fromtimestamp(int(point[0]) / 1000, UTC)
+                millis = int(point[0])
+                stamp = datetime.fromtimestamp(millis / 1000, UTC)
                 price = Decimal(point[1])
             except (TypeError, ValueError, IndexError, ArithmeticError):
                 continue
-            if stamp.hour or stamp.minute or price < 0:
-                continue  # the live trailing point, or garbage
+            # Daily points sit exactly on 00:00:00.000 UTC; anything else is the live price
+            # (which may itself fall a few seconds after midnight).
+            if millis % 86_400_000 or price < 0:
+                continue
             day = stamp.date() - timedelta(days=1)
             if day < today:
                 closes[day] = DailyClose(day=day, close=price)

@@ -480,6 +480,167 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Signals
+         * @description Latest signal per asset (strategy in force), ranked by score.
+         */
+        get: operations["list_signals_api_v1_signals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signals/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Strategy */
+        get: operations["strategy_api_v1_signals_strategy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signals/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Asset Signal
+         * @description Signal for the latest closed candle (generated on demand if not stored yet).
+         */
+        get: operations["asset_signal_api_v1_signals__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/signals/{slug}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset History */
+        get: operations["asset_history_api_v1_signals__slug__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Alerts */
+        get: operations["list_alerts_api_v1_alerts_get"];
+        put?: never;
+        /** Create Alert */
+        post: operations["create_alert_api_v1_alerts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/alerts/{alert_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Alert */
+        put: operations["update_alert_api_v1_alerts__alert_id__put"];
+        post?: never;
+        /** Delete Alert */
+        delete: operations["delete_alert_api_v1_alerts__alert_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notifications */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All */
+        post: operations["read_all_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read One */
+        post: operations["read_one_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portfolios": {
         parameters: {
             query?: never;
@@ -699,6 +860,73 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertIn */
+        AlertIn: {
+            type: components["schemas"]["AlertType"];
+            /** Asset Id */
+            asset_id?: string | null;
+            /** Timeframe */
+            timeframe?: ("15m" | "1h" | "4h" | "1d" | "1w") | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Notify Email
+             * @default true
+             */
+            notify_email: boolean;
+            /**
+             * Cooldown Minutes
+             * @default 360
+             */
+            cooldown_minutes: number;
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+        };
+        /** AlertOut */
+        AlertOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["AlertType"];
+            asset: components["schemas"]["AssetRef"] | null;
+            /** Timeframe */
+            timeframe: ("15m" | "1h" | "4h" | "1d" | "1w") | null;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Notify Email */
+            notify_email: boolean;
+            /** Cooldown Minutes */
+            cooldown_minutes: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Description */
+            description: string;
+            /** Last Evaluated At */
+            last_evaluated_at: string | null;
+            /** Last Triggered At */
+            last_triggered_at: string | null;
+            /** Trigger Count */
+            trigger_count: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * AlertType
+         * @enum {string}
+         */
+        AlertType: "price_above" | "price_below" | "rsi_above" | "rsi_below" | "ma_cross" | "volume_spike" | "trend_change" | "signal_change" | "concentration";
         /** AnalysisOut */
         AnalysisOut: {
             /** Asset Slug */
@@ -870,6 +1098,19 @@ export interface components {
             net_flows: string;
             /** Pct */
             pct: string | null;
+        };
+        /** ComponentOut */
+        ComponentOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Score */
+            score: string;
+            /** Weight Pct */
+            weight_pct: string;
+            /** Detail */
+            detail: string;
         };
         /** CriterionOut */
         CriterionOut: {
@@ -1146,6 +1387,42 @@ export interface components {
             /** Otpauth Uri */
             otpauth_uri: string;
         };
+        /** NotificationListOut */
+        NotificationListOut: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Unread */
+            unread: number;
+            /** Total */
+            total: number;
+        };
+        /** NotificationOut */
+        NotificationOut: {
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "alert" | "system";
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Data */
+            data: {
+                [key: string]: unknown;
+            };
+            /** Alert Id */
+            alert_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Read At */
+            read_at: string | null;
+        };
         /** PasswordChangeIn */
         PasswordChangeIn: {
             /** Current Password */
@@ -1336,6 +1613,97 @@ export interface components {
             /** Timezone */
             timezone?: string | null;
         };
+        /** SignalHistoryPoint */
+        SignalHistoryPoint: {
+            /**
+             * Candle Time
+             * Format: date-time
+             */
+            candle_time: string;
+            /** Score */
+            score: string;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "buy_potential" | "neutral" | "attention" | "sell_potential";
+            /** Reference Price */
+            reference_price: string;
+        };
+        /** SignalListOut */
+        SignalListOut: {
+            /** Items */
+            items: components["schemas"]["SignalOut"][];
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "15m" | "1h" | "4h" | "1d" | "1w";
+            strategy: components["schemas"]["StrategyOut"];
+            /** Disclaimer */
+            disclaimer: string;
+        };
+        /** SignalOut */
+        SignalOut: {
+            /** Id */
+            id: number;
+            asset: components["schemas"]["AssetRef"];
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "15m" | "1h" | "4h" | "1d" | "1w";
+            /**
+             * Candle Time
+             * Format: date-time
+             */
+            candle_time: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Reference Price */
+            reference_price: string;
+            /** Current Price */
+            current_price: string | null;
+            /** Score */
+            score: string;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "buy_potential" | "neutral" | "attention" | "sell_potential";
+            /** Trend */
+            trend: string;
+            /** Components */
+            components: components["schemas"]["ComponentOut"][];
+            /** Justification */
+            justification: string;
+            /** Risks */
+            risks: string[];
+            /** Invalidation */
+            invalidation: string[];
+            /** Indicators */
+            indicators: {
+                [key: string]: unknown;
+            };
+            /** Data Source */
+            data_source: string;
+            /**
+             * Data Fetched At
+             * Format: date-time
+             */
+            data_fetched_at: string;
+            /** Data Is Stale */
+            data_is_stale: boolean;
+            /** Strategy Key */
+            strategy_key: string;
+            /** Strategy Version */
+            strategy_version: number;
+            /** Methodology Version */
+            methodology_version: string;
+        };
         /**
          * Snapshot
          * @description Latest values computed on the last *closed* candle (no repainting).
@@ -1390,6 +1758,23 @@ export interface components {
             volume_ratio: string | null;
             /** Volatility Annualized Pct */
             volatility_annualized_pct: string | null;
+        };
+        /** StrategyOut */
+        StrategyOut: {
+            /** Key */
+            key: string;
+            /** Version */
+            version: number;
+            /** Name */
+            name: string;
+            /** Weights Pct */
+            weights_pct: {
+                [key: string]: string;
+            };
+            /** Buy Threshold */
+            buy_threshold: string;
+            /** Sell Threshold */
+            sell_threshold: string;
         };
         /** SummaryOut */
         SummaryOut: {
@@ -2560,6 +2945,323 @@ export interface operations {
             path: {
                 asset_id: string;
                 watchlist_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_signals_api_v1_signals_get: {
+        parameters: {
+            query?: {
+                timeframe?: "15m" | "1h" | "4h" | "1d" | "1w";
+                classification?: ("buy_potential" | "neutral" | "attention" | "sell_potential") | null;
+                watchlist_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    strategy_api_v1_signals_strategy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyOut"];
+                };
+            };
+        };
+    };
+    asset_signal_api_v1_signals__slug__get: {
+        parameters: {
+            query?: {
+                timeframe?: "15m" | "1h" | "4h" | "1d" | "1w";
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_history_api_v1_signals__slug__history_get: {
+        parameters: {
+            query?: {
+                timeframe?: "15m" | "1h" | "4h" | "1d" | "1w";
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalHistoryPoint"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_alerts_api_v1_alerts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"][];
+                };
+            };
+        };
+    };
+    create_alert_api_v1_alerts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_alert_api_v1_alerts__alert_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AlertIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_alert_api_v1_alerts__alert_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                unread_only?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_all_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    read_one_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: number;
             };
             cookie?: never;
         };

@@ -1297,6 +1297,523 @@
         }
       }
     },
+    "/api/v1/signals": {
+      "get": {
+        "tags": [
+          "signals"
+        ],
+        "summary": "List Signals",
+        "description": "Latest signal per asset (strategy in force), ranked by score.",
+        "operationId": "list_signals_api_v1_signals_get",
+        "parameters": [
+          {
+            "name": "timeframe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "15m",
+                "1h",
+                "4h",
+                "1d",
+                "1w"
+              ],
+              "type": "string",
+              "default": "1d",
+              "title": "Timeframe"
+            }
+          },
+          {
+            "name": "classification",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "buy_potential",
+                    "neutral",
+                    "attention",
+                    "sell_potential"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Classification"
+            }
+          },
+          {
+            "name": "watchlist_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Watchlist Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/signals/strategy": {
+      "get": {
+        "tags": [
+          "signals"
+        ],
+        "summary": "Strategy",
+        "operationId": "strategy_api_v1_signals_strategy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategyOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/signals/{slug}": {
+      "get": {
+        "tags": [
+          "signals"
+        ],
+        "summary": "Asset Signal",
+        "description": "Signal for the latest closed candle (generated on demand if not stored yet).",
+        "operationId": "asset_signal_api_v1_signals__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9-]+$",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "15m",
+                "1h",
+                "4h",
+                "1d",
+                "1w"
+              ],
+              "type": "string",
+              "default": "1d",
+              "title": "Timeframe"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/signals/{slug}/history": {
+      "get": {
+        "tags": [
+          "signals"
+        ],
+        "summary": "Asset History",
+        "operationId": "asset_history_api_v1_signals__slug__history_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^[a-z0-9-]+$",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "timeframe",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "15m",
+                "1h",
+                "4h",
+                "1d",
+                "1w"
+              ],
+              "type": "string",
+              "default": "1d",
+              "title": "Timeframe"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 90,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SignalHistoryPoint"
+                  },
+                  "title": "Response Asset History Api V1 Signals  Slug  History Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alerts": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "List Alerts",
+        "operationId": "list_alerts_api_v1_alerts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AlertOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Alerts Api V1 Alerts Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Create Alert",
+        "operationId": "create_alert_api_v1_alerts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/alerts/{alert_id}": {
+      "put": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Update Alert",
+        "operationId": "update_alert_api_v1_alerts__alert_id__put",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Delete Alert",
+        "operationId": "delete_alert_api_v1_alerts__alert_id__delete",
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "List Notifications",
+        "operationId": "list_notifications_api_v1_notifications_get",
+        "parameters": [
+          {
+            "name": "unread_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Unread Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 30,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Read All",
+        "operationId": "read_all_api_v1_notifications_read_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "tags": [
+          "alerts"
+        ],
+        "summary": "Read One",
+        "operationId": "read_one_api_v1_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Notification Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/portfolios": {
       "get": {
         "tags": [
@@ -1964,6 +2481,196 @@
   },
   "components": {
     "schemas": {
+      "AlertIn": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "timeframe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "15m",
+                  "1h",
+                  "4h",
+                  "1d",
+                  "1w"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeframe"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "notify_email": {
+            "type": "boolean",
+            "title": "Notify Email",
+            "default": true
+          },
+          "cooldown_minutes": {
+            "type": "integer",
+            "maximum": 10080.0,
+            "minimum": 15.0,
+            "title": "Cooldown Minutes",
+            "default": 360
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "AlertIn"
+      },
+      "AlertOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/AlertType"
+          },
+          "asset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssetRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timeframe": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "15m",
+                  "1h",
+                  "4h",
+                  "1d",
+                  "1w"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timeframe"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          },
+          "notify_email": {
+            "type": "boolean",
+            "title": "Notify Email"
+          },
+          "cooldown_minutes": {
+            "type": "integer",
+            "title": "Cooldown Minutes"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "last_evaluated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Evaluated At"
+          },
+          "last_triggered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Triggered At"
+          },
+          "trigger_count": {
+            "type": "integer",
+            "title": "Trigger Count"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "asset",
+          "timeframe",
+          "params",
+          "notify_email",
+          "cooldown_minutes",
+          "is_active",
+          "description",
+          "last_evaluated_at",
+          "last_triggered_at",
+          "trigger_count",
+          "created_at"
+        ],
+        "title": "AlertOut"
+      },
+      "AlertType": {
+        "type": "string",
+        "enum": [
+          "price_above",
+          "price_below",
+          "rsi_above",
+          "rsi_below",
+          "ma_cross",
+          "volume_spike",
+          "trend_change",
+          "signal_change",
+          "concentration"
+        ],
+        "title": "AlertType"
+      },
       "AnalysisOut": {
         "properties": {
           "asset_slug": {
@@ -2513,6 +3220,39 @@
           "pct"
         ],
         "title": "Change24hOut"
+      },
+      "ComponentOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "score": {
+            "type": "string",
+            "title": "Score"
+          },
+          "weight_pct": {
+            "type": "string",
+            "title": "Weight Pct"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "score",
+          "weight_pct",
+          "detail"
+        ],
+        "title": "ComponentOut"
       },
       "CriterionOut": {
         "properties": {
@@ -3378,6 +4118,102 @@
         ],
         "title": "MfaSetupOut"
       },
+      "NotificationListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "unread": {
+            "type": "integer",
+            "title": "Unread"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "unread",
+          "total"
+        ],
+        "title": "NotificationListOut"
+      },
+      "NotificationOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "alert",
+              "system"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "alert_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "data",
+          "alert_id",
+          "created_at",
+          "read_at"
+        ],
+        "title": "NotificationOut"
+      },
       "PasswordChangeIn": {
         "properties": {
           "current_password": {
@@ -3958,6 +4794,223 @@
         "type": "object",
         "title": "SettingsUpdateIn"
       },
+      "SignalHistoryPoint": {
+        "properties": {
+          "candle_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Candle Time"
+          },
+          "score": {
+            "type": "string",
+            "title": "Score"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "buy_potential",
+              "neutral",
+              "attention",
+              "sell_potential"
+            ],
+            "title": "Classification"
+          },
+          "reference_price": {
+            "type": "string",
+            "title": "Reference Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "candle_time",
+          "score",
+          "classification",
+          "reference_price"
+        ],
+        "title": "SignalHistoryPoint"
+      },
+      "SignalListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SignalOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "15m",
+              "1h",
+              "4h",
+              "1d",
+              "1w"
+            ],
+            "title": "Timeframe"
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/StrategyOut"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "timeframe",
+          "strategy",
+          "disclaimer"
+        ],
+        "title": "SignalListOut"
+      },
+      "SignalOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "15m",
+              "1h",
+              "4h",
+              "1d",
+              "1w"
+            ],
+            "title": "Timeframe"
+          },
+          "candle_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Candle Time"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "reference_price": {
+            "type": "string",
+            "title": "Reference Price"
+          },
+          "current_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Price"
+          },
+          "score": {
+            "type": "string",
+            "title": "Score"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "buy_potential",
+              "neutral",
+              "attention",
+              "sell_potential"
+            ],
+            "title": "Classification"
+          },
+          "trend": {
+            "type": "string",
+            "title": "Trend"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentOut"
+            },
+            "type": "array",
+            "title": "Components"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "invalidation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invalidation"
+          },
+          "indicators": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Indicators"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "data_fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Fetched At"
+          },
+          "data_is_stale": {
+            "type": "boolean",
+            "title": "Data Is Stale"
+          },
+          "strategy_key": {
+            "type": "string",
+            "title": "Strategy Key"
+          },
+          "strategy_version": {
+            "type": "integer",
+            "title": "Strategy Version"
+          },
+          "methodology_version": {
+            "type": "string",
+            "title": "Methodology Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "asset",
+          "timeframe",
+          "candle_time",
+          "generated_at",
+          "reference_price",
+          "current_price",
+          "score",
+          "classification",
+          "trend",
+          "components",
+          "justification",
+          "risks",
+          "invalidation",
+          "indicators",
+          "data_source",
+          "data_fetched_at",
+          "data_is_stale",
+          "strategy_key",
+          "strategy_version",
+          "methodology_version"
+        ],
+        "title": "SignalOut"
+      },
       "Snapshot": {
         "properties": {
           "as_of": {
@@ -4231,6 +5284,47 @@
         ],
         "title": "Snapshot",
         "description": "Latest values computed on the last *closed* candle (no repainting)."
+      },
+      "StrategyOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "weights_pct": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Weights Pct"
+          },
+          "buy_threshold": {
+            "type": "string",
+            "title": "Buy Threshold"
+          },
+          "sell_threshold": {
+            "type": "string",
+            "title": "Sell Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "version",
+          "name",
+          "weights_pct",
+          "buy_threshold",
+          "sell_threshold"
+        ],
+        "title": "StrategyOut"
       },
       "SummaryOut": {
         "properties": {
