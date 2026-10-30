@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
 
 ConnectionStatus = Literal["active", "error", "blocked"]
 RecordStatus = Literal["pending", "imported", "needs_review"]
@@ -12,13 +12,14 @@ RecordStatus = Literal["pending", "imported", "needs_review"]
 class ConnectionIn(BaseModel):
     exchange_id: Literal["binance"]
     label: str = Field(default="Binance", min_length=1, max_length=80)
-    api_key: str = Field(min_length=16, max_length=256)
-    api_secret: str = Field(min_length=16, max_length=256)
+    # SecretStr keeps the credentials out of repr(), logs and error reports.
+    api_key: SecretStr = Field(min_length=16, max_length=256)
+    api_secret: SecretStr = Field(min_length=16, max_length=256)
 
-    @field_validator("api_key", "api_secret", "label")
+    @field_validator("api_key", "api_secret", "label", mode="before")
     @classmethod
-    def _strip(cls, value: str) -> str:
-        return value.strip()
+    def _strip(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
 
 
 class ReconciliationRowOut(BaseModel):

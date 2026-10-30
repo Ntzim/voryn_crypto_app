@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator
 
 from app.modules.auth.passwords import validate_password_strength
-from app.modules.users.schemas import UserOut
+from app.modules.users.schemas import UserOut, validate_full_name
 
 
 def _normalize_email(value: str) -> str:
@@ -26,10 +26,7 @@ class RegisterIn(BaseModel):
     @field_validator("full_name")
     @classmethod
     def _name(cls, value: str) -> str:
-        value = " ".join(value.split())
-        if len(value) < 2:
-            raise ValueError("Informe seu nome.")
-        return value
+        return validate_full_name(value)
 
 
 class LoginIn(BaseModel):
@@ -64,6 +61,10 @@ class PasswordResetIn(BaseModel):
     @classmethod
     def _strong(cls, value: str) -> str:
         return validate_password_strength(value)
+
+
+class PasswordIn(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
 
 
 class MfaSetupOut(BaseModel):

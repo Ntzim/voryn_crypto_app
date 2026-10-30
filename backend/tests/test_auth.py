@@ -2,6 +2,7 @@ import time
 
 import httpx
 import pyotp
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,6 +72,38 @@ async def test_duplicate_registration_does_not_reveal_account(
     assert response.status_code == 202
     assert outbox[-1].subject == "Tentativa de cadastro na Voryn"
     assert await db.scalar(select(func.count()).select_from(User)) == 1
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Conta bloqueada, acesse www.voryn-suporte.com",
+        "Ana https://evil.example",
+        "Ana evil.example",
+        "Ana <b>Souza</b>",
+        "Ana suporte@evil.example",
+    ],
+)
+async def test_link_like_names_are_rejected(
+    client: httpx.AsyncClient, outbox: Outbox, name: str
+) -> None:
+    """The name is printed in an e-mail sent to whatever address is given at sign-up."""
+    response = await client.post(
+        f"{API}/auth/register",
+        json={"email": "victim@example.com", "password": PASSWORD, "full_name": name},
+    )
+    assert response.status_code == 422
+    assert outbox == []
+
+    await register_verified(client, outbox)
+    await login(client)
+    assert (await client.patch(f"{API}/me", json={"full_name": name})).status_code == 422
+
+
+async def test_ordinary_names_are_accepted(client: httpx.AsyncClient, outbox: Outbox) -> None:
+    await register_verified(client, outbox, name="Maria-José D'Ávila J. R. Souza")
+    await login(client)
+    assert (await client.get(f"{API}/me")).json()["full_name"] == "Maria-José D'Ávila J. R. Souza"
 
 
 async def test_weak_password_is_rejected(client: httpx.AsyncClient) -> None:
@@ -222,7 +255,7 @@ async def test_two_factor_lifecycle(
     await register_verified(client, outbox)
     await login(client)
 
-    setup = (await client.post(f"{API}/me/mfa/setup")).json()
+    setup = (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()
     assert setup["otpauth_uri"].startswith("otpauth://totp/Voryn")
     totp = pyotp.TOTP(setup["secret"])
 
@@ -286,13 +319,28 @@ async def test_two_factor_lifecycle(
     assert (await login(client)).json()["status"] == "authenticated"
 
 
+async def test_mfa_setup_requires_the_password(client: httpx.AsyncClient, outbox: Outbox) -> None:
+    """A stolen session must not be able to enrol the attacker's authenticator."""
+    await register_verified(client, outbox)
+    await login(client)
+    assert (await client.post(f"{API}/me/mfa/setup", json={})).status_code == 422
+    wrong = await client.post(f"{API}/me/mfa/setup", json={"password": "not-the-password"})
+    assert wrong.status_code == 401 and "secret" not in wrong.text
+    # No secret was staged, so enabling has nothing to confirm.
+    assert (await client.post(f"{API}/me/mfa/enable", json={"code": "123456"})).status_code == 400
+    ok = await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})
+    assert ok.status_code == 200 and ok.json()["secret"]
+
+
 async def test_mfa_challenge_attempts_are_limited(
     client: httpx.AsyncClient,
     outbox: Outbox,
 ) -> None:
     await register_verified(client, outbox)
     await login(client)
-    secret = (await client.post(f"{API}/me/mfa/setup")).json()["secret"]
+    secret = (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()[
+        "secret"
+    ]
     await client.post(f"{API}/me/mfa/enable", json={"code": pyotp.TOTP(secret).now()})
     await client.post(f"{API}/auth/logout")
 
@@ -306,3 +354,39 @@ async def test_mfa_challenge_attempts_are_limited(
         f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": "000000"}
     )
     assert response.status_code == 429
+
+
+async def test_mfa_failures_are_limited_per_account_across_challenges(
+    client: httpx.AsyncClient,
+    outbox: Outbox,
+) -> None:
+    """A fresh challenge only costs the password, so the cap must span challenges."""
+    await register_verified(client, outbox)
+    await login(client)
+    totp = pyotp.TOTP(
+        (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()["secret"]
+    )
+    await client.post(f"{API}/me/mfa/enable", json={"code": totp.now()})
+    await client.post(f"{API}/auth/logout")
+    outbox.clear()
+
+    for _ in range(2):  # two challenges, each within its own 5-attempt cap
+        mfa_token = (await login(client)).json()["mfa_token"]
+        for _ in range(5):
+            response = await client.post(
+                f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": "000000"}
+            )
+            assert response.status_code == 401
+
+    # Even the correct code is refused until the window passes.
+    mfa_token = (await login(client)).json()["mfa_token"]
+    code = totp.at(int(time.time()) + 30)
+    response = await client.post(
+        f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": code}
+    )
+    assert response.status_code == 429
+
+    # The owner is warned once: reaching the second factor required the password.
+    notices = [m for m in outbox if m.subject == "Alerta de segurança da Voryn"]
+    assert len(notices) == 1
+    assert "errou o código" in notices[0].text

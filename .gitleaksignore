@@ -1,0 +1,2 @@
+# Fixed SECRET_KEY used only by the test-suite (tests/conftest.py), never in an environment.
+ce01ef0b060962ee389b7b72f063ade8b6af88a6:backend/tests/conftest.py:generic-api-key:18

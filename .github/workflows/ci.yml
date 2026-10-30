@@ -9,7 +9,36 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Jobs only read the repository; nothing here needs a token that can write.
+permissions:
+  contents: read
+
 jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # secret scan covers the whole history
+      - name: Secrets (gitleaks)
+        run: docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.28.0 git /repo --redact --no-banner
+      - name: Static analysis (semgrep)
+        run: >-
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest semgrep scan
+          --config p/python --config p/fastapi --config p/typescript --config p/react
+          --config p/nextjs --config p/dockerfile --config p/secrets
+          --exclude node_modules --exclude .next --exclude .venv --metrics=off --error
+      - uses: astral-sh/setup-uv@v6
+      - name: Python dependencies (pip-audit)
+        working-directory: backend
+        run: |
+          uv export --frozen --no-dev --no-hashes --no-emit-project > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit --no-deps --disable-pip -r "$RUNNER_TEMP/requirements.txt"
+      - name: Node dependencies (npm audit)
+        working-directory: frontend
+        # Only build-time tooling (shadcn → deepmerge) carries low-severity advisories today.
+        run: npm audit --omit=dev --audit-level=moderate
+
   backend:
     runs-on: ubuntu-latest
     defaults:

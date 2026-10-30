@@ -52,6 +52,9 @@ def create_app() -> FastAPI:
             environment=settings.environment,
             traces_sample_rate=0.1,
             send_default_pii=False,
+            # Frame locals would carry request bodies (passwords, exchange secrets, TOTP codes)
+            # inside model reprs, which the default scrubber does not inspect.
+            include_local_variables=False,
         )
 
     app = FastAPI(

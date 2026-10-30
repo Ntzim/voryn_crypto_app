@@ -42,6 +42,10 @@ MFA_SETUP_TTL = 600
 SESSION_TOUCH_INTERVAL = timedelta(minutes=5)
 LOGIN_ACCOUNT_FAILURES = 5
 LOGIN_ACCOUNT_WINDOW = 15 * 60
+# Second-factor failures per account, across challenges and IPs: a new challenge only
+# costs the correct password, so a per-challenge cap alone allows unlimited guessing.
+MFA_ACCOUNT_FAILURES = 10
+MFA_ACCOUNT_WINDOW = 60 * 60
 
 
 class InvalidCredentialsError(AppError):
@@ -274,9 +278,27 @@ async def login_with_mfa(
     if user is None or not user.is_active or not user.mfa_enabled:
         await redis.delete(key)
         raise InvalidCredentialsError()
+    fail_key = f"mfa_fail:{user.id}"
+    failures, ttl = await rate_limit.peek(fail_key)
+    if failures >= MFA_ACCOUNT_FAILURES * get_settings().rate_limit_scale:
+        await redis.delete(key)
+        raise RateLimitedError(
+            ttl, "Muitas tentativas de verificação nesta conta. Aguarde e tente novamente."
+        )
     if not await _verify_second_factor(db, user, code, meta):
+        result = await rate_limit.hit(fail_key, MFA_ACCOUNT_FAILURES, MFA_ACCOUNT_WINDOW)
         _audit(db, AuditAction.LOGIN_FAILED, user.id, meta, reason="mfa")
         await db.commit()
+        if result.count == 1:
+            # Reaching this step required the correct password.
+            await deliver(
+                emails.security_notice_email(
+                    user.email,
+                    user.full_name,
+                    "Alguém digitou a sua senha corretamente, mas errou o código de verificação "
+                    "em duas etapas. Se não foi você, troque sua senha agora.",
+                )
+            )
         raise InvalidMfaCodeError()
     await redis.delete(key)
     return await _complete_login(db, user, meta, method="password+totp")
@@ -496,9 +518,12 @@ async def change_password(
 # --------------------------------------------------------------------------- 2FA
 
 
-async def start_mfa_setup(user: User) -> tuple[str, str]:
+async def start_mfa_setup(user: User, password: str) -> tuple[str, str]:
     if user.mfa_enabled:
         raise ConflictError("A autenticação em dois fatores já está ativa.")
+    # A session alone is not enough: with a stolen one, an attacker could enrol their own
+    # authenticator and lock the owner out of the next sign-in.
+    await _require_password(user, password)
     secret = mfa.new_secret()
     await get_redis().set(f"mfa_setup:{user.id}", encrypt(secret), ex=MFA_SETUP_TTL)
     return secret, mfa.provisioning_uri(secret, user.email)

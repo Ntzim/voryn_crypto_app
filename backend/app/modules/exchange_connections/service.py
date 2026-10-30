@@ -79,7 +79,8 @@ async def create_connection(
     ip: str | None,
 ) -> ExchangeConnection:
     await rate_limit.enforce(f"exchanges:connect:{user_id}", CONNECTIONS_PER_HOUR, 3600)
-    fingerprint = hash_token(f"{body.exchange_id}:{body.api_key}")
+    api_key, api_secret = body.api_key.get_secret_value(), body.api_secret.get_secret_value()
+    fingerprint = hash_token(f"{body.exchange_id}:{api_key}")
     exists = await db.scalar(
         select(ExchangeConnection.id).where(
             ExchangeConnection.user_id == user_id,
@@ -90,7 +91,7 @@ async def create_connection(
     if exists:
         raise AppError("Esta chave já está conectada.", code="exchange_duplicate", status_code=409)
 
-    connector = factory(body.exchange_id, body.api_key, body.api_secret)
+    connector = factory(body.exchange_id, api_key, api_secret)
     try:
         perms = await connector.permissions()
     except ConnectorAuthError as exc:
@@ -114,10 +115,10 @@ async def create_connection(
         portfolio_id=portfolio_row.id,
         exchange_id=body.exchange_id,
         label=body.label,
-        api_key_encrypted=encrypt(body.api_key),
-        api_secret_encrypted=encrypt(body.api_secret),
+        api_key_encrypted=encrypt(api_key),
+        api_secret_encrypted=encrypt(api_secret),
         key_fingerprint=fingerprint,
-        key_hint=body.api_key[-4:],
+        key_hint=api_key[-4:],
         permissions={"can_read": perms.can_read, "write_permissions": perms.write_permissions},
         sync_requested_at=utcnow(),
     )

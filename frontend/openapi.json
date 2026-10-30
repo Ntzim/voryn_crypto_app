@@ -571,6 +571,16 @@
         ],
         "summary": "Mfa Setup",
         "operationId": "mfa_setup_api_v1_me_mfa_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -578,6 +588,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MfaSetupOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -4818,13 +4838,17 @@
             "type": "string",
             "maxLength": 256,
             "minLength": 16,
-            "title": "Api Key"
+            "format": "password",
+            "title": "Api Key",
+            "writeOnly": true
           },
           "api_secret": {
             "type": "string",
             "maxLength": 256,
             "minLength": 16,
-            "title": "Api Secret"
+            "format": "password",
+            "title": "Api Secret",
+            "writeOnly": true
           }
         },
         "type": "object",
@@ -6275,6 +6299,21 @@
           "new_password"
         ],
         "title": "PasswordChangeIn"
+      },
+      "PasswordIn": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "PasswordIn"
       },
       "PasswordResetIn": {
         "properties": {

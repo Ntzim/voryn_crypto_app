@@ -79,6 +79,8 @@ export default defineRailway((ctx, project) => {
     env: {
       API_PRIVATE_HOST: api.env.RAILWAY_PRIVATE_DOMAIN,
       API_PRIVATE_PORT: API_PORT,
+      // The Railway edge overwrites X-Real-IP; the BFF rebuilds X-Forwarded-For from it.
+      CLIENT_IP_HEADER: "x-real-ip",
     },
   });
 

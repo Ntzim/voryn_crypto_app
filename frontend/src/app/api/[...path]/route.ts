@@ -4,20 +4,7 @@
  */
 import type { NextRequest } from "next/server";
 
-const HOP_BY_HOP = new Set([
-  "connection",
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
-  "host",
-  "content-length",
-  // fetch() already decoded the body; forwarding this would make browsers decode twice.
-  "content-encoding",
-]);
+import { isHopByHop, upstreamHeaders } from "@/lib/upstream-headers";
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
 
@@ -49,10 +36,7 @@ async function forward(request: NextRequest, ctx: RouteContext<"/api/[...path]">
     apiBaseUrl(),
   );
 
-  const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key)) headers.set(key, value);
-  });
+  const headers = upstreamHeaders(request.headers, process.env.CLIENT_IP_HEADER);
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   // The timeout covers the wait for response headers only: streamed bodies (Voryn AI replies)
@@ -81,7 +65,7 @@ async function forward(request: NextRequest, ctx: RouteContext<"/api/[...path]">
 
   const responseHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key) && key !== "set-cookie") responseHeaders.set(key, value);
+    if (!isHopByHop(key) && key !== "set-cookie") responseHeaders.set(key, value);
   });
   for (const cookie of upstream.headers.getSetCookie()) responseHeaders.append("set-cookie", cookie);
 

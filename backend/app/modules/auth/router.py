@@ -17,6 +17,7 @@ from app.modules.auth.schemas import (
     MfaEnableOut,
     MfaLoginIn,
     MfaSetupOut,
+    PasswordIn,
     PasswordResetIn,
     RegisterIn,
     TokenIn,
@@ -167,8 +168,8 @@ async def revoke_session(
 
 
 @security_router.post("/mfa/setup")
-async def mfa_setup(auth: CurrentAuth) -> MfaSetupOut:
-    secret, uri = await service.start_mfa_setup(auth.user)
+async def mfa_setup(data: PasswordIn, auth: CurrentAuth) -> MfaSetupOut:
+    secret, uri = await service.start_mfa_setup(auth.user, data.password)
     return MfaSetupOut(secret=secret, otpauth_uri=uri)
 
 

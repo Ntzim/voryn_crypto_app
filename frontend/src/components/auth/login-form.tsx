@@ -14,14 +14,10 @@ import { Label } from "@/components/ui/label";
 import { api, isApiError } from "@/lib/api/client";
 import type { LoginResponse, Message } from "@/lib/api/types";
 import { queryKeys } from "@/lib/queries";
+import { safeNext } from "@/lib/safe-next";
 
 import { AuthHeading, Field, FormError, SubmitButton, fieldErrors } from "./form-parts";
 
-/** Only same-site relative paths are allowed as post-login destinations (no open redirect). */
-export function safeNext(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/dashboard";
-  return next;
-}
 
 export function LoginForm() {
   const router = useRouter();
