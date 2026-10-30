@@ -5,7 +5,7 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN npm ci && npm cache clean --force
 
 # Local development (docker compose): source is bind-mounted, hot reload enabled.
 FROM deps AS dev
