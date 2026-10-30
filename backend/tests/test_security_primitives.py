@@ -72,7 +72,9 @@ def test_exchange_credentials_never_appear_in_repr() -> None:
     from app.modules.exchange_connections.schemas import ConnectionIn
 
     body = ConnectionIn(
-        exchange_id="binance", api_key="  " + "K" * 12 + "KEY-1234  ", api_secret="S" * 20 + "TOPSECRET"
+        exchange_id="binance",
+        api_key="  " + "K" * 12 + "KEY-1234  ",
+        api_secret="S" * 20 + "TOPSECRET",
     )
     assert "TOPSECRET" not in repr(body) and "KEY-1234" not in repr(body)
     assert "TOPSECRET" not in str(body.model_dump())

@@ -363,7 +363,7 @@ async def test_mfa_failures_are_limited_per_account_across_challenges(
 
     # Even the correct code is refused until the window passes.
     mfa_token = (await login(client)).json()["mfa_token"]
-    code = totp.at(time.time() + 30)
+    code = totp.at(int(time.time()) + 30)
     response = await client.post(
         f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": code}
     )
