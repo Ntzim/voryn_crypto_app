@@ -61,3 +61,10 @@ export type AIStatus = Schemas["AIStatusOut"];
 export type AIConversation = Schemas["AIConversationOut"];
 export type AIConversationDetail = Schemas["AIConversationDetailOut"];
 export type AIMessage = Schemas["AIMessageOut"];
+
+export type Risk = Schemas["RiskOut"];
+export type AssetRisk = Schemas["AssetRiskOut"];
+export type RiskFlag = Schemas["RiskFlagOut"];
+export type ScenarioInput = Schemas["ScenarioIn"];
+export type Scenario = Schemas["ScenarioOut"];
+export type ScenarioMethod = Scenario["lines"][number]["method"];

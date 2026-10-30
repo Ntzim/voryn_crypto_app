@@ -14,11 +14,21 @@ const STYLE = {
   risk: { icon: ShieldAlert, className: "text-destructive bg-destructive/10" },
 } as const;
 
-export function InsightsPanel({ items, loading }: { items: Insight[] | undefined; loading?: boolean }) {
+export function InsightsPanel({
+  items,
+  loading,
+  title = "Insights da carteira",
+  emptyText = "Nenhum ponto de atenção identificado pelas regras atuais (concentração, variação relevante, posições abaixo do preço médio e correlação).",
+}: {
+  items: Pick<Insight, "id" | "severity" | "title" | "message" | "basis">[] | undefined;
+  loading?: boolean;
+  title?: string;
+  emptyText?: string;
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-heading text-sm font-medium">Insights da carteira</CardTitle>
+        <CardTitle className="font-heading text-sm font-medium">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading || !items ? (
@@ -27,10 +37,7 @@ export function InsightsPanel({ items, loading }: { items: Insight[] | undefined
             <Skeleton className="h-14 w-full" />
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nenhum ponto de atenção identificado pelas regras atuais (concentração, variação relevante,
-            posições abaixo do preço médio e correlação).
-          </p>
+          <p className="text-sm text-muted-foreground">{emptyText}</p>
         ) : (
           <ul className="space-y-3">
             {items.map((item) => {

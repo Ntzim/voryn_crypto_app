@@ -2601,6 +2601,156 @@
         }
       }
     },
+    "/api/v1/portfolios/{portfolio_id}/risk": {
+      "get": {
+        "tags": [
+          "risk"
+        ],
+        "summary": "Portfolio Risk",
+        "description": "Volatility, drawdown, historical VaR, beta, correlation, concentration and liquidity\nof the current holdings over their daily price history.",
+        "operationId": "portfolio_risk_api_v1_portfolios__portfolio_id__risk_get",
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          },
+          {
+            "name": "window",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 30,
+              "default": 365,
+              "title": "Window"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "BRL",
+                    "USD"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolios/{portfolio_id}/risk/scenario": {
+      "post": {
+        "tags": [
+          "risk"
+        ],
+        "summary": "Risk Scenario",
+        "description": "What-if: a Bitcoin move propagated by beta, with optional per-asset overrides.\nRead-only: nothing is stored.",
+        "operationId": "risk_scenario_api_v1_portfolios__portfolio_id__risk_scenario_post",
+        "parameters": [
+          {
+            "name": "portfolio_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Portfolio Id"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "BRL",
+                    "USD"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Currency"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/exchanges": {
       "get": {
         "tags": [
@@ -3535,6 +3685,138 @@
         ],
         "title": "AssetRef"
       },
+      "AssetRiskOut": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "weight_pct": {
+            "type": "string",
+            "title": "Weight Pct"
+          },
+          "market_value": {
+            "type": "string",
+            "title": "Market Value"
+          },
+          "is_stablecoin": {
+            "type": "boolean",
+            "title": "Is Stablecoin"
+          },
+          "covered": {
+            "type": "boolean",
+            "title": "Covered"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations"
+          },
+          "volatility_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volatility Pct"
+          },
+          "max_drawdown_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Drawdown Pct"
+          },
+          "beta_btc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beta Btc"
+          },
+          "var95_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Var95 Pct"
+          },
+          "risk_contribution_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Contribution Pct"
+          },
+          "avg_daily_volume_usd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Daily Volume Usd"
+          },
+          "position_to_volume_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position To Volume Pct"
+          },
+          "liquidity": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              "unknown"
+            ],
+            "title": "Liquidity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset",
+          "weight_pct",
+          "market_value",
+          "is_stablecoin",
+          "covered",
+          "observations",
+          "volatility_pct",
+          "max_drawdown_pct",
+          "beta_btc",
+          "var95_pct",
+          "risk_contribution_pct",
+          "avg_daily_volume_usd",
+          "position_to_volume_pct",
+          "liquidity"
+        ],
+        "title": "AssetRiskOut"
+      },
       "CandleOut": {
         "properties": {
           "time": {
@@ -3646,6 +3928,73 @@
           "detail"
         ],
         "title": "ComponentOut"
+      },
+      "ConcentrationOut": {
+        "properties": {
+          "hhi": {
+            "type": "string",
+            "title": "Hhi"
+          },
+          "effective_assets": {
+            "type": "string",
+            "title": "Effective Assets"
+          },
+          "top1_pct": {
+            "type": "string",
+            "title": "Top1 Pct"
+          },
+          "top3_pct": {
+            "type": "string",
+            "title": "Top3 Pct"
+          },
+          "stablecoin_pct": {
+            "type": "string",
+            "title": "Stablecoin Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hhi",
+          "effective_assets",
+          "top1_pct",
+          "top3_pct",
+          "stablecoin_pct"
+        ],
+        "title": "ConcentrationOut"
+      },
+      "CorrelationOut": {
+        "properties": {
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Symbols"
+          },
+          "values": {
+            "items": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbols",
+          "values"
+        ],
+        "title": "CorrelationOut"
       },
       "CriterionOut": {
         "properties": {
@@ -3934,6 +4283,64 @@
         ],
         "title": "DataStatus",
         "description": "Freshness metadata attached to every market response."
+      },
+      "DrawdownOut": {
+        "properties": {
+          "pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct"
+          },
+          "peak": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak"
+          },
+          "trough": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trough"
+          },
+          "current_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pct",
+          "peak",
+          "trough",
+          "current_pct"
+        ],
+        "title": "DrawdownOut"
       },
       "EmailIn": {
         "properties": {
@@ -5015,6 +5422,403 @@
         "title": "ReturnsOut",
         "description": "Time-weighted returns in percent; null when the portfolio is younger than the period."
       },
+      "RiskFlagOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "attention",
+              "risk"
+            ],
+            "title": "Severity"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "title",
+          "message",
+          "basis"
+        ],
+        "title": "RiskFlagOut"
+      },
+      "RiskOut": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD"
+            ],
+            "title": "Currency"
+          },
+          "window_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 30.0,
+            "title": "Window Days"
+          },
+          "period_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Start"
+          },
+          "period_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period End"
+          },
+          "observations": {
+            "type": "integer",
+            "title": "Observations"
+          },
+          "market_value": {
+            "type": "string",
+            "title": "Market Value"
+          },
+          "covered_value": {
+            "type": "string",
+            "title": "Covered Value"
+          },
+          "coverage_pct": {
+            "type": "string",
+            "title": "Coverage Pct"
+          },
+          "uncovered_assets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uncovered Assets"
+          },
+          "volatility_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volatility Pct"
+          },
+          "drawdown": {
+            "$ref": "#/components/schemas/DrawdownOut"
+          },
+          "var": {
+            "items": {
+              "$ref": "#/components/schemas/VarOut"
+            },
+            "type": "array",
+            "title": "Var"
+          },
+          "expected_shortfall_95": {
+            "$ref": "#/components/schemas/VarOut"
+          },
+          "beta_btc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Beta Btc"
+          },
+          "worst_day": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StressWindowOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stress": {
+            "items": {
+              "$ref": "#/components/schemas/StressWindowOut"
+            },
+            "type": "array",
+            "title": "Stress"
+          },
+          "concentration": {
+            "$ref": "#/components/schemas/ConcentrationOut"
+          },
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetRiskOut"
+            },
+            "type": "array",
+            "title": "Assets"
+          },
+          "correlation": {
+            "$ref": "#/components/schemas/CorrelationOut"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/RiskFlagOut"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "methodology": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Methodology"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "window_days",
+          "period_start",
+          "period_end",
+          "observations",
+          "market_value",
+          "covered_value",
+          "coverage_pct",
+          "uncovered_assets",
+          "volatility_pct",
+          "drawdown",
+          "var",
+          "expected_shortfall_95",
+          "beta_btc",
+          "worst_day",
+          "stress",
+          "concentration",
+          "assets",
+          "correlation",
+          "flags",
+          "data_source",
+          "methodology",
+          "as_of"
+        ],
+        "title": "RiskOut"
+      },
+      "ScenarioIn": {
+        "properties": {
+          "btc_change_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": -100.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Btc Change Pct"
+          },
+          "overrides": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioOverride"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Overrides"
+          },
+          "window": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 30.0,
+            "title": "Window",
+            "default": 365
+          }
+        },
+        "type": "object",
+        "required": [
+          "btc_change_pct"
+        ],
+        "title": "ScenarioIn"
+      },
+      "ScenarioLineOut": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "market_value": {
+            "type": "string",
+            "title": "Market Value"
+          },
+          "change_pct": {
+            "type": "string",
+            "title": "Change Pct"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "override",
+              "stablecoin",
+              "beta",
+              "assumed_beta_1"
+            ],
+            "title": "Method"
+          },
+          "new_value": {
+            "type": "string",
+            "title": "New Value"
+          },
+          "pnl": {
+            "type": "string",
+            "title": "Pnl"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset",
+          "market_value",
+          "change_pct",
+          "method",
+          "new_value",
+          "pnl"
+        ],
+        "title": "ScenarioLineOut"
+      },
+      "ScenarioOut": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "BRL",
+              "USD"
+            ],
+            "title": "Currency"
+          },
+          "btc_change_pct": {
+            "type": "string",
+            "title": "Btc Change Pct"
+          },
+          "market_value": {
+            "type": "string",
+            "title": "Market Value"
+          },
+          "new_value": {
+            "type": "string",
+            "title": "New Value"
+          },
+          "pnl": {
+            "type": "string",
+            "title": "Pnl"
+          },
+          "pnl_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pnl Pct"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioLineOut"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "btc_change_pct",
+          "market_value",
+          "new_value",
+          "pnl",
+          "pnl_pct",
+          "lines",
+          "notes",
+          "as_of"
+        ],
+        "title": "ScenarioOut"
+      },
+      "ScenarioOverride": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Asset Id"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000.0,
+                "minimum": -100.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Change Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_id",
+          "change_pct"
+        ],
+        "title": "ScenarioOverride"
+      },
       "SeriesPoint": {
         "properties": {
           "day": {
@@ -5719,6 +6523,41 @@
         ],
         "title": "StrategyOut"
       },
+      "StressWindowOut": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "pct": {
+            "type": "string",
+            "title": "Pct"
+          },
+          "start": {
+            "type": "string",
+            "format": "date",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "title": "End"
+          },
+          "amount": {
+            "type": "string",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "pct",
+          "start",
+          "end",
+          "amount"
+        ],
+        "title": "StressWindowOut"
+      },
       "SummaryOut": {
         "properties": {
           "portfolio": {
@@ -6368,6 +7207,43 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VarOut": {
+        "properties": {
+          "confidence_pct": {
+            "type": "string",
+            "title": "Confidence Pct"
+          },
+          "pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confidence_pct",
+          "pct",
+          "amount"
+        ],
+        "title": "VarOut"
       },
       "WatchlistIn": {
         "properties": {

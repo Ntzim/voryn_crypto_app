@@ -872,6 +872,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portfolios/{portfolio_id}/risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Portfolio Risk
+         * @description Volatility, drawdown, historical VaR, beta, correlation, concentration and liquidity
+         *     of the current holdings over their daily price history.
+         */
+        get: operations["portfolio_risk_api_v1_portfolios__portfolio_id__risk_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/portfolios/{portfolio_id}/risk/scenario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Risk Scenario
+         * @description What-if: a Bitcoin move propagated by beta, with optional per-asset overrides.
+         *     Read-only: nothing is stored.
+         */
+        post: operations["risk_scenario_api_v1_portfolios__portfolio_id__risk_scenario_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exchanges": {
         parameters: {
             query?: never;
@@ -1233,6 +1275,39 @@ export interface components {
             /** Image Url */
             image_url: string | null;
         };
+        /** AssetRiskOut */
+        AssetRiskOut: {
+            asset: components["schemas"]["AssetRef"];
+            /** Weight Pct */
+            weight_pct: string;
+            /** Market Value */
+            market_value: string;
+            /** Is Stablecoin */
+            is_stablecoin: boolean;
+            /** Covered */
+            covered: boolean;
+            /** Observations */
+            observations: number;
+            /** Volatility Pct */
+            volatility_pct: string | null;
+            /** Max Drawdown Pct */
+            max_drawdown_pct: string | null;
+            /** Beta Btc */
+            beta_btc: string | null;
+            /** Var95 Pct */
+            var95_pct: string | null;
+            /** Risk Contribution Pct */
+            risk_contribution_pct: string | null;
+            /** Avg Daily Volume Usd */
+            avg_daily_volume_usd: string | null;
+            /** Position To Volume Pct */
+            position_to_volume_pct: string | null;
+            /**
+             * Liquidity
+             * @enum {string}
+             */
+            liquidity: "high" | "medium" | "low" | "unknown";
+        };
         /** CandleOut */
         CandleOut: {
             /**
@@ -1276,6 +1351,26 @@ export interface components {
             weight_pct: string;
             /** Detail */
             detail: string;
+        };
+        /** ConcentrationOut */
+        ConcentrationOut: {
+            /** Hhi */
+            hhi: string;
+            /** Effective Assets */
+            effective_assets: string;
+            /** Top1 Pct */
+            top1_pct: string;
+            /** Top3 Pct */
+            top3_pct: string;
+            /** Stablecoin Pct */
+            stablecoin_pct: string;
+        };
+        /** CorrelationOut */
+        CorrelationOut: {
+            /** Symbols */
+            symbols: string[];
+            /** Values */
+            values: (string | null)[][];
         };
         /** CriterionOut */
         CriterionOut: {
@@ -1376,6 +1471,17 @@ export interface components {
             fx_rate?: string | null;
             /** Fx Observed At */
             fx_observed_at?: string | null;
+        };
+        /** DrawdownOut */
+        DrawdownOut: {
+            /** Pct */
+            pct: string | null;
+            /** Peak */
+            peak: string | null;
+            /** Trough */
+            trough: string | null;
+            /** Current Pct */
+            current_pct: string | null;
         };
         /** EmailIn */
         EmailIn: {
@@ -1718,6 +1824,138 @@ export interface components {
             /** Inception */
             inception: string | null;
         };
+        /** RiskFlagOut */
+        RiskFlagOut: {
+            /** Id */
+            id: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "attention" | "risk";
+            /** Title */
+            title: string;
+            /** Message */
+            message: string;
+            /** Basis */
+            basis: string;
+        };
+        /** RiskOut */
+        RiskOut: {
+            /**
+             * Currency
+             * @enum {string}
+             */
+            currency: "BRL" | "USD";
+            /** Window Days */
+            window_days: number;
+            /** Period Start */
+            period_start: string | null;
+            /** Period End */
+            period_end: string | null;
+            /** Observations */
+            observations: number;
+            /** Market Value */
+            market_value: string;
+            /** Covered Value */
+            covered_value: string;
+            /** Coverage Pct */
+            coverage_pct: string;
+            /** Uncovered Assets */
+            uncovered_assets: string[];
+            /** Volatility Pct */
+            volatility_pct: string | null;
+            drawdown: components["schemas"]["DrawdownOut"];
+            /** Var */
+            var: components["schemas"]["VarOut"][];
+            expected_shortfall_95: components["schemas"]["VarOut"];
+            /** Beta Btc */
+            beta_btc: string | null;
+            worst_day: components["schemas"]["StressWindowOut"] | null;
+            /** Stress */
+            stress: components["schemas"]["StressWindowOut"][];
+            concentration: components["schemas"]["ConcentrationOut"];
+            /** Assets */
+            assets: components["schemas"]["AssetRiskOut"][];
+            correlation: components["schemas"]["CorrelationOut"];
+            /** Flags */
+            flags: components["schemas"]["RiskFlagOut"][];
+            /** Data Source */
+            data_source: string;
+            /** Methodology */
+            methodology: string[];
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+        };
+        /** ScenarioIn */
+        ScenarioIn: {
+            /** Btc Change Pct */
+            btc_change_pct: number | string;
+            /** Overrides */
+            overrides?: components["schemas"]["ScenarioOverride"][];
+            /**
+             * Window
+             * @default 365
+             */
+            window: number;
+        };
+        /** ScenarioLineOut */
+        ScenarioLineOut: {
+            asset: components["schemas"]["AssetRef"];
+            /** Market Value */
+            market_value: string;
+            /** Change Pct */
+            change_pct: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "override" | "stablecoin" | "beta" | "assumed_beta_1";
+            /** New Value */
+            new_value: string;
+            /** Pnl */
+            pnl: string;
+        };
+        /** ScenarioOut */
+        ScenarioOut: {
+            /**
+             * Currency
+             * @enum {string}
+             */
+            currency: "BRL" | "USD";
+            /** Btc Change Pct */
+            btc_change_pct: string;
+            /** Market Value */
+            market_value: string;
+            /** New Value */
+            new_value: string;
+            /** Pnl */
+            pnl: string;
+            /** Pnl Pct */
+            pnl_pct: string | null;
+            /** Lines */
+            lines: components["schemas"]["ScenarioLineOut"][];
+            /** Notes */
+            notes: string[];
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+        };
+        /** ScenarioOverride */
+        ScenarioOverride: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /** Change Pct */
+            change_pct: number | string;
+        };
         /** SeriesPoint */
         SeriesPoint: {
             /**
@@ -1940,6 +2178,25 @@ export interface components {
             buy_threshold: string;
             /** Sell Threshold */
             sell_threshold: string;
+        };
+        /** StressWindowOut */
+        StressWindowOut: {
+            /** Days */
+            days: number;
+            /** Pct */
+            pct: string;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Amount */
+            amount: string;
         };
         /** SummaryOut */
         SummaryOut: {
@@ -2170,6 +2427,15 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VarOut */
+        VarOut: {
+            /** Confidence Pct */
+            confidence_pct: string;
+            /** Pct */
+            pct: string | null;
+            /** Amount */
+            amount: string | null;
         };
         /** WatchlistIn */
         WatchlistIn: {
@@ -3936,6 +4202,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CsvCommitOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    portfolio_risk_api_v1_portfolios__portfolio_id__risk_get: {
+        parameters: {
+            query?: {
+                window?: number;
+                currency?: ("BRL" | "USD") | null;
+            };
+            header?: never;
+            path: {
+                portfolio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    risk_scenario_api_v1_portfolios__portfolio_id__risk_scenario_post: {
+        parameters: {
+            query?: {
+                currency?: ("BRL" | "USD") | null;
+            };
+            header?: never;
+            path: {
+                portfolio_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScenarioIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioOut"];
                 };
             };
             /** @description Validation Error */
