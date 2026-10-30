@@ -21,6 +21,8 @@ from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import CandleProvider, ProviderError
 from app.modules.portfolio import service as portfolio
 from app.modules.portfolio.engine import Ledger
+from app.modules.risk import service as risk
+from app.modules.risk.schemas import ScenarioIn, ScenarioOverride
 from app.modules.signals import service as signals
 from app.modules.technical_analysis import service as analysis
 
@@ -76,6 +78,22 @@ class SignalListArgs(_Args):
     timeframe: Literal["1d", "4h"] = "1d"
     classification: Literal["buy_potential", "neutral", "attention", "sell_potential"] | None = None
     limit: int = Field(default=10, ge=1, le=30)
+
+
+class RiskArgs(CurrencyArgs):
+    window: int = Field(default=365, ge=30, le=365, description="Dias de histórico")
+
+
+class ScenarioShock(_Args):
+    asset: str = Field(description="Símbolo ou identificador do ativo")
+    change_pct: Decimal = Field(ge=-100, le=1000)
+
+
+class ScenarioArgs(CurrencyArgs):
+    btc_change_pct: Decimal = Field(ge=-100, le=1000, description="Variação do Bitcoin, em %")
+    overrides: list[ScenarioShock] = Field(
+        default_factory=list, max_length=20, description="Variações específicas por ativo"
+    )
 
 
 class SearchArgs(_Args):
@@ -399,6 +417,30 @@ async def search_asset(ctx: ToolContext, args: SearchArgs) -> ToolOutput:
 # --------------------------------------------------------------------------- registry
 
 
+async def portfolio_risk(ctx: ToolContext, args: RiskArgs) -> ToolOutput:
+    pf = (await portfolio.list_portfolios(ctx.db, ctx.user_id))[0]
+    out = await risk.portfolio_risk(
+        ctx.db, pf, args.currency or ctx.currency, args.window, ctx.candles
+    )
+    data = out.model_dump(mode="json", exclude={"methodology"})
+    return ToolOutput(
+        data,
+        f"Risco da carteira · {args.window} dias até {out.period_end or 'sem dados'} · "
+        f"{_stamp(out.as_of)}",
+    )
+
+
+async def simulate_scenario(ctx: ToolContext, args: ScenarioArgs) -> ToolOutput:
+    pf = (await portfolio.list_portfolios(ctx.db, ctx.user_id))[0]
+    overrides = [
+        ScenarioOverride(asset_id=(await _resolve(ctx, o.asset)).id, change_pct=o.change_pct)
+        for o in args.overrides
+    ]
+    body = ScenarioIn(btc_change_pct=args.btc_change_pct, overrides=overrides)
+    out = await risk.scenario(ctx.db, pf, args.currency or ctx.currency, body, ctx.candles)
+    return ToolOutput(out.model_dump(mode="json"), f"Simulação de cenário · {_stamp(out.as_of)}")
+
+
 @dataclass(frozen=True, slots=True)
 class Tool:
     spec: ToolSpec
@@ -454,6 +496,15 @@ _DESCRIPTIONS = {
         "Panorama do mercado: capitalização e volume agregados, dominância do Bitcoin, "
         "altas e baixas e maiores variações em 24h."
     ),
+    "get_portfolio_risk": (
+        "Risco da carteira atual sobre o histórico diário: volatilidade, drawdown, VaR "
+        "histórico 95/99% e expected shortfall, beta ao BTC, piores janelas de 1/7/30 dias, "
+        "concentração, correlação, liquidez e contribuição de cada ativo ao risco."
+    ),
+    "simulate_scenario": (
+        "Simulação mecânica: aplica uma variação do Bitcoin às posições atuais pelo beta de "
+        "cada ativo (stablecoins estáveis), com ajustes opcionais por ativo. Não é previsão."
+    ),
     "search_asset": (
         "Busca ativos no catálogo por nome ou símbolo, para resolver a qual ativo o usuário "
         "se refere."
@@ -481,6 +532,8 @@ TOOLS: list[Tool] = [
     _tool("get_asset_signal", AnalysisArgs, asset_signal, "Consultando o sinal"),
     _tool("list_signals", SignalListArgs, list_signals, "Listando oportunidades"),
     _tool("get_market_overview", NoArgs, market_overview, "Consultando o panorama do mercado"),
+    _tool("get_portfolio_risk", RiskArgs, portfolio_risk, "Calculando o risco da carteira"),
+    _tool("simulate_scenario", ScenarioArgs, simulate_scenario, "Simulando o cenário"),
     _tool("search_asset", SearchArgs, search_asset, "Buscando o ativo"),
 ]
 TOOLS_BY_NAME = {t.spec.name: t for t in TOOLS}
