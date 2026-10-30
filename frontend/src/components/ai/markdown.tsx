@@ -13,7 +13,7 @@ const components: Components = {
   li: ({ children }) => <li className="leading-relaxed">{children}</li>,
   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
   a: ({ children, href }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-primary underline underline-offset-2">
+    <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="text-primary-ink underline underline-offset-2">
       {children}
     </a>
   ),

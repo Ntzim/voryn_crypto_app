@@ -69,7 +69,8 @@ test("register transactions and see positions, results and dashboard", async ({ 
   await page.goto("/dashboard");
   await expect(page.getByText("Evolução da carteira")).toBeVisible();
   await expect(page.getByText("Distribuição")).toBeVisible();
-  await expect(page.getByText("Insights da carteira")).toBeVisible();
+  // Insights are part of "Precisa da sua atenção" since the dashboard redesign.
+  await expect(page.getByRole("heading", { name: "Precisa da sua atenção" })).toBeVisible();
   await expect(page.getByText(/Bitcoin representa/)).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("dashboard-carteira.png"), fullPage: true });
 });

@@ -408,7 +408,7 @@ function Welcome({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center py-8 text-center">
       <span className="mb-4 inline-flex size-12 items-center justify-center rounded-2xl border border-primary/30 bg-primary/10">
-        <Sparkles className="size-5 text-primary" aria-hidden />
+        <Sparkles className="size-5 text-primary-ink" aria-hidden />
       </span>
       <h2 className="font-heading text-lg font-semibold text-foreground">Como posso ajudar?</h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
@@ -458,7 +458,7 @@ function AssistantBubble({
   return (
     <div className="flex gap-3">
       <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-        <Sparkles className="size-3.5 text-primary" aria-hidden />
+        <Sparkles className="size-3.5 text-primary-ink" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">
         {streaming && !text && (

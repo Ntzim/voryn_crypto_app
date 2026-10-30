@@ -17,6 +17,7 @@ import { TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Locale, Performance, SeriesPoint } from "@/lib/api/types";
 import { formatMoney } from "@/lib/format";
@@ -37,38 +38,6 @@ const COLORS = {
 
 function toTime(day: string): UTCTimestamp {
   return (Date.parse(`${day}T00:00:00Z`) / 1000) as UTCTimestamp;
-}
-
-function Segmented<T extends string>({
-  value,
-  onChange,
-  options,
-  label,
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: [T, string][];
-  label: string;
-}) {
-  return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg border border-border bg-surface p-0.5">
-      {options.map(([key, text]) => (
-        <button
-          key={key}
-          type="button"
-          role="radio"
-          aria-checked={value === key}
-          onClick={() => onChange(key)}
-          className={cn(
-            "h-7 rounded-md px-2.5 text-xs font-medium transition-colors",
-            value === key ? "bg-card text-foreground ring-1 ring-border-strong" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {text}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 /** Portfolio evolution (value vs. net invested, with flow markers) or TWR vs. BTC/ETH. */
@@ -92,7 +61,8 @@ export function EquityChart({ performance, locale }: { performance: Performance 
       autoSize: true,
       layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: COLORS.text, fontFamily: "var(--font-inter)", attributionLogo: false },
       grid: { vertLines: { visible: false }, horzLines: { color: COLORS.grid } },
-      rightPriceScale: { borderVisible: false },
+      // Headroom keeps the top axis label inside the canvas.
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.08 } },
       timeScale: { borderVisible: false, fixLeftEdge: true, fixRightEdge: true },
       crosshair: { horzLine: { labelBackgroundColor: "#151D28" }, vertLine: { labelBackgroundColor: "#151D28" } },
       localization: {
@@ -133,7 +103,8 @@ export function EquityChart({ performance, locale }: { performance: Performance 
             position: inflow ? "belowBar" : "aboveBar",
             shape: inflow ? "arrowUp" : "arrowDown",
             color: inflow ? COLORS.inflow : COLORS.outflow,
-            text: inflow ? "Aporte" : "Retirada",
+            // On narrow charts the words overlap the line; the arrows alone still mark the flows.
+            text: el.clientWidth >= 480 ? (inflow ? "Aporte" : "Retirada") : "",
           };
         });
       createSeriesMarkers(area, markers);
@@ -170,8 +141,26 @@ export function EquityChart({ performance, locale }: { performance: Performance 
       <CardHeader className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle className="font-heading text-sm font-medium">Evolução da carteira</CardTitle>
         <CardAction className="flex flex-wrap gap-2">
-          <Segmented label="Visualização" value={mode} onChange={setMode} options={[["value", "Patrimônio"], ["return", "Rentabilidade"]]} />
-          <Segmented label="Período" value={range} onChange={setRange} options={[["30", "30D"], ["90", "90D"], ["365", "1A"], ["all", "Tudo"]]} />
+          <Segmented
+            label="Visualização"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "value", label: "Patrimônio", short: "Valor" },
+              { value: "return", label: "Rentabilidade", short: "Retorno" },
+            ]}
+          />
+          <Segmented
+            label="Período"
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: "30", label: "30D" },
+              { value: "90", label: "90D" },
+              { value: "365", label: "1A" },
+              { value: "all", label: "Tudo" },
+            ]}
+          />
         </CardAction>
       </CardHeader>
       <CardContent>

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/common/page-skeleton";
 import { AnalysisView } from "@/components/analysis/analysis-view";
 
 async function Content({ params }: { params: PageProps<"/analise/[slug]">["params"] }) {
@@ -9,7 +10,7 @@ async function Content({ params }: { params: PageProps<"/analise/[slug]">["param
 
 export default function AnalysisPage({ params }: PageProps<"/analise/[slug]">) {
   return (
-    <Suspense>
+    <Suspense fallback={<PageSkeleton variant="detail" label="a análise" />}>
       <Content params={params} />
     </Suspense>
   );

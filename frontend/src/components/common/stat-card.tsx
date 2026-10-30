@@ -1,10 +1,9 @@
 import { cn } from "cn";
 import type { ReactNode } from "react";
 
+import { Hint } from "@/components/common/hint";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
 
 export function StatCard({
   label,
@@ -25,14 +24,7 @@ export function StatCard({
     <Card className={cn("gap-0 px-5 py-4", className)}>
       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {label}
-        {hint && (
-          <Tooltip>
-            <TooltipTrigger aria-label={`Sobre: ${label}`} className="text-subtle-foreground hover:text-foreground">
-              <Info className="size-3.5" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-64">{hint}</TooltipContent>
-          </Tooltip>
-        )}
+        {hint && <Hint label={label} content={hint} />}
       </div>
       {loading ? (
         <Skeleton className="mt-2.5 h-7 w-32" />

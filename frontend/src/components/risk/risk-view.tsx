@@ -1,5 +1,6 @@
 "use client";
 
+import { Hint } from "@/components/common/hint";
 import { cn } from "cn";
 import { FlaskConical, ShieldHalf } from "lucide-react";
 import Link from "next/link";
@@ -15,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Segmented } from "@/components/ui/segmented";
 import { ApiError } from "@/lib/api/client";
 import type { AssetRisk, Currency, Locale, Risk, Scenario, ScenarioMethod } from "@/lib/api/types";
 import { formatDateTime, formatMoney, formatNumber, formatPercent, parseDecimalInput, trendOf } from "@/lib/format";
@@ -73,23 +74,12 @@ export function RiskView() {
       title="Risco"
       description="Como a sua carteira de hoje teria se comportado no histórico recente: oscilação, perdas extremas, concentração e liquidez."
       actions={
-        <div role="radiogroup" aria-label="Período" className="inline-flex rounded-lg border border-border bg-surface p-0.5">
-          {RISK_WINDOWS.map((w) => (
-            <button
-              key={w}
-              type="button"
-              role="radio"
-              aria-checked={window === w}
-              onClick={() => setWindow(w)}
-              className={cn(
-                "h-8 rounded-md px-3 text-xs font-medium",
-                window === w ? "bg-card text-foreground ring-1 ring-border-strong" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {w === 365 ? "1 ano" : `${w} dias`}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Período"
+          value={String(window)}
+          onChange={(w) => setWindow(Number(w) as typeof window)}
+          options={RISK_WINDOWS.map((w) => ({ value: String(w), label: w === 365 ? "1 ano" : `${w} dias` }))}
+        />
       }
     />
   );
@@ -177,7 +167,7 @@ export function RiskView() {
         />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-4 *:min-w-0 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <InsightsPanel
             title="Pontos de atenção"
@@ -191,7 +181,7 @@ export function RiskView() {
 
       <AssetTable data={data} currency={currency} locale={locale} />
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+      <div className="mt-4 grid gap-4 *:min-w-0 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <ScenarioCard portfolioId={portfolio.data?.id} window={window} assets={data?.assets} currency={currency} locale={locale} />
         </div>
@@ -273,10 +263,10 @@ function AssetTable({ data, currency, locale }: { data: Risk | undefined; curren
                 <th className="px-3 py-2.5 text-right font-medium">Beta BTC</th>
                 <th className="px-3 py-2.5 text-right font-medium">VaR 95%</th>
                 <th className="px-3 py-2.5 text-right font-medium">
-                  <Hint label="Contribuição" text="Parcela da volatilidade da carteira que vem deste ativo (soma 100%)." />
+                  <TermHint label="Contribuição" text="Parcela da volatilidade da carteira que vem deste ativo (soma 100%)." />
                 </th>
                 <th className="px-5 py-2.5 text-right font-medium">
-                  <Hint label="Liquidez" text="Valor da posição ÷ volume médio diário de 30 dias no par USDT da Binance." />
+                  <TermHint label="Liquidez" text="Valor da posição ÷ volume médio diário de 30 dias no par USDT da Binance." />
                 </th>
               </tr>
             </thead>
@@ -335,12 +325,11 @@ function AssetRow({
   );
 }
 
-function Hint({ label, text }: { label: string; text: string }) {
+function TermHint({ label, text }: { label: string; text: string }) {
   return (
-    <Tooltip>
-      <TooltipTrigger className="underline decoration-dotted underline-offset-2">{label}</TooltipTrigger>
-      <TooltipContent className="max-w-64">{text}</TooltipContent>
-    </Tooltip>
+    <Hint content={<>{text}</>}>
+      {label}
+    </Hint>
   );
 }
 
@@ -452,7 +441,7 @@ function ScenarioCard({
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-heading text-sm font-medium">
-          <FlaskConical className="size-4 text-primary" aria-hidden /> Simulador de cenários
+          <FlaskConical className="size-4 text-primary-ink" aria-hidden /> Simulador de cenários
         </CardTitle>
       </CardHeader>
       <CardContent>

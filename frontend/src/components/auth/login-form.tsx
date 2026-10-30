@@ -67,7 +67,7 @@ export function LoginForm() {
             <MailCheck className="text-warning" />
             <AlertDescription className="text-foreground">
               Confirme seu e-mail para entrar.{" "}
-              <button type="button" onClick={() => resend.mutate()} disabled={resend.isPending} className="font-medium text-primary hover:underline">
+              <button type="button" onClick={() => resend.mutate()} disabled={resend.isPending} className="font-medium text-primary-ink hover:underline">
                 Reenviar link
               </button>
             </AlertDescription>

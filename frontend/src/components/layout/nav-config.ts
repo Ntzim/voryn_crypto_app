@@ -20,6 +20,8 @@ export type NavItem = {
   available: boolean;
   /** Shown in the mobile bottom bar (max 4; the 5th slot is "Mais"). */
   mobilePrimary?: boolean;
+  /** Bottom-bar label: one fifth of a 320px screen fits about 10 characters. */
+  short?: string;
 };
 
 export type NavSection = { label: string; items: NavItem[] };
@@ -28,8 +30,8 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Visão geral",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, available: true, mobilePrimary: true },
-      { href: "/carteira", label: "Minha Carteira", icon: Wallet, available: true, mobilePrimary: true },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, available: true, mobilePrimary: true, short: "Início" },
+      { href: "/carteira", label: "Minha Carteira", icon: Wallet, available: true, mobilePrimary: true, short: "Carteira" },
     ],
   },
   {
@@ -37,7 +39,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/mercado", label: "Mercado", icon: ChartLine, available: true, mobilePrimary: true },
       { href: "/analise", label: "Análise de Ativos", icon: ChartCandlestick, available: true },
-      { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: true, mobilePrimary: true },
+      { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: true, mobilePrimary: true, short: "Sinais" },
     ],
   },
   {

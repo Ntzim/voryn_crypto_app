@@ -15,10 +15,18 @@ const PRIMARY = NAV_ITEMS.filter((item) => item.mobilePrimary);
 
 /** Bottom tab bar for phones: thumb-reachable access to the most used areas. */
 export function MobileNav() {
-  const pathname = usePathname();
+  return <MobileNavBar pathname={usePathname()} />;
+}
+
+/**
+ * The bar itself. Reading the URL suspends, so the app shell renders this with
+ * `pathname={null}` as the Suspense fallback: the bar is in the first HTML instead of
+ * appearing only once the JavaScript has loaded.
+ */
+export function MobileNavBar({ pathname }: { pathname: string | null }) {
   const [open, setOpen] = useState(false);
   const logout = useLogout();
-  const moreActive = !PRIMARY.some((item) => isActive(pathname, item.href));
+  const moreActive = pathname !== null && !PRIMARY.some((item) => isActive(pathname, item.href));
 
   return (
     <nav
@@ -27,20 +35,23 @@ export function MobileNav() {
     >
       <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
         {PRIMARY.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active = pathname !== null && isActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                aria-label={item.label}
                 className={cn(
-                  "flex h-full flex-col items-center justify-center gap-1 text-[11px] transition-colors",
+                  "group flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
                   active ? "text-foreground" : "text-muted-foreground",
                 )}
               >
-                <Icon className={cn("size-5", active && "text-primary")} />
-                <span className="max-w-full truncate px-1">{item.label.replace("Minha ", "")}</span>
+                <TabIcon active={active}>
+                  <Icon className={cn("size-5", active && "text-primary-ink")} aria-hidden />
+                </TabIcon>
+                <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
               </Link>
             </li>
           );
@@ -49,11 +60,13 @@ export function MobileNav() {
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
               className={cn(
-                "flex h-full w-full flex-col items-center justify-center gap-1 text-[11px]",
+                "group flex h-full w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
                 moreActive ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              <Ellipsis className={cn("size-5", moreActive && "text-primary")} />
+              <TabIcon active={moreActive}>
+                <Ellipsis className={cn("size-5", moreActive && "text-primary-ink")} aria-hidden />
+              </TabIcon>
               Mais
             </SheetTrigger>
             <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl pb-safe">
@@ -70,7 +83,7 @@ export function MobileNav() {
                     <ul>
                       {section.items.map((item) => {
                         const Icon = item.icon;
-                        const active = isActive(pathname, item.href);
+                        const active = pathname !== null && isActive(pathname, item.href);
                         return (
                           <li key={item.href}>
                             <Link
@@ -81,7 +94,7 @@ export function MobileNav() {
                                 active ? "bg-accent text-foreground" : "text-sidebar-foreground",
                               )}
                             >
-                              <Icon className={cn("size-[18px]", active ? "text-primary" : "text-muted-foreground")} />
+                              <Icon className={cn("size-[18px]", active ? "text-primary-ink" : "text-muted-foreground")} />
                               <span className="flex-1">{item.label}</span>
                               {!item.available && (
                                 <span className="rounded-md border border-border px-1.5 py-px text-[10px] text-subtle-foreground">
@@ -109,5 +122,19 @@ export function MobileNav() {
         </li>
       </ul>
     </nav>
+  );
+}
+
+/** Pill behind the icon marks the current tab beyond color; it also gives tap feedback. */
+function TabIcon({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150 group-active:bg-accent",
+        active && "bg-primary/15",
+      )}
+    >
+      {children}
+    </span>
   );
 }

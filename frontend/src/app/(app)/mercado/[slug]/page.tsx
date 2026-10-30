@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { PageSkeleton } from "@/components/common/page-skeleton";
 import { AssetView } from "@/components/market/asset-view";
 
 async function AssetPageContent({ params }: { params: PageProps<"/mercado/[slug]">["params"] }) {
@@ -9,7 +10,7 @@ async function AssetPageContent({ params }: { params: PageProps<"/mercado/[slug]
 
 export default function AssetPage({ params }: PageProps<"/mercado/[slug]">) {
   return (
-    <Suspense>
+    <Suspense fallback={<PageSkeleton variant="detail" label="o ativo" />}>
       <AssetPageContent params={params} />
     </Suspense>
   );

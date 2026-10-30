@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Segmented } from "@/components/ui/segmented";
 import { ApiError } from "@/lib/api/client";
 import type { AssetBrief, BacktestInput, BacktestStrategy, BacktestSummary, Locale } from "@/lib/api/types";
 import { useBacktest, useBacktestMutations, useBacktests, useBacktestStrategies } from "@/lib/backtest-queries";
@@ -29,7 +30,7 @@ type Timeframe = NonNullable<BacktestInput["timeframe"]>;
 
 export const STATUS = {
   queued: { label: "Na fila", className: "text-muted-foreground" },
-  running: { label: "Processando", className: "text-primary" },
+  running: { label: "Processando", className: "text-primary-ink" },
   done: { label: "Concluído", className: "text-success" },
   failed: { label: "Falhou", className: "text-destructive" },
 } as const;
@@ -197,20 +198,15 @@ function BacktestForm({
           </div>
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium">Intervalo</span>
-            <div role="radiogroup" aria-label="Intervalo" className="inline-flex w-fit rounded-lg border border-border bg-surface p-0.5">
-              {(["1d", "4h"] as const).map((tf) => (
-                <button
-                  key={tf}
-                  type="button"
-                  role="radio"
-                  aria-checked={timeframe === tf}
-                  onClick={() => setTimeframe(tf)}
-                  className={cn("h-8 rounded-md px-3 text-xs font-medium", timeframe === tf ? "bg-card text-foreground ring-1 ring-border-strong" : "text-muted-foreground hover:text-foreground")}
-                >
-                  {tf === "1d" ? "Diário" : "4 horas"}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              label="Intervalo"
+              value={timeframe}
+              onChange={setTimeframe}
+              options={[
+                { value: "1d", label: "Diário" },
+                { value: "4h", label: "4 horas" },
+              ]}
+            />
           </div>
 
           {strategy && strategy.params.length > 0 && (
