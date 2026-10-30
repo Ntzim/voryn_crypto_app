@@ -138,6 +138,26 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Horizontal chip rows on phones: one swipeable line instead of wrapping into several.
+   A plain class (not @utility): Tailwind drops utilities with nested selectors. */
+@layer components {
+  .scroll-row {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
+  .scroll-row > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
