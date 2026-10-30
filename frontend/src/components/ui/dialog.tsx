@@ -61,11 +61,17 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // Phones: a bottom sheet (anchored to the bottom edge, within thumb reach, slides up).
+          // Larger screens: a centered dialog.
+          "fixed inset-x-0 bottom-0 z-50 grid max-h-[92dvh] w-full gap-4 overflow-y-auto rounded-t-[1.75rem] bg-popover p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] text-sm text-popover-foreground ring-1 ring-white/8 outline-none",
+          "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          "max-sm:duration-300 max-sm:ease-(--ease-out-soft) max-sm:data-open:slide-in-from-bottom max-sm:data-closed:slide-out-to-bottom",
+          "sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-[85dvh] sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:pb-5 sm:duration-150 sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
           className
         )}
         {...props}
       >
+        <div aria-hidden className="mx-auto -mt-2 -mb-1 h-1 w-9 rounded-full bg-white/20 sm:hidden" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
