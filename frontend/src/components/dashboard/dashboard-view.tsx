@@ -25,7 +25,7 @@ import { AttentionPanel } from "./attention-panel";
 const chartSkeleton = (height: string) =>
   function ChartSkeleton() {
     return (
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="rounded-2xl bg-card ring-1 ring-white/6 p-5">
         <Skeleton className={`${height} w-full`} />
       </div>
     );
@@ -70,7 +70,7 @@ export function DashboardView() {
       {summary.isPending ? (
         <SummaryCards summary={undefined} performance={undefined} locale={locale} loading />
       ) : hasPortfolio ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <SummaryCards summary={summary.data} performance={performance.data} locale={locale} loading={!summary.data} />
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
@@ -79,19 +79,19 @@ export function DashboardView() {
             <div className="order-last lg:order-none">
               <AllocationChart summary={summary.data} locale={locale} />
             </div>
+            <section aria-labelledby="positions-title" className="overflow-hidden rounded-2xl bg-card ring-1 ring-white/6 lg:col-span-2">
+              <SectionHeader id="positions-title" title="Principais posições" href="/carteira" linkLabel="Ver carteira" />
+              <PositionsTable positions={summary.data?.positions.slice(0, 6)} currency={currency} locale={locale} compact />
+            </section>
             <AttentionPanel
               positions={summary.data?.positions}
               insights={insights.data?.items}
               insightsLoading={insights.isPending}
             />
-            <section aria-labelledby="positions-title" className="overflow-hidden rounded-2xl border border-border bg-card lg:col-span-2">
-              <SectionHeader id="positions-title" title="Principais posições" href="/carteira" linkLabel="Ver carteira" />
-              <PositionsTable positions={summary.data?.positions.slice(0, 6)} currency={currency} locale={locale} compact />
-            </section>
           </div>
         </div>
       ) : (
-        <section className="rounded-2xl border border-border bg-card">
+        <section className="rounded-2xl bg-card ring-1 ring-white/6">
           <EmptyState
             icon={Wallet}
             title="Comece pela sua carteira"
@@ -156,7 +156,7 @@ function MarketToday() {
       </div>
 
       {overview.isError ? (
-        <div className="rounded-2xl border border-border bg-card">
+        <div className="rounded-2xl bg-card ring-1 ring-white/6">
           <ErrorState error={overview.error} onRetry={() => overview.refetch()} />
         </div>
       ) : (
@@ -191,7 +191,7 @@ function MarketToday() {
             </Figure>
           </dl>
 
-          <div className="min-w-0 rounded-2xl border border-border bg-card p-4 lg:col-span-2">
+          <div className="min-w-0 rounded-2xl bg-card ring-1 ring-white/6 p-4 lg:col-span-2">
             <Tabs defaultValue="gainers">
               <TabsList className="w-full sm:w-fit">
                 <TabsTrigger value="gainers">Altas 24h</TabsTrigger>

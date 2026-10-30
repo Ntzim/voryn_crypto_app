@@ -62,7 +62,7 @@ export function PositionsTable({
       <ul className="divide-y divide-border md:hidden">
         {positions.map((p) => (
           <li key={p.asset.id}>
-            <Link href={`/mercado/${p.asset.slug}`} className="flex items-center gap-3 px-4 py-3">
+            <Link href={`/mercado/${p.asset.slug}`} className="pressable flex items-center gap-3 px-5 py-3.5 active:bg-white/4">
               <AssetIcon src={p.asset.image_url} symbol={p.asset.symbol} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">{p.asset.name}</p>
