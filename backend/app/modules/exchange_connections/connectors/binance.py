@@ -5,10 +5,12 @@ and withdrawals. Convert, Earn, P2P, Pay and futures are not read; reconciliatio
 the difference they leave in the balances.
 """
 
+import asyncio
+import functools
 import hashlib
 import hmac
 import time
-from collections.abc import Sequence
+from collections.abc import Callable, Coroutine, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -36,7 +38,27 @@ OVERLAP = timedelta(days=3)
 PAGE = 1000
 DEPOSIT_SUCCESS = 1
 WITHDRAWAL_COMPLETED = 6
+#: transient failures are retried this many times, waiting BACKOFF_SECONDS × 2^n
+RETRIES = 2
+BACKOFF_SECONDS = 1.0
 _AUTH_CODES = {-2014, -2015, -1022, -2008}
+
+
+def _validated[**P, R](
+    method: Callable[P, Coroutine[Any, Any, R]],
+) -> Callable[P, Coroutine[Any, Any, R]]:
+    """A payload of an unexpected shape (missing field, wrong type, non-numeric amount,
+    body that is not JSON) becomes a ConnectorError with a generic message: the sync of
+    this connection fails cleanly, without the raw response, and no partial data is kept."""
+
+    @functools.wraps(method)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        try:
+            return await method(*args, **kwargs)
+        except (KeyError, IndexError, TypeError, ValueError, ArithmeticError, AttributeError):
+            raise ConnectorError("A Binance respondeu em um formato inesperado.") from None
+
+    return wrapper
 
 
 def _ms(dt: datetime) -> int:
@@ -58,6 +80,7 @@ class BinanceConnector:
         base_url: str | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
         now: Any = None,
+        backoff_seconds: float = BACKOFF_SECONDS,
     ) -> None:
         self._key, self._secret = api_key, api_secret.encode()
         self._client = httpx.AsyncClient(
@@ -68,18 +91,33 @@ class BinanceConnector:
         )
         self._offset_ms = 0
         self._now = now or (lambda: datetime.now(UTC))
+        self._backoff = backoff_seconds
 
     async def aclose(self) -> None:
         await self._client.aclose()
 
     # ------------------------------------------------------------------ transport
 
+    async def _send(
+        self, url: str, params: dict[str, Any] | None = None, headers: dict[str, str] | None = None
+    ) -> httpx.Response:
+        """GET with retries for transient failures (network errors, 5xx), backing off
+        exponentially. 418/429 are not retried: Binance bans clients that keep calling."""
+        for attempt in range(RETRIES + 1):
+            last = attempt == RETRIES
+            try:
+                response = await self._client.get(url, params=params, headers=headers)
+            except httpx.HTTPError as exc:
+                if last:
+                    raise ConnectorError("Não foi possível conectar à Binance.") from exc
+            else:
+                if response.status_code < 500 or last:
+                    return response
+            await asyncio.sleep(self._backoff * 2**attempt)
+        raise AssertionError("unreachable")
+
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        try:
-            response = await self._client.get(path, params=params)
-        except httpx.HTTPError as exc:
-            raise ConnectorError("Não foi possível conectar à Binance.") from exc
-        return self._parse(response)
+        return self._parse(await self._send(path, params))
 
     async def _signed(self, path: str, params: dict[str, Any] | None = None) -> Any:
         for attempt in range(2):
@@ -91,12 +129,10 @@ class BinanceConnector:
                 }
             )
             signature = hmac.new(self._secret, query.encode(), hashlib.sha256).hexdigest()
-            try:
-                response = await self._client.get(
-                    f"{path}?{query}&signature={signature}", headers={"X-MBX-APIKEY": self._key}
-                )
-            except httpx.HTTPError as exc:
-                raise ConnectorError("Não foi possível conectar à Binance.") from exc
+            # Retries reuse the signature: they finish well inside recvWindow (10 s).
+            response = await self._send(
+                f"{path}?{query}&signature={signature}", headers={"X-MBX-APIKEY": self._key}
+            )
             if attempt == 0 and _code(response) == -1021:  # clock drift: resync and retry once
                 server = await self._get("/api/v3/time")
                 self._offset_ms = int(server["serverTime"]) - int(time.time() * 1000)
@@ -118,6 +154,7 @@ class BinanceConnector:
 
     # ------------------------------------------------------------------ contract
 
+    @_validated
     async def permissions(self) -> Permissions:
         data = await self._signed("/sapi/v1/account/apiRestrictions")
         flags = {k: v for k, v in data.items() if isinstance(v, bool)}
@@ -125,6 +162,7 @@ class BinanceConnector:
         writes = sorted(k for k, v in flags.items() if v and k not in READ_FLAGS)
         return Permissions(can_read=bool(flags.get("enableReading")), write_permissions=writes)
 
+    @_validated
     async def balances(self) -> dict[str, Decimal]:
         data = await self._signed("/api/v3/account", {"omitZeroBalances": "true"})
         out: dict[str, Decimal] = {}
@@ -134,6 +172,7 @@ class BinanceConnector:
                 out[b["asset"].upper()] = total
         return out
 
+    @_validated
     async def history(self, cursor: dict[str, Any], assets: Sequence[str]) -> SyncBatch:
         batch = SyncBatch(cursor={**cursor})
         # Transfers first: a coin deposited and later sold out still gets its markets read.
