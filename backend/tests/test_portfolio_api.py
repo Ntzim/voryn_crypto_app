@@ -261,7 +261,7 @@ async def test_portfolios_are_isolated(
     outbox: Outbox,
 ) -> None:
     client, pid = user
-    await add(
+    created = await add(
         client,
         pid,
         type="buy",
@@ -270,10 +270,11 @@ async def test_portfolios_are_isolated(
         unit_price="1",
         executed_at=at(D3),
     )
+    tx_id = created.json()["id"]
     other = await client_factory()
     await register_verified(other, outbox, email="eve@example.com", name="Eve")
     await login(other, email="eve@example.com")
-    for path in ("summary", "transactions", "performance"):
+    for path in ("summary", "transactions", "performance", "insights", "risk"):
         assert (await other.get(f"{API}/portfolios/{pid}/{path}")).status_code == 404
     body = {
         "type": "buy",
@@ -284,6 +285,24 @@ async def test_portfolios_are_isolated(
         "executed_at": at(D3),
     }
     assert (await other.post(f"{API}/portfolios/{pid}/transactions", json=body)).status_code == 404
+    tx_url = f"{API}/portfolios/{pid}/transactions/{tx_id}"
+    assert (await other.put(tx_url, json=body)).status_code == 404
+    assert (await other.delete(tx_url)).status_code == 404
+    csv_body = {"content": "data;tipo;ativo;quantidade\n2026-01-01 10:00;compra;BTC;1\n"}
+    for step in ("preview", "commit"):
+        url = f"{API}/portfolios/{pid}/imports/{step}"
+        assert (await other.post(url, json=csv_body)).status_code == 404
+    scenario = {"btc_change_pct": "-50"}
+    assert (
+        await other.post(f"{API}/portfolios/{pid}/risk/scenario", json=scenario)
+    ).status_code == 404
+
+    # A transaction id from another user's portfolio is not reachable through one's own.
+    own_pid = (await other.get(f"{API}/portfolios")).json()[0]["id"]
+    foreign = f"{API}/portfolios/{own_pid}/transactions/{tx_id}"
+    assert (await other.put(foreign, json=body)).status_code == 404
+    assert (await other.delete(foreign)).status_code == 404
+    assert (await client.get(f"{API}/portfolios/{pid}/transactions")).json()["total"] == 1
 
 
 async def test_performance_twr_and_benchmarks(

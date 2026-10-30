@@ -429,7 +429,10 @@ async def test_sync_imports_dedupes_reviews_and_reconciles(
     await register_verified(other, outbox, email="outra@example.com")
     await login(other, email="outra@example.com")
     assert (await other.get(f"{API}/exchange-connections/{conn['id']}")).status_code == 404
+    assert (await other.get(f"{API}/exchange-connections/{conn['id']}/records")).status_code == 404
+    assert (await other.post(f"{API}/exchange-connections/{conn['id']}/sync")).status_code == 404
     assert (await other.delete(f"{API}/exchange-connections/{conn['id']}")).status_code == 404
+    assert (await other.get(f"{API}/exchange-connections")).json() == []
 
     assert (await client.delete(f"{API}/exchange-connections/{conn['id']}")).status_code == 204
     assert await db.scalar(select(func.count()).select_from(ExchangeRecord)) == 0

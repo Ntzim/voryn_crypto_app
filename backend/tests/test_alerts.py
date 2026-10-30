@@ -131,11 +131,17 @@ async def test_alert_validation_and_isolation(
     await register_verified(eve, outbox, email="eve@example.com", name="Eve")
     await login(eve, email="eve@example.com")
     assert (await eve.get(f"{API}/alerts")).json() == []
+    valid = {"type": "rsi_below", "asset_id": setup["bitcoin"], "params": {"level": "20"}}
+    assert (await eve.put(f"{API}/alerts/{alert['id']}", json=valid)).status_code == 404
     assert (await eve.delete(f"{API}/alerts/{alert['id']}")).status_code == 404
 
 
 async def test_price_alert_evaluation_dedupe_cooldown_and_email(
-    client: httpx.AsyncClient, setup: dict[str, str], db: AsyncSession, outbox: Outbox
+    client: httpx.AsyncClient,
+    setup: dict[str, str],
+    db: AsyncSession,
+    outbox: Outbox,
+    client_factory: ClientFactory,
 ) -> None:
     body = {
         "type": "price_above",
@@ -177,6 +183,14 @@ async def test_price_alert_evaluation_dedupe_cooldown_and_email(
     listing = (await client.get(f"{API}/notifications")).json()
     assert listing["unread"] == 1 and listing["items"][0]["data"]["asset_slug"] == "bitcoin"
     nid = listing["items"][0]["id"]
+    # Another user can neither see nor mark it (ids are sequential integers, easy to guess).
+    eve = await client_factory()
+    await register_verified(eve, outbox, email="eve@example.com", name="Eve")
+    await login(eve, email="eve@example.com")
+    assert (await eve.get(f"{API}/notifications")).json()["total"] == 0
+    await eve.post(f"{API}/notifications/{nid}/read")
+    await eve.post(f"{API}/notifications/read-all")
+    assert (await client.get(f"{API}/notifications")).json()["unread"] == 1
     assert (await client.post(f"{API}/notifications/{nid}/read")).status_code == 204
     assert (await client.get(f"{API}/notifications")).json()["unread"] == 0
 
