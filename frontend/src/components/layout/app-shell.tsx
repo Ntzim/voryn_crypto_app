@@ -6,7 +6,7 @@ import { Suspense, type ReactNode } from "react";
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { Logo } from "@/components/brand/logo";
 
-import { MobileNav } from "./mobile-nav";
+import { MobileNav, MobileNavBar } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
 
@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-      <Suspense>
+      <Suspense fallback={<MobileNavBar pathname={null} />}>
         <MobileNav />
       </Suspense>
     </div>

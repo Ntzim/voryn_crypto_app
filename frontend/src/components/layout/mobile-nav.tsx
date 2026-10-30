@@ -15,10 +15,18 @@ const PRIMARY = NAV_ITEMS.filter((item) => item.mobilePrimary);
 
 /** Bottom tab bar for phones: thumb-reachable access to the most used areas. */
 export function MobileNav() {
-  const pathname = usePathname();
+  return <MobileNavBar pathname={usePathname()} />;
+}
+
+/**
+ * The bar itself. Reading the URL suspends, so the app shell renders this with
+ * `pathname={null}` as the Suspense fallback: the bar is in the first HTML instead of
+ * appearing only once the JavaScript has loaded.
+ */
+export function MobileNavBar({ pathname }: { pathname: string | null }) {
   const [open, setOpen] = useState(false);
   const logout = useLogout();
-  const moreActive = !PRIMARY.some((item) => isActive(pathname, item.href));
+  const moreActive = pathname !== null && !PRIMARY.some((item) => isActive(pathname, item.href));
 
   return (
     <nav
@@ -27,7 +35,7 @@ export function MobileNav() {
     >
       <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
         {PRIMARY.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active = pathname !== null && isActive(pathname, item.href);
           const Icon = item.icon;
           return (
             <li key={item.href}>
@@ -75,7 +83,7 @@ export function MobileNav() {
                     <ul>
                       {section.items.map((item) => {
                         const Icon = item.icon;
-                        const active = isActive(pathname, item.href);
+                        const active = pathname !== null && isActive(pathname, item.href);
                         return (
                           <li key={item.href}>
                             <Link
