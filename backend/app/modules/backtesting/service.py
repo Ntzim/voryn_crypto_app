@@ -10,7 +10,8 @@ from typing import Any
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import rate_limit
+from app.core import rate_limit, security_events
+from app.core.authz import owned_or_404
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.core.tasks import enqueue
@@ -195,9 +196,7 @@ async def create_run(db: AsyncSession, user_id: uuid.UUID, body: BacktestIn) -> 
 
 
 async def get_owned(db: AsyncSession, user_id: uuid.UUID, run_id: uuid.UUID) -> BacktestRun:
-    run = await db.get(BacktestRun, run_id)
-    if run is None or run.user_id != user_id:
-        raise NotFoundError("Backtest não encontrado.")
+    run = await owned_or_404(db, BacktestRun, run_id, user_id, "Backtest não encontrado.")
     if run.status in ("queued", "running") and utcnow() - run.created_at > STUCK_AFTER:
         run.status, run.error = "failed", "O processamento excedeu o tempo limite. Tente de novo."
         run.finished_at = utcnow()
@@ -469,6 +468,7 @@ async def execute(db: AsyncSession, run_id: uuid.UUID, provider: CandleProvider)
     except Exception as exc:
         if not isinstance(exc, AppError):
             logger.exception("backtest_failed", run_id=str(run_id))
+            await security_events.emit("processing_failed", job="backtest", run_id=str(run_id))
         await db.rollback()
         failed = await db.get(BacktestRun, run_id)
         if failed is None:

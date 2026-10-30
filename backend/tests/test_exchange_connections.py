@@ -126,6 +126,7 @@ def _client(fake: FakeBinance) -> BinanceConnector:
         base_url="https://binance.test",
         transport=httpx.MockTransport(fake),
         now=lambda: NOW,
+        backoff_seconds=0,
     )
 
 

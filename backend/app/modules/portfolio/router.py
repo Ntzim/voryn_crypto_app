@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.errors import AppError
-from app.modules.auth.deps import CurrentAuth, DbSession, Meta
+from app.modules.auth.deps import CurrentAuth, DbSession, Meta, user_rate_limit
 from app.modules.market_data.providers.base import FxHistoryProvider
 from app.modules.market_data.providers.bcb import BcbPtaxProvider
 from app.modules.portfolio import csv_import, service
@@ -83,14 +83,18 @@ async def summary(
     return await service.summary(db, portfolio, currency)
 
 
-@router.get("/{portfolio_id}/performance")
+@router.get(
+    "/{portfolio_id}/performance", dependencies=[user_rate_limit("portfolio_performance", 60, 60)]
+)
 async def performance(
     portfolio: OwnedPortfolio, db: DbSession, currency: ReportingCurrency
 ) -> PerformanceOut:
     return await service.performance(db, portfolio, currency)
 
 
-@router.get("/{portfolio_id}/insights")
+@router.get(
+    "/{portfolio_id}/insights", dependencies=[user_rate_limit("portfolio_insights", 60, 60)]
+)
 async def insights(
     portfolio: OwnedPortfolio, db: DbSession, currency: ReportingCurrency
 ) -> InsightsOut:
@@ -112,7 +116,11 @@ async def list_transactions(
     return TransactionListOut(items=items, total=total, page=page, page_size=page_size)
 
 
-@router.post("/{portfolio_id}/transactions", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{portfolio_id}/transactions",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[user_rate_limit("transactions_write", 60, 60)],
+)
 async def create_transaction(
     data: TransactionIn, portfolio: OwnedPortfolio, db: DbSession, fx: FxHistory, meta: Meta
 ) -> TransactionOut:
@@ -122,7 +130,10 @@ async def create_transaction(
     return (await service.transactions_out(db, [tx]))[0]
 
 
-@router.put("/{portfolio_id}/transactions/{tx_id}")
+@router.put(
+    "/{portfolio_id}/transactions/{tx_id}",
+    dependencies=[user_rate_limit("transactions_write", 60, 60)],
+)
 async def update_transaction(
     tx_id: uuid.UUID,
     data: TransactionIn,
@@ -135,7 +146,11 @@ async def update_transaction(
     return (await service.transactions_out(db, [tx]))[0]
 
 
-@router.delete("/{portfolio_id}/transactions/{tx_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{portfolio_id}/transactions/{tx_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[user_rate_limit("transactions_write", 60, 60)],
+)
 async def delete_transaction(
     tx_id: uuid.UUID, portfolio: OwnedPortfolio, db: DbSession, meta: Meta
 ) -> None:
@@ -170,7 +185,9 @@ async def _parse(
     return rows
 
 
-@router.post("/{portfolio_id}/imports/preview")
+@router.post(
+    "/{portfolio_id}/imports/preview", dependencies=[user_rate_limit("csv_import", 30, 3600)]
+)
 async def import_preview(
     body: CsvIn, auth: CurrentAuth, portfolio: OwnedPortfolio, db: DbSession
 ) -> CsvPreviewOut:
@@ -184,7 +201,9 @@ async def import_preview(
     )
 
 
-@router.post("/{portfolio_id}/imports/commit")
+@router.post(
+    "/{portfolio_id}/imports/commit", dependencies=[user_rate_limit("csv_import", 30, 3600)]
+)
 async def import_commit(
     body: CsvIn,
     auth: CurrentAuth,

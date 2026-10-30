@@ -22,9 +22,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core import rate_limit
+from app.core.authz import owned_or_404
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
-from app.core.errors import AppError, ConflictError, NotFoundError
+from app.core.errors import AppError, ConflictError
 from app.core.logging import get_logger
 from app.modules.ai import tools as ai_tools
 from app.modules.ai.llm.anthropic_provider import AnthropicProvider, dumps
@@ -82,16 +83,9 @@ async def list_conversations(db: AsyncSession, user_id: uuid.UUID) -> list[AICon
 async def get_owned(
     db: AsyncSession, user_id: uuid.UUID, conversation_id: uuid.UUID
 ) -> AIConversation:
-    conv = (
-        await db.execute(
-            select(AIConversation).where(
-                AIConversation.id == conversation_id, AIConversation.user_id == user_id
-            )
-        )
-    ).scalar_one_or_none()
-    if conv is None:
-        raise NotFoundError("Conversa não encontrada.")
-    return conv
+    return await owned_or_404(
+        db, AIConversation, conversation_id, user_id, "Conversa não encontrada."
+    )
 
 
 async def create_conversation(

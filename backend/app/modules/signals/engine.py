@@ -13,7 +13,7 @@ Six components, each scored 0–100 (50 = neutral), combined with the strategy's
 | Market               | mean of breadth (advancers %) and Bitcoin's trend                       |
 
 Classification (thresholds come from the strategy):
-- stale data → "attention", never buy/sell;
+- stale, incomplete or anomalous data (signals.quality) → "attention", never buy/sell;
 - score ≥ buy threshold and trend not bearish → "buy_potential";
 - score ≤ sell threshold, or bearish trend with score ≤ sell threshold + 10 → "sell_potential";
 - contradictory evidence (trend vs momentum gap ≥ 40, RSI ≥ 75 or ≤ 25, volatility
@@ -245,7 +245,9 @@ def evaluate(
     stale: bool,
     weights: dict[str, Decimal] | None = None,
     thresholds: dict[str, Decimal] | None = None,
+    quality_issue: str | None = None,
 ) -> SignalResult:
+    """`quality_issue` (from signals.quality) suspends buy/sell like stale data does."""
     weights = weights or DEFAULT_WEIGHTS
     thresholds = thresholds or DEFAULT_THRESHOLDS
     total_weight = sum((weights[k] for k in COMPONENTS), Decimal(0))
@@ -281,6 +283,8 @@ def evaluate(
         risks.append("Mercado em geral desfavorável.")
     if stale:
         risks.append("Dados de preço desatualizados: o sinal pode não refletir o mercado atual.")
+    elif quality_issue:
+        risks.append(f"Qualidade dos dados insuficiente: {quality_issue}")
 
     contradictory = (
         abs(by_key["trend"].score - by_key["momentum"].score) >= 40
@@ -288,7 +292,7 @@ def evaluate(
         or by_key["volatility"].score <= 30
     )
     classification: Classification
-    if stale:
+    if stale or quality_issue:
         classification = "attention"
     elif score >= thresholds["buy"] and trend.classification != "downtrend":
         classification = "buy_potential"
@@ -329,5 +333,7 @@ def evaluate(
     justification = intro + " " + " ".join(c.detail for c in strongest)
     if stale:
         justification = "Dados desatualizados — sinal suspenso. " + justification
+    elif quality_issue:
+        justification = "Dados inconsistentes ou incompletos — sinal suspenso. " + justification
 
     return SignalResult(score, classification, components, justification, risks, invalidation)

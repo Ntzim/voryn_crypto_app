@@ -14,6 +14,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authz import deny, owned_or_404
 from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.core.tasks import enqueue
@@ -103,14 +104,7 @@ async def list_portfolios(db: AsyncSession, user_id: uuid.UUID) -> list[Portfoli
 
 
 async def get_portfolio(db: AsyncSession, user_id: uuid.UUID, portfolio_id: uuid.UUID) -> Portfolio:
-    portfolio = (
-        await db.execute(
-            select(Portfolio).where(Portfolio.id == portfolio_id, Portfolio.user_id == user_id)
-        )
-    ).scalar_one_or_none()
-    if portfolio is None:
-        raise NotFoundError("Carteira não encontrada.")
-    return portfolio
+    return await owned_or_404(db, Portfolio, portfolio_id, user_id, "Carteira não encontrada.")
 
 
 async def list_exchanges(db: AsyncSession) -> list[Exchange]:
@@ -280,14 +274,10 @@ async def create_transactions(
 
 
 async def _get_transaction(db: AsyncSession, portfolio: Portfolio, tx_id: uuid.UUID) -> Transaction:
-    tx = (
-        await db.execute(
-            select(Transaction).where(
-                Transaction.id == tx_id, Transaction.portfolio_id == portfolio.id
-            )
-        )
-    ).scalar_one_or_none()
-    if tx is None:
+    tx = await db.get(Transaction, tx_id)
+    if tx is None or tx.portfolio_id != portfolio.id:
+        if tx is not None and tx.user_id != portfolio.user_id:
+            await deny(portfolio.user_id, "transactions", tx_id)
         raise NotFoundError("Transação não encontrada.")
     return tx
 

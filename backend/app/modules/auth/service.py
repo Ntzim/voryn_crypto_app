@@ -18,7 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core import rate_limit
+from app.core import rate_limit, security_events
 from app.core.config import get_settings
 from app.core.crypto import decrypt, encrypt
 from app.core.email import deliver
@@ -238,6 +238,7 @@ async def login(db: AsyncSession, data: LoginIn, meta: RequestMeta) -> LoginResu
         await rate_limit.hit(fail_key, LOGIN_ACCOUNT_FAILURES, LOGIN_ACCOUNT_WINDOW)
         _audit(db, AuditAction.LOGIN_FAILED, user.id if user else None, meta, reason="credentials")
         await db.commit()
+        await security_events.emit("login_failed", reason="credentials", ip=meta.ip)
         raise InvalidCredentialsError()
 
     await rate_limit.reset(fail_key)
@@ -289,6 +290,7 @@ async def login_with_mfa(
         result = await rate_limit.hit(fail_key, MFA_ACCOUNT_FAILURES, MFA_ACCOUNT_WINDOW)
         _audit(db, AuditAction.LOGIN_FAILED, user.id, meta, reason="mfa")
         await db.commit()
+        await security_events.emit("mfa_failed", user_id=str(user.id), ip=meta.ip)
         if result.count == 1:
             # Reaching this step required the correct password.
             await deliver(
@@ -597,6 +599,7 @@ async def regenerate_recovery_codes(
         raise ConflictError("A autenticação em dois fatores não está ativa.")
     await _require_second_factor(db, user, code, meta)
     codes = await _store_recovery_codes(db, user.id)
+    _audit(db, AuditAction.MFA_RECOVERY_CODES_REGENERATED, user.id, meta)
     await db.commit()
     return codes
 

@@ -2,6 +2,7 @@
 
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +23,12 @@ function makeClient() {
       onError: (error) => {
         // An expired session on any authenticated query sends the user back to login.
         if (error instanceof ApiError && error.status === 401) redirectToLogin();
+        // Throttled reads: one notice (fixed id, so parallel queries don't stack toasts).
+        // Forms show their own 429 message, so mutations are left to them.
+        if (error instanceof ApiError && error.status === 429) {
+          const wait = error.retryAfter ? ` Tente novamente em ${error.retryAfter} s.` : "";
+          toast.warning(`${error.message}${wait}`, { id: "rate-limited" });
+        }
       },
     }),
     defaultOptions: {

@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
 
-from app.modules.auth.deps import CurrentAuth, DbSession
+from app.modules.auth.deps import CurrentAuth, DbSession, user_rate_limit
 from app.modules.market_data.providers.base import CandleProvider, Timeframe
 from app.modules.signals import service
 from app.modules.signals.schemas import (
@@ -49,7 +49,7 @@ async def strategy(_: CurrentAuth, db: DbSession) -> StrategyOut:
     return service.strategy_out(await service.active_strategy(db))
 
 
-@router.get("/{slug}")
+@router.get("/{slug}", dependencies=[user_rate_limit("asset_signal", 60, 60)])
 async def asset_signal(
     _: CurrentAuth, db: DbSession, provider: Provider, slug: Slug, timeframe: Timeframe = "1d"
 ) -> SignalOut:

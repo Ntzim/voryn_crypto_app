@@ -22,6 +22,7 @@ import { SIGNAL_META, useSignalHistory, useSignals } from "@/lib/signal-queries"
 import {
   ClassificationBadge,
   ComponentBars,
+  DataQualityNotice,
   RisksAndInvalidation,
   ScoreHistory,
   SignalProvenance,
@@ -160,7 +161,9 @@ export function OpportunitiesView() {
               <SignalSummaryRow signal={signal} locale={locale} />
               <div className="mt-3 flex items-center justify-between">
                 <ClassificationBadge value={signal.classification} />
-                {signal.risks.length > 0 && (
+                {signal.data_quality !== "valid" ? (
+                  <span className="text-xs text-warning">dados com problema</span>
+                ) : signal.risks.length > 0 && (
                   <span className="text-xs text-warning">{signal.risks.length} risco(s)</span>
                 )}
               </div>
@@ -207,6 +210,7 @@ function SignalDetail({ signal, locale, timeZone }: { signal: Signal; locale: "p
       </SheetHeader>
       <div className="space-y-6 px-4 pb-6">
         <SignalSummaryRow signal={signal} locale={locale} />
+        <DataQualityNotice signal={signal} />
         <ClassificationBadge value={signal.classification} />
         <p className="text-sm text-foreground">{signal.justification}</p>
         <section>

@@ -31,6 +31,8 @@ IP do cliente: por padrão `request.client`. Com `TRUST_PROXY_HEADERS=true` (som
 
 Backtests: 10 execuções/h por usuário. Conexões de exchange: 5 por hora; sincronização manual a cada 2 min no mínimo.
 
+Por usuário (`user_rate_limit`, não por IP, para não penalizar quem compartilha endereço): escrita de transações 60/min; importação CSV 30/h; desempenho e insights da carteira 60/min; análise técnica e sinal por ativo 60/min (podem consultar a Binance); risco e cenários 30/min. Uma consulta limitada mostra um aviso único com o tempo de espera.
+
 Voryn AI: 30 mensagens/h e 150/dia por usuário, 30 mensagens por conversa, rodadas de ferramentas limitadas por resposta.
 
 ## Voryn AI
@@ -59,7 +61,9 @@ API: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Cach
 
 ## Auditoria
 
-Eventos registrados: cadastro, verificação de e-mail, login (sucesso/falha, com motivo), logout, pedido e redefinição de senha, troca de senha, ativação/desativação de 2FA, uso de código de recuperação, revogação de sessão, alteração de perfil e preferências. Cada evento grava usuário, IP, user-agent e contexto não sensível.
+Eventos registrados: cadastro, verificação de e-mail, login (sucesso/falha, com motivo), logout, pedido e redefinição de senha, troca de senha, ativação/desativação de 2FA, uso e regeneração de códigos de recuperação, revogação de sessão, alteração de perfil e preferências, **acesso negado a recurso de outro usuário**, conexão, desconexão, falha e bloqueio de exchange. Cada evento grava usuário, IP, user-agent, o `request_id` da requisição (liga o registro ao log de acesso) e contexto não sensível.
+
+A tabela é **somente inserção no banco** (gatilho `audit_logs_append_only`): `UPDATE` e `DELETE` são recusados, exceto a anonimização do `user_id` quando a conta é excluída e a remoção após 365 dias (tarefa diária `audit.prune`). Nenhuma rota da API expõe a auditoria. Detalhes e monitoramento: [SECURITY_ARCHITECTURE.md](SECURITY_ARCHITECTURE.md).
 
 ## Backup e retenção
 

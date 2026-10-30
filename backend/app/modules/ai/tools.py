@@ -349,11 +349,19 @@ async def asset_signal(ctx: ToolContext, args: AnalysisArgs) -> ToolOutput:
         "reference_price": str(s.reference_price),
         "candle_time": s.candle_time.isoformat(),
         "data_stale": s.data_is_stale,
+        "data_quality": s.data_quality,
+        "quality_reasons": s.quality_reasons,
+        "is_current": s.is_current,
         "strategy": f"{s.strategy_key} v{s.strategy_version}",
         "disclaimer": (
             "O score mede o alinhamento de condições favoráveis; não é probabilidade de lucro."
         ),
     }
+    if not s.is_current:
+        data["historical_notice"] = (
+            "Análise histórica: os dados atuais estão indisponíveis ou desatualizados. "
+            "Não apresente esta classificação como recomendação atual."
+        )
     return ToolOutput(
         data, f"Sinal {s.asset.symbol} {s.timeframe} · candle de {_stamp(s.candle_time)}"
     )
@@ -373,6 +381,7 @@ async def list_signals(ctx: ToolContext, args: SignalListArgs) -> ToolOutput:
                 "trend": s.trend,
                 "risks": s.risks,
                 "candle_time": s.candle_time.isoformat(),
+                "data_quality": s.data_quality,
             }
             for s in items
         ],

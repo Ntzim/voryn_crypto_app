@@ -62,6 +62,10 @@ class AnalysisSignal(Base):
             "classification IN ('buy_potential', 'neutral', 'attention', 'sell_potential')",
             name="classification_valid",
         ),
+        CheckConstraint(
+            "data_quality IN ('valid', 'stale', 'incomplete', 'anomalous')",
+            name="data_quality_valid",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -87,4 +91,7 @@ class AnalysisSignal(Base):
     data_source: Mapped[str] = mapped_column(String(64), nullable=False)
     data_fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     data_is_stale: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    #: signals.quality grade of the inputs at generation time, with the reasons
+    data_quality: Mapped[str] = mapped_column(String(16), nullable=False, server_default="valid")
+    quality_reasons: Mapped[list[str]] = mapped_column(JSONB, nullable=False, server_default="[]")
     methodology_version: Mapped[str] = mapped_column(String(16), nullable=False)

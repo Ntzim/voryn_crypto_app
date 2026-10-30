@@ -1,0 +1,115 @@
+name: Security
+
+# Runs on every pull request and on pushes to main. Required checks for merging are set in
+# the branch protection rules (docs/SECURITY_ARCHITECTURE.md#pipeline-devsecops).
+#
+# `pull_request` (not `pull_request_target`): code from a fork runs without repository
+# secrets and with a read-only token. No step here uses a secret.
+# Third-party code is pinned: actions by commit SHA, tool images by digest.
+# There is no deploy step; Railway deploys main on its own.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1 ----------------------------------------------------------------------------
+  secrets:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # the whole history: a secret removed later is still leaked
+          persist-credentials: false
+      # Known false positives live in .gitleaksignore (one fingerprint each, with a reason).
+      # --redact keeps any finding's value out of the job log.
+      - name: Scan history
+        run: >-
+          docker run --rm -v "$PWD:/repo"
+          zricethezav/gitleaks@sha256:cdbb7c955abce02001a9f6c9f602fb195b7fadc1e812065883f695d1eeaba854
+          git /repo --redact --no-banner --exit-code 1
+
+  # Stage 2 ----------------------------------------------------------------------------
+  dependencies:
+    name: Dependency scanning (pip-audit, npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+      - name: Python (locked runtime dependencies, transitive included)
+        working-directory: backend
+        # Any known vulnerability fails. Exceptions: --ignore-vuln <ID>, with the reason in
+        # docs/SECURITY_ARCHITECTURE.md (none today).
+        run: |
+          uv export --frozen --no-dev --no-hashes --no-emit-project > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit==2.10.1 --no-deps --disable-pip --strict -r "$RUNNER_TEMP/requirements.txt"
+      - name: Node (runtime dependencies, transitive included)
+        working-directory: frontend
+        # High and critical fail. Today only build-time tooling (shadcn → deepmerge) has
+        # advisories, all low severity.
+        run: npm audit --omit=dev --audit-level=high
+
+  # Stage 3 ----------------------------------------------------------------------------
+  sast:
+    name: Static analysis (semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # Rulesets cover injection, XSS, SSRF, insecure crypto, secrets and dangerous config
+      # for the stack. Accepted findings carry an inline `nosemgrep` with the reason.
+      - name: Scan
+        run: >-
+          docker run --rm -v "$PWD:/src" -w /src
+          semgrep/semgrep@sha256:451b3d875c00dac7ed5db5293e584a07de11449a409c10b3c2d2652f429630b6
+          semgrep scan
+          --config p/python --config p/fastapi --config p/typescript --config p/react
+          --config p/nextjs --config p/dockerfile --config p/secrets --config p/owasp-top-ten
+          --exclude node_modules --exclude .next --exclude .venv --metrics=off --error
+
+  # Stage 4 ----------------------------------------------------------------------------
+  containers:
+    name: Container scanning (trivy)
+    runs-on: ubuntu-latest
+    env:
+      TRIVY: aquasec/trivy@sha256:e2b22eac59c02003d8749f5b8d9bd073b62e30fefaef5b7c8371204e0a4b0c08
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Build the production images
+        run: |
+          docker build -t voryn-api:ci ./backend
+          docker build -t voryn-web:ci --target runtime ./frontend
+      - name: Dockerfile misconfigurations (root user, unsafe instructions)
+        run: >-
+          docker run --rm -v "$PWD:/src" "$TRIVY" config --quiet
+          --severity HIGH,CRITICAL --exit-code 1 /src/backend/Dockerfile /src/frontend/Dockerfile
+      - name: Image vulnerabilities (OS and language packages)
+        # --ignore-unfixed: a finding with no released fix cannot be acted on here; it is
+        # listed in the log and revisited when a fix ships.
+        run: |
+          for image in voryn-api:ci voryn-web:ci; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$TRIVY" image \
+              --quiet --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 "$image"
+          done
+      - name: Images run as an unprivileged user
+        run: |
+          test "$(docker image inspect -f '{{.Config.User}}' voryn-api:ci)" = "voryn"
+          test "$(docker image inspect -f '{{.Config.User}}' voryn-web:ci)" = "voryn"
+
+  # Stages 5 and 6 ---------------------------------------------------------------------
+  tests-and-build:
+    name: Tests and build
+    uses: ./.github/workflows/ci.yml

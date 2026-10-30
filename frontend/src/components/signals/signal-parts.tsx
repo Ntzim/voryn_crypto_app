@@ -115,6 +115,35 @@ export function RisksAndInvalidation({ signal }: { signal: Signal }) {
   );
 }
 
+const QUALITY_TITLE: Record<Signal["data_quality"], string> = {
+  valid: "",
+  stale: "Dados desatualizados",
+  incomplete: "Dados insuficientes",
+  anomalous: "Dados inconsistentes",
+  unavailable: "Fonte de dados indisponível",
+};
+
+/** Data-quality warning; renders nothing for a current signal built on valid data. */
+export function DataQualityNotice({ signal }: { signal: Signal }) {
+  if (signal.is_current && signal.data_quality === "valid") return null;
+  return (
+    <div role="status" className="rounded-lg border border-warning/40 bg-warning/5 p-3 text-xs text-warning">
+      <p className="flex items-center gap-1.5 font-medium">
+        <TriangleAlert className="size-3.5" />
+        {QUALITY_TITLE[signal.data_quality] || "Análise histórica"}
+        {signal.is_current ? " — compra e venda suspensas" : " — análise histórica, não é uma recomendação atual"}
+      </p>
+      {signal.quality_reasons.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5 text-warning/90">
+          {signal.quality_reasons.map((r) => (
+            <li key={r}>• {r}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function SignalProvenance({ signal, locale, timeZone }: { signal: Signal; locale: Locale; timeZone: string }) {
   const change =
     signal.current_price && Number(signal.reference_price) > 0
@@ -122,16 +151,12 @@ export function SignalProvenance({ signal, locale, timeZone }: { signal: Signal;
       : null;
   return (
     <div className="space-y-2 text-xs text-subtle-foreground">
-      {signal.data_is_stale && (
-        <p className="flex items-center gap-1.5 font-medium text-warning">
-          <TriangleAlert className="size-3.5" /> Gerado com dados desatualizados — sinal suspenso.
-        </p>
-      )}
       <p>
         Candle {signal.timeframe} de {formatDateTime(signal.candle_time, locale, timeZone)} · preço de referência{" "}
         {formatPrice(signal.reference_price, "USD", locale)}
         {change !== null && <> ({formatPercent(change, locale)} desde então)</>} · fonte {signal.data_source.replace(":", " ")} · estratégia{" "}
-        {signal.strategy_key} v{signal.strategy_version} · metodologia {signal.methodology_version}
+        {signal.strategy_key} v{signal.strategy_version} · metodologia {signal.methodology_version} · qualidade dos dados{" "}
+        {signal.data_quality === "valid" ? "válida" : QUALITY_TITLE[signal.data_quality].toLowerCase()}
       </p>
     </div>
   );

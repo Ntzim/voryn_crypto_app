@@ -14,6 +14,8 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import distinct_on, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import security_events
+from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.core.redis import get_redis
@@ -28,7 +30,7 @@ from app.modules.market_data.providers.base import (
 )
 from app.modules.portfolio.insights import STABLECOINS
 from app.modules.portfolio.schemas import AssetRef
-from app.modules.signals import engine
+from app.modules.signals import engine, quality
 from app.modules.signals.models import AnalysisSignal, SignalStrategy
 from app.modules.signals.schemas import (
     COMPONENT_LABELS,
@@ -40,6 +42,9 @@ from app.modules.signals.schemas import (
 from app.modules.technical_analysis.service import METHODOLOGY_VERSION, analyze
 
 logger = get_logger(__name__)
+
+#: a signal older than this many candles no longer describes the market
+CURRENT_CANDLES = 3
 
 DEFAULT_KEY = "voryn-core"
 SCHEDULED_TIMEFRAMES: tuple[Timeframe, ...] = ("1d", "4h")
@@ -183,6 +188,22 @@ async def generate(
     strategy: SignalStrategy,
     context: engine.MarketContext,
 ) -> AnalysisSignal:
+    return (await generate_graded(db, crypto, timeframe, provider, strategy, context))[0]
+
+
+async def generate_graded(
+    db: AsyncSession,
+    crypto: Cryptocurrency,
+    timeframe: Timeframe,
+    provider: CandleProvider,
+    strategy: SignalStrategy,
+    context: engine.MarketContext,
+) -> tuple[AnalysisSignal, quality.QualityReport]:
+    """The stored signal plus the grade of the data read *now*.
+
+    They differ when the candle was already analysed: the stored row keeps the grade it
+    had then, while the provider may have gone stale since.
+    """
     if crypto.symbol.upper() in STABLECOINS:
         raise StablecoinError()
     candle_set = await candle_service.get_candles(db, crypto, timeframe, provider)
@@ -194,6 +215,25 @@ async def generate(
         raise StablecoinError()
     weights, thresholds = strategy_params(strategy)
     last = closed[-1]
+    quote = (await market.live_tickers(db, [crypto.id])).get(crypto.id)
+    report = quality.assess(
+        closed=closed,
+        snapshot=result.snapshot,
+        timeframe=timeframe,
+        is_stale=candle_set.is_stale,
+        quote_price=quote.price if quote else None,
+        quote_fetched_at=quote.fetched_at if quote else None,
+        now=utcnow(),
+        quote_max_age=timedelta(seconds=get_settings().market_stale_after_seconds),
+    )
+    if not report.ok:
+        await security_events.emit(
+            "signal_blocked",
+            asset=crypto.source_id,
+            timeframe=timeframe,
+            data_quality=report.status,
+            reasons=report.reasons,
+        )
     signal = engine.evaluate(
         snapshot=result.snapshot,
         trend=result.trend,
@@ -205,6 +245,8 @@ async def generate(
         stale=candle_set.is_stale,
         weights=weights,
         thresholds=thresholds,
+        # Stale data is already handled by `stale`; other problems suspend buy/sell too.
+        quality_issue=None if report.status in ("valid", "stale") else " ".join(report.reasons),
     )
     await db.execute(
         insert(AnalysisSignal)
@@ -228,6 +270,8 @@ async def generate(
             data_source=f"{candle_set.source}:{candle_set.pair}",
             data_fetched_at=candle_set.fetched_at,
             data_is_stale=candle_set.is_stale,
+            data_quality=report.status,
+            quality_reasons=report.reasons,
             methodology_version=METHODOLOGY_VERSION,
         )
         .on_conflict_do_nothing()
@@ -243,7 +287,7 @@ async def generate(
             )
         )
     ).scalar_one()
-    return stored
+    return stored, report
 
 
 async def universe(db: AsyncSession) -> dict[uuid.UUID, Cryptocurrency]:
@@ -293,8 +337,36 @@ async def run(db: AsyncSession, provider: CandleProvider) -> int:
 # --------------------------------------------------------------------------- read models
 
 
+def _effective_quality(
+    s: AnalysisSignal, *, source_unavailable: bool, live: quality.QualityReport | None
+) -> tuple[quality.DataQuality, list[str], bool]:
+    """Quality as of now: a signal that was valid when generated ages into "stale", and
+    takes the grade of the data just read (`live`) when that one is worse."""
+    status: quality.DataQuality = s.data_quality  # type: ignore[assignment]
+    reasons = list(s.quality_reasons)
+    if live is not None and quality.SEVERITY.index(live.status) < quality.SEVERITY.index(status):
+        status = live.status
+        reasons = [*live.reasons, *(r for r in reasons if r not in live.reasons)]
+    window = timedelta(seconds=TIMEFRAME_SECONDS[s.timeframe] * CURRENT_CANDLES)
+    is_current = not source_unavailable and status != "stale" and s.candle_time >= utcnow() - window
+    when = s.candle_time.strftime("%d/%m/%Y %H:%M UTC")
+    if source_unavailable:
+        status = "unavailable"
+        reasons.insert(0, f"Fonte de dados indisponível: exibindo a análise histórica de {when}.")
+    elif not is_current and status != "stale":
+        if status == "valid":
+            status = "stale"
+        reasons.insert(0, f"Análise histórica de {when}: não descreve o mercado atual.")
+    return status, reasons, is_current
+
+
 async def _to_out(
-    db: AsyncSession, signals: Sequence[AnalysisSignal], strategy: SignalStrategy
+    db: AsyncSession,
+    signals: Sequence[AnalysisSignal],
+    strategy: SignalStrategy,
+    *,
+    source_unavailable: bool = False,
+    live: quality.QualityReport | None = None,
 ) -> list[SignalOut]:
     ids = list({s.cryptocurrency_id for s in signals})
     cryptos = await market.cryptos_by_id(db, ids)
@@ -303,6 +375,9 @@ async def _to_out(
     for s in signals:
         c = cryptos[s.cryptocurrency_id]
         ticker = tickers.get(s.cryptocurrency_id)
+        data_quality, reasons, is_current = _effective_quality(
+            s, source_unavailable=source_unavailable, live=live
+        )
         out.append(
             SignalOut(
                 id=s.id,
@@ -334,6 +409,9 @@ async def _to_out(
                 data_source=s.data_source,
                 data_fetched_at=s.data_fetched_at,
                 data_is_stale=s.data_is_stale,
+                data_quality=data_quality,
+                quality_reasons=reasons,
+                is_current=is_current,
                 strategy_key=strategy.key,
                 strategy_version=strategy.version,
                 methodology_version=s.methodology_version,
@@ -351,8 +429,8 @@ async def list_latest(
     limit: int,
 ) -> list[SignalOut]:
     strategy = await active_strategy(db)
-    # A signal older than 3 candles no longer describes the market; leave it out.
-    fresh_after = utcnow() - timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * 3)
+    # Lists show current signals only; historical ones stay in the per-asset history.
+    fresh_after = utcnow() - timedelta(seconds=TIMEFRAME_SECONDS[timeframe] * CURRENT_CANDLES)
     latest = (
         select(AnalysisSignal)
         .where(
@@ -385,13 +463,20 @@ async def for_asset(
     strategy = await active_strategy(db)
     signal: AnalysisSignal | None
     try:
-        signal = await generate(
+        signal, live = await generate_graded(
             db, crypto, timeframe, provider, strategy, await market_context(db, provider, timeframe)
         )
     except StablecoinError:
         raise
-    except (AppError, ProviderError):
-        # Provider unavailable: fall back to the most recent stored signal, if any.
+    except (AppError, ProviderError) as exc:
+        # No fresh analysis: show the most recent stored one, flagged as historical.
+        await security_events.emit(
+            "signal_blocked",
+            asset=slug,
+            timeframe=timeframe,
+            data_quality="unavailable",
+            cause=getattr(exc, "code", type(exc).__name__),
+        )
         signal = (
             await db.execute(
                 select(AnalysisSignal)
@@ -406,7 +491,8 @@ async def for_asset(
         ).scalar_one_or_none()
         if signal is None:
             raise
-    return (await _to_out(db, [signal], strategy))[0]
+        return (await _to_out(db, [signal], strategy, source_unavailable=True))[0]
+    return (await _to_out(db, [signal], strategy, live=live))[0]
 
 
 async def history(

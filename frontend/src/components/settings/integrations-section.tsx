@@ -123,6 +123,12 @@ function ConnectionCard({
             Chave …{c.key_hint} ·{" "}
             {c.last_synced_at ? `sincronizada ${formatRelative(c.last_synced_at, locale)}` : waiting ? "primeira sincronização em andamento" : "ainda não sincronizada"}
           </p>
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+            <Lock className="size-3" />
+            {c.write_permissions.length === 0
+              ? "Permissão: somente leitura"
+              : `Permissões além de leitura (sincronização suspensa): ${c.write_permissions.join(", ")}`}
+          </p>
         </div>
         <span className={cn("rounded-full border px-2 py-0.5 text-xs", status.className)}>{status.label}</span>
       </div>

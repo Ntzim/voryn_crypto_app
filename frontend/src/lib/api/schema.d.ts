@@ -2619,6 +2619,15 @@ export interface components {
             data_fetched_at: string;
             /** Data Is Stale */
             data_is_stale: boolean;
+            /**
+             * Data Quality
+             * @enum {string}
+             */
+            data_quality: "valid" | "stale" | "incomplete" | "anomalous" | "unavailable";
+            /** Quality Reasons */
+            quality_reasons: string[];
+            /** Is Current */
+            is_current: boolean;
             /** Strategy Key */
             strategy_key: string;
             /** Strategy Version */

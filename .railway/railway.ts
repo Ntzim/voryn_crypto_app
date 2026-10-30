@@ -41,6 +41,8 @@ export default defineRailway((ctx, project) => {
     TRUST_PROXY_HEADERS: "true",
     COINGECKO_API_KEY: preserve(),
     SENTRY_DSN: preserve(),
+    // Receives security alerts from the beat task (abnormal failed logins, denied access...).
+    SECURITY_ALERT_EMAIL: preserve(),
   };
 
   const api = service("api", {
