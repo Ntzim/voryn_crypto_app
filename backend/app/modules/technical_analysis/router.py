@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path
 
-from app.modules.auth.deps import CurrentAuth, DbSession
+from app.modules.auth.deps import CurrentAuth, DbSession, user_rate_limit
 from app.modules.market_data.providers.base import CandleProvider, Timeframe
 from app.modules.market_data.providers.binance import BinanceCandleProvider
 from app.modules.technical_analysis import service
@@ -20,7 +20,7 @@ async def get_candle_provider() -> AsyncIterator[CandleProvider]:
         await provider.aclose()
 
 
-@router.get("/{slug}/analysis")
+@router.get("/{slug}/analysis", dependencies=[user_rate_limit("analysis", 60, 60)])
 async def asset_analysis(
     _: CurrentAuth,
     db: DbSession,

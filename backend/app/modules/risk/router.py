@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.modules.auth.deps import DbSession
+from app.modules.auth.deps import DbSession, user_rate_limit
 from app.modules.market_data.providers.base import CandleProvider
 from app.modules.portfolio.router import OwnedPortfolio, ReportingCurrency
 from app.modules.risk import service
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/portfolios", tags=["risk"])
 Candles = Annotated[CandleProvider, Depends(get_candle_provider)]
 
 
-@router.get("/{portfolio_id}/risk")
+@router.get("/{portfolio_id}/risk", dependencies=[user_rate_limit("risk", 30, 60)])
 async def portfolio_risk(
     portfolio: OwnedPortfolio,
     db: DbSession,
@@ -27,7 +27,7 @@ async def portfolio_risk(
     return await service.portfolio_risk(db, portfolio, currency, window, provider)
 
 
-@router.post("/{portfolio_id}/risk/scenario")
+@router.post("/{portfolio_id}/risk/scenario", dependencies=[user_rate_limit("risk", 30, 60)])
 async def risk_scenario(
     portfolio: OwnedPortfolio,
     db: DbSession,

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import security_events
+from app.core import rate_limit, security_events
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.core.errors import UnauthorizedError
@@ -40,3 +40,16 @@ async def get_auth_context(request: Request, db: DbSession) -> AuthContext:
 
 Meta = Annotated[RequestMeta, Depends(get_request_meta)]
 CurrentAuth = Annotated[AuthContext, Depends(get_auth_context)]
+
+
+def user_rate_limit(name: str, limit: int, window_seconds: int) -> Any:
+    """Route dependency: at most `limit` calls per `window_seconds` per signed-in user.
+
+    Keyed by user rather than IP, so people behind one address (offices, mobile carriers)
+    do not throttle each other. Counters live in Redis, shared by every API replica.
+    """
+
+    async def dependency(auth: CurrentAuth) -> None:
+        await rate_limit.enforce(f"user:{name}:{auth.user.id}", limit, window_seconds)
+
+    return Depends(dependency)

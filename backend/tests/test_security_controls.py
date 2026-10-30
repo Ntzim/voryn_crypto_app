@@ -267,6 +267,26 @@ async def test_throttled_requests_answer_429_and_are_counted(client: httpx.Async
     assert counts["rate_limited"] == 1
 
 
+async def test_costly_endpoints_are_limited_per_user_not_per_address(
+    client: httpx.AsyncClient, client_factory: ClientFactory, outbox: Outbox
+) -> None:
+    await register_verified(client, outbox)
+    await login(client)
+    pid = (await client.get(f"{API}/portfolios")).json()[0]["id"]
+    url = f"{API}/portfolios/{pid}/risk/scenario"
+    # Invalid bodies still count: the limit protects the server, not the happy path.
+    statuses = [(await client.post(url, json={})).status_code for _ in range(31)]
+    assert statuses == [422] * 30 + [429]
+    assert (await client.post(url, json={})).json()["error"]["details"]["retry_after"] > 0
+
+    # Same address (the test client), different user: unaffected.
+    other = await client_factory()
+    await register_verified(other, outbox, email="eve@example.com", name="Eve")
+    await login(other, email="eve@example.com")
+    own = (await other.get(f"{API}/portfolios")).json()[0]["id"]
+    assert (await other.post(f"{API}/portfolios/{own}/risk/scenario", json={})).status_code == 422
+
+
 # --------------------------------------------------------------------------- 8. audit
 
 
