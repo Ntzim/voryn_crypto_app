@@ -35,6 +35,20 @@ dev = [
 
 [tool.uv]
 package = false
+# Supply-chain cooldown: versions published in the last 7 days are not resolved, so a
+# hijacked release is usually caught and yanked before it can reach the lockfile.
+exclude-newer = "7 days"
+# Versions already in uv.lock when the cooldown was adopted (2026-10-30) that were younger
+# than 7 days: each is allowed up to its locked release only, not newer ones. Redundant (and
+# safe to delete) after 2026-11-04.
+[tool.uv.exclude-newer-package]
+anthropic = "2026-10-24T00:00:00Z"
+fastapi = "2026-10-24T00:00:00Z"
+starlette = "2026-10-25T00:00:00Z"
+wcwidth = "2026-10-25T00:00:00Z"
+pytest-asyncio = "2026-10-26T00:00:00Z"
+pytest = "2026-10-28T00:00:00Z"
+ruff = "2026-10-28T00:00:00Z"
 
 [tool.ruff]
 line-length = 100

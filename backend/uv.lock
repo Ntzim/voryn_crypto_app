@@ -6,6 +6,19 @@ resolution-markers = [
     "python_full_version < '3.14'",
 ]
 
+[options]
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P7D"
+
+[options.exclude-newer-package]
+starlette = "2026-10-25T00:00:00Z"
+pytest = "2026-10-28T00:00:00Z"
+pytest-asyncio = "2026-10-26T00:00:00Z"
+wcwidth = "2026-10-25T00:00:00Z"
+fastapi = "2026-10-24T00:00:00Z"
+ruff = "2026-10-28T00:00:00Z"
+anthropic = "2026-10-24T00:00:00Z"
+
 [[package]]
 name = "alembic"
 version = "1.20.1"
