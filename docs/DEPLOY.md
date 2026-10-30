@@ -58,7 +58,7 @@ O arquivo define para cada serviço:
 - **`web`:** `API_PRIVATE_HOST` aponta para o domínio privado da `api` (referência, sem endereço fixo); health check em `/entrar`.
 - **Watch paths:** mudanças só em `frontend/` não reimplantam o backend, e vice-versa.
 
-> **Sem a CLI:** crie os serviços pelo painel com os mesmos valores. Para `api`, `worker` e `beat`: repositório, Root Directory `backend`, comando de início acima e as variáveis da tabela abaixo. Para o `web`: Root Directory `frontend`, `API_PRIVATE_HOST=${{api.RAILWAY_PRIVATE_DOMAIN}}` e `API_PRIVATE_PORT=8000`.
+> **Sem a CLI:** crie os serviços pelo painel com os mesmos valores. Para `api`, `worker` e `beat`: repositório, Root Directory `backend`, comando de início acima e as variáveis da tabela abaixo. Para o `web`: Root Directory `frontend`, `API_PRIVATE_HOST=${{api.RAILWAY_PRIVATE_DOMAIN}}`, `API_PRIVATE_PORT=8000` e `CLIENT_IP_HEADER=x-real-ip` (o cabeçalho que a borda do Railway sobrescreve; o limite de requisições por IP depende dele, veja [SECURITY.md](SECURITY.md#proteção-contra-abuso-redis-janela-fixa)).
 
 Variáveis de `api`, `worker` e `beat` (o arquivo já as define):
 

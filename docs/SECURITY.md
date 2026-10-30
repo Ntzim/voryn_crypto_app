@@ -12,7 +12,9 @@
 | Recuperação de senha | link de uso único, expira em 30 min; ao redefinir, todas as sessões são encerradas e o usuário é notificado |
 | Enumeração de contas | cadastro, "esqueci a senha" e "reenviar verificação" respondem igual para e-mails existentes e inexistentes; o hash de senha é calculado nos dois caminhos para igualar o tempo de resposta; login sempre verifica contra um hash (fictício quando o usuário não existe) |
 | 2FA | TOTP (RFC 6238), segredo cifrado com Fernet (`ENCRYPTION_KEYS`, com rotação via MultiFernet), tolerância de ±1 passo, **cada código só pode ser usado uma vez** (proteção a replay em Redis). 10 códigos de recuperação de uso único, armazenados como HMAC. Desativar exige senha + segundo fator |
-| Desafio MFA | após a senha, um token temporário (5 min, máx. 5 tentativas) — nenhuma sessão é criada antes do segundo fator |
+| Desafio MFA | após a senha, um token temporário (5 min, máx. 5 tentativas) — nenhuma sessão é criada antes do segundo fator. Além disso, **10 falhas por hora por conta**, somando todos os desafios e IPs (um desafio novo só custa a senha). A primeira falha envia um alerta ao dono da conta, porque significa que a senha é conhecida |
+| Nome do usuário | aparece nos e-mails enviados ao endereço informado no cadastro, que pode não ser de quem se cadastra; nomes com links, domínios, e-mails ou marcação são recusados |
+| Redirecionamento pós-login | `?next=` só aceita destinos que o parser de URL resolve para a mesma origem (tabs, quebras de linha e `\` são normalizados pelo navegador) |
 
 ## Proteção contra abuso (Redis, janela fixa)
 
@@ -23,9 +25,9 @@
 | Cadastro | 5 / h por IP |
 | Esqueci a senha / reenviar verificação | 5 / h por IP; 3 e-mails / h por conta (silencioso) |
 | Reautenticação (troca de senha, desativar 2FA) | 5 / 15 min por usuário |
-| Verificação de segundo fator | 10 / 15 min por usuário |
+| Verificação de segundo fator | 10 / 15 min por usuário (ações na conta); 10 falhas / h por conta (login) |
 
-IP do cliente: por padrão `request.client`. Com `TRUST_PROXY_HEADERS=true` (somente atrás de proxy controlado), usa a entrada **mais à direita** de `X-Forwarded-For`, a única que o cliente não consegue forjar.
+IP do cliente: por padrão `request.client`. Com `TRUST_PROXY_HEADERS=true` (somente atrás de proxy controlado), usa a entrada mais à direita de `X-Forwarded-For`. Esse valor só é confiável porque o BFF (`frontend/src/lib/upstream-headers.ts`) **descarta** todo cabeçalho de endereço enviado pelo navegador (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`…) e escreve um `X-Forwarded-For` com um único IP, lido do cabeçalho que a borda sobrescreve (`CLIENT_IP_HEADER`, padrão `x-real-ip`, o do Railway). A borda do Railway **não** substitui o `X-Forwarded-For` recebido do cliente: antes dessa correção, um valor forjado criava um balde de limite novo a cada requisição. Em outro provedor, ajuste `CLIENT_IP_HEADER` para o cabeçalho que ele garante; sem ele, todos os clientes compartilham um balde (mais restritivo, nunca burlável).
 
 Backtests: 10 execuções/h por usuário. Conexões de exchange: 5 por hora; sincronização manual a cada 2 min no mínimo.
 
@@ -49,6 +51,7 @@ Toda consulta a dados do usuário filtra por `user_id` vindo da sessão — nunc
 - `SECRET_KEY`: HMAC de tokens. `ENCRYPTION_KEYS`: Fernet para segredos em repouso (TOTP hoje; chaves de exchange na Fase 6). Em produção a aplicação **recusa iniciar** sem valores fortes, sem `FRONTEND_URL` https, sem provedor de e-mail real, sem `TRUST_PROXY_HEADERS` (a API fica atrás do BFF) ou com limites de requisição relaxados.
 - Credenciais de exchange: só chaves **somente leitura**, verificadas na própria exchange ao conectar e a cada sincronização. Qualquer outra permissão, inclusive uma desconhecida, é recusada ou bloqueia a conexão. Chave e segredo ficam cifrados (Fernet), nunca voltam ao navegador e são identificados por HMAC e pelos 4 últimos caracteres. Conectar e desconectar entram na auditoria ([EXCHANGES.md](EXCHANGES.md)).
 - Auditoria (`audit_logs`) nunca registra senhas, tokens ou códigos.
+- Relatórios de erro (Sentry): `include_local_variables=False`, porque as variáveis locais carregariam os corpos das requisições (senhas, chaves de exchange) dentro do `repr` dos modelos, que o filtro padrão do Sentry não inspeciona. Chave e segredo de exchange são `SecretStr` desde a entrada.
 
 ## Cabeçalhos e transporte
 
