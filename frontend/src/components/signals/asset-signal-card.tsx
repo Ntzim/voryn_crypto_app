@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "cn";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -10,7 +11,7 @@ import type { Timeframe } from "@/lib/api/types";
 import { usePreferences } from "@/lib/queries";
 import { useAssetSignal } from "@/lib/signal-queries";
 
-import { ClassificationBadge, ComponentBars, RisksAndInvalidation, ScoreGauge, SignalProvenance } from "./signal-parts";
+import { ClassificationBadge, ComponentBars, DataQualityNotice, RisksAndInvalidation, ScoreGauge, SignalProvenance } from "./signal-parts";
 
 export function AssetSignalCard({ slug, timeframe }: { slug: string; timeframe: Timeframe }) {
   const { locale, timeZone } = usePreferences();
@@ -39,10 +40,16 @@ export function AssetSignalCard({ slug, timeframe }: { slug: string; timeframe: 
         {!signal ? (
           <Skeleton className="h-40 w-full rounded-lg" />
         ) : (
+          <div className="space-y-4">
+          <DataQualityNotice signal={signal} />
           <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)_minmax(0,1fr)]">
-            <div className="space-y-3">
+            {/* A historical signal stays visible for traceability, visibly not current. */}
+            <div className={cn("space-y-3", !signal.is_current && "opacity-60")}>
               <ScoreGauge score={signal.score} classification={signal.classification} size={120} />
-              <ClassificationBadge value={signal.classification} />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <ClassificationBadge value={signal.classification} />
+                {!signal.is_current && <span className="text-xs text-muted-foreground">(histórico)</span>}
+              </div>
               <p className="text-sm text-foreground">{signal.justification}</p>
             </div>
             <ComponentBars signal={signal} locale={locale} />
@@ -50,6 +57,7 @@ export function AssetSignalCard({ slug, timeframe }: { slug: string; timeframe: 
               <RisksAndInvalidation signal={signal} />
               <SignalProvenance signal={signal} locale={locale} timeZone={timeZone} />
             </div>
+          </div>
           </div>
         )}
       </CardContent>

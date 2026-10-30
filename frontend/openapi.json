@@ -7604,6 +7604,28 @@
             "type": "boolean",
             "title": "Data Is Stale"
           },
+          "data_quality": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "stale",
+              "incomplete",
+              "anomalous",
+              "unavailable"
+            ],
+            "title": "Data Quality"
+          },
+          "quality_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Reasons"
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current"
+          },
           "strategy_key": {
             "type": "string",
             "title": "Strategy Key"
@@ -7637,6 +7659,9 @@
           "data_source",
           "data_fetched_at",
           "data_is_stale",
+          "data_quality",
+          "quality_reasons",
+          "is_current",
           "strategy_key",
           "strategy_version",
           "methodology_version"

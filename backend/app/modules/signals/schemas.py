@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.modules.market_data.providers.base import Timeframe
 from app.modules.portfolio.schemas import AssetRef
+from app.modules.signals.quality import DataQuality
 
 SignalClass = Literal["buy_potential", "neutral", "attention", "sell_potential"]
 
@@ -55,6 +56,11 @@ class SignalOut(BaseModel):
     data_source: str
     data_fetched_at: datetime
     data_is_stale: bool
+    #: signals.quality grade; anything but "valid" means buy/sell was withheld or the
+    #: signal is historical (is_current false) and must not be shown as today's view
+    data_quality: DataQuality
+    quality_reasons: list[str]
+    is_current: bool
     strategy_key: str
     strategy_version: int
     methodology_version: str
