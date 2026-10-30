@@ -23,7 +23,7 @@ A auditoria encontrou **9 problemas**:
 
 Nenhuma falha de autorização (IDOR/BOLA) foi encontrada: todas as rotas que recebem um identificador foram testadas com uma segunda conta. Não foram encontrados segredos no histórico do Git nem vulnerabilidades conhecidas nas dependências Python. As dependências npm têm só 3 alertas de severidade baixa, em ferramenta de build.
 
-**Todas as 9 falhas foram corrigidas na branch `security/hardening`** e cobertas por testes de regressão. Para as P1 e P2, verifiquei que os testes falham no código antigo. **A correção V-01 ainda precisa ser validada em produção depois do deploy**, porque depende de como a borda do Railway trata o `X-Real-IP` (veja Riscos residuais).
+**Todas as 9 falhas foram corrigidas na branch `security/hardening`** e cobertas por testes de regressão. Para as P1 e P2, verifiquei que os testes falham no código antigo. A correção V-01 foi validada em produção depois do deploy.
 
 **Nível de confiança:** alto para autenticação, autorização e manuseio de credenciais (revisão linha a linha mais testes automatizados); médio para a infraestrutura do Railway, que só pode ser observada de fora; baixo para o Voryn AI em execução, que não pôde ser testado ao vivo porque não há `ANTHROPIC_API_KEY` configurada. A revisão do Voryn AI foi feita só sobre o desenho. O sistema **não** deve ser considerado 100% seguro.
 
@@ -51,7 +51,7 @@ Não existe papel de administrador. A escalação vertical de privilégio não s
 - **Arquivos:** `frontend/src/app/api/[...path]/route.ts`, `frontend/src/lib/upstream-headers.ts` (novo), `.railway/railway.ts`, `docs/SECURITY.md`, `docs/DEPLOY.md`.
 - **Correção:** o BFF descarta todo cabeçalho de endereço vindo do cliente (`X-Forwarded-For`, `X-Real-IP`, `Forwarded`, `True-Client-IP`, `CF-Connecting-IP`…) e escreve um `X-Forwarded-For` com um único IP, lido do cabeçalho que a borda sobrescreve. Esse cabeçalho é configurável em `CLIENT_IP_HEADER`, com padrão `x-real-ip`. Valores que não parecem um IP são ignorados. Sem esse cabeçalho, todos os clientes compartilham um balde: a falha é mais restritiva, nunca burlável.
 - **Teste:** `upstream-headers.test.ts` (6 casos). DAST local pela pilha completa (BFF → API, limites de produção): com `X-Forwarded-For` forjado e `X-Real-IP` fixo, `429` na 21ª tentativa; sem `X-Real-IP`, também `429` na 21ª.
-- **Status:** corrigido na branch; **validação em produção pendente do deploy.**
+- **Status:** corrigido e **validado em produção** em 30/10/2026, após o deploy: 22 tentativas com `X-Forwarded-For` e `X-Real-IP` forjados deram `429` a partir da 21ª.
 
 ### V-02 — Tentativas ilimitadas do código 2FA no login
 - **Severidade:** Alta (P1) · CVSS 3.1 7.4 (`AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N`). O `AC:H` reflete que é preciso ter a senha.

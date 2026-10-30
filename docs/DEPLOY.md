@@ -90,6 +90,7 @@ Só na `api`: `PORT=8000` e `HOST=::`.
 | `ANTHROPIC_API_KEY` | `api` | habilita o Voryn AI (modelo `claude-opus-5-5`; ajuste com `AI_MODEL`, `AI_EFFORT`) |
 | `COINGECKO_API_KEY` + `COINGECKO_API_PLAN=demo` | `api`, `worker` | mais limite de requisições na CoinGecko |
 | `SENTRY_DSN` | `api`, `worker`, `beat` | captura de erros |
+| `SECURITY_ALERT_EMAIL` | `worker` | recebe os alertas de segurança (picos de falhas de login, acessos negados, erros 500…); sem ela, os alertas ficam só nos logs (`security_alert`) |
 
 O arquivo de infraestrutura mantém os valores que você definir no painel para essas variáveis (`preserve()`).
 
