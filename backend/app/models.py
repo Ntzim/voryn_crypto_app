@@ -6,6 +6,7 @@ from app.modules.alerts.models import Alert, Notification
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import AuthToken, MfaRecoveryCode, UserSession
 from app.modules.backtesting.models import BacktestRun
+from app.modules.exchange_connections.models import ExchangeConnection, ExchangeRecord
 from app.modules.market_data.models import (
     Cryptocurrency,
     DailyPrice,
@@ -31,6 +32,8 @@ __all__ = [
     "Cryptocurrency",
     "DailyPrice",
     "Exchange",
+    "ExchangeConnection",
+    "ExchangeRecord",
     "FxRate",
     "HistoricalCandle",
     "MarketPrice",

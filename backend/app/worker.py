@@ -23,6 +23,7 @@ from app.core.logging import configure_logging, get_logger
 from app.modules.alerts import service as alerts
 from app.modules.auth.service import purge_expired
 from app.modules.backtesting import service as backtests
+from app.modules.exchange_connections import service as exchanges
 from app.modules.market_data import candles
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import CandleProvider, ProviderError
@@ -60,6 +61,8 @@ celery_app.conf.update(
         "generate-signals": {"task": "signals.generate", "schedule": 30 * 60.0},
         "evaluate-alerts": {"task": "alerts.evaluate", "schedule": 5 * 60.0},
         "prune-notifications": {"task": "alerts.prune", "schedule": 24 * 3600.0},
+        # Read-only exchange accounts: incremental, so frequent runs stay cheap.
+        "sync-exchanges": {"task": "exchanges.sync_all", "schedule": 6 * 3600.0},
     },
 )
 
@@ -140,6 +143,36 @@ def run_backtest_task(run_id: str) -> None:
             await provider.aclose()
 
     _run(job)
+
+
+async def _sync_exchange(db: AsyncSession, connection_id: uuid.UUID) -> None:
+    candles_provider = BinanceCandleProvider()
+    fx = BcbPtaxProvider()
+    try:
+        await exchanges.sync(db, connection_id, exchanges.connector_for, candles_provider, fx)
+    finally:
+        await candles_provider.aclose()
+        await fx.aclose()
+
+
+@celery_app.task(name=exchanges.SYNC_TASK)
+def sync_exchange_task(connection_id: str) -> None:
+    _run(lambda db: _sync_exchange(db, uuid.UUID(connection_id)))
+
+
+@celery_app.task(name="exchanges.sync_all")
+def sync_all_exchanges_task() -> int:
+    async def job(db: AsyncSession) -> int:
+        ids = await exchanges.due_connections(db)
+        for connection_id in ids:
+            try:
+                await _sync_exchange(db, connection_id)
+            except Exception:
+                logger.exception("exchange_sync_failed", connection_id=str(connection_id))
+                await db.rollback()
+        return len(ids)
+
+    return _run(job)
 
 
 @celery_app.task(name="portfolio.refresh_history")

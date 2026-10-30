@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     coingecko_api_key: SecretStr | None = None
     coingecko_api_plan: Literal["public", "demo", "pro"] = "public"
     binance_base_url: str = "https://data-api.binance.vision"
+    #: signed (account) endpoints; used only with the user's read-only keys
+    binance_private_base_url: str = "https://api.binance.com"
     market_top_n: int = Field(default=100, ge=1, le=250)
     market_sync_interval_seconds: int = Field(default=300, ge=60)
     fx_sync_interval_seconds: int = Field(default=3600, ge=300)
