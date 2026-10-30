@@ -52,7 +52,7 @@ def _concrete(path: str) -> str:
 
 async def test_public_routes_exist() -> None:
     """Keeps the allowlist honest: a renamed public route must be renamed here too."""
-    assert PUBLIC <= set(_api_routes())
+    assert set(_api_routes()) >= PUBLIC
 
 
 async def test_every_other_route_requires_a_session(client: httpx.AsyncClient) -> None:
