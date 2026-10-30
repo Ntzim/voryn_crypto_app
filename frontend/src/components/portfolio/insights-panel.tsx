@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Insight } from "@/lib/api/types";
 
 const STYLE = {
-  info: { icon: Info, className: "text-primary bg-primary/10" },
+  info: { icon: Info, className: "text-primary-ink bg-primary/10" },
   attention: { icon: TriangleAlert, className: "text-warning bg-warning/10" },
   risk: { icon: ShieldAlert, className: "text-destructive bg-destructive/10" },
 } as const;

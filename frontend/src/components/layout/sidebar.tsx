@@ -96,7 +96,7 @@ function SidebarLink({ item, active, expanded }: { item: NavItem; active: boolea
       {active && (
         <span className="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-primary" aria-hidden />
       )}
-      <Icon className={cn("size-[18px] shrink-0", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+      <Icon className={cn("size-[18px] shrink-0", active ? "text-primary-ink" : "text-muted-foreground group-hover:text-foreground")} />
       <span className={cn("hidden flex-1 truncate", expanded && "xl:inline")}>{item.label}</span>
       {!item.available && (
         <span

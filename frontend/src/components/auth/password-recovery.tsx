@@ -25,7 +25,7 @@ function ResultPanel({
   description: React.ReactNode;
   action?: React.ReactNode;
 }) {
-  const color = { primary: "text-primary", success: "text-success", destructive: "text-destructive" }[tone];
+  const color = { primary: "text-primary-ink", success: "text-success", destructive: "text-destructive" }[tone];
   return (
     <div className="text-center">
       <span className="mx-auto mb-6 inline-flex size-12 items-center justify-center rounded-xl border border-border bg-surface">

@@ -29,7 +29,7 @@ export function RegisterForm() {
     return (
       <div className="text-center">
         <span className="mx-auto mb-6 inline-flex size-12 items-center justify-center rounded-xl border border-border bg-surface">
-          <MailCheck className="size-6 text-primary" />
+          <MailCheck className="size-6 text-primary-ink" />
         </span>
         <AuthHeading
           title="Confirme seu e-mail"
@@ -42,7 +42,7 @@ export function RegisterForm() {
         />
         <p className="text-sm text-muted-foreground">
           Não recebeu?{" "}
-          <button type="button" onClick={() => resend.mutate()} disabled={resend.isPending} className="font-medium text-primary hover:underline">
+          <button type="button" onClick={() => resend.mutate()} disabled={resend.isPending} className="font-medium text-primary-ink hover:underline">
             Reenviar link
           </button>
         </p>

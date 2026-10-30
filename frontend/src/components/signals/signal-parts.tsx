@@ -102,7 +102,7 @@ export function RisksAndInvalidation({ signal }: { signal: Signal }) {
         )}
       </div>
       <div>
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary">
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-primary-ink">
           <Target className="size-3.5" /> Condições de invalidação
         </p>
         <ul className="space-y-1.5 text-sm text-muted-foreground">

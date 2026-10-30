@@ -211,7 +211,7 @@ function SignalDetail({ signal, locale, timeZone }: { signal: Signal; locale: "p
           <ScoreHistory points={history.data} loading={history.isPending} locale={locale} />
         </section>
         <SignalProvenance signal={signal} locale={locale} timeZone={timeZone} />
-        <Link href={`/analise/${signal.asset.slug}?tf=${signal.timeframe}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+        <Link href={`/analise/${signal.asset.slug}?tf=${signal.timeframe}`} className="inline-flex items-center gap-1 text-sm font-medium text-primary-ink hover:underline">
           Abrir análise técnica <ArrowRight className="size-4" />
         </Link>
         <p className="text-xs text-subtle-foreground">

@@ -17,17 +17,22 @@
   --card-hover: #19222f;
   --popover: #151d28;
   --popover-foreground: #f8fafc;
-  --primary: #6366f1;
+  /* Fills (buttons, active states): white text on it is 4.8:1 (WCAG AA). */
+  --primary: #585bef;
+  /* Brand color as text or icon on the dark surfaces: 5.6:1 or more on all of them. */
+  --primary-ink: #8b93f8;
   --primary-foreground: #f8fafc;
   --violet: #8b5cf6;
   --secondary: #101820;
   --secondary-foreground: #f8fafc;
   --muted: #101820;
   --muted-foreground: #94a3b8;
-  --subtle-foreground: #64748b;
+  /* Captions and small labels: 4.7:1 or more on every surface (was 3.3:1). */
+  --subtle-foreground: #8190a6;
   --accent: #1b2533;
   --accent-foreground: #f8fafc;
-  --destructive: #ef4444;
+  /* Losses and errors, read as text: 4.8:1 or more on every surface. */
+  --destructive: #f25f5f;
   --success: #22c55e;
   --warning: #f59e0b;
   --border: rgb(148 163 184 / 0.12);
@@ -87,6 +92,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-ink: var(--primary-ink);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);

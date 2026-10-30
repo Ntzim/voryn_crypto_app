@@ -72,7 +72,7 @@ export function NotificationBell() {
           <p className="px-2 py-6 text-center text-sm text-muted-foreground">Nenhuma notificação ainda.</p>
         )}
         <div className="mt-1 border-t border-border pt-2">
-          <Link href="/alertas" className="block rounded-md px-2 py-1.5 text-center text-xs font-medium text-primary hover:bg-accent">
+          <Link href="/alertas" className="block rounded-md px-2 py-1.5 text-center text-xs font-medium text-primary-ink hover:bg-accent">
             Gerenciar alertas
           </Link>
         </div>

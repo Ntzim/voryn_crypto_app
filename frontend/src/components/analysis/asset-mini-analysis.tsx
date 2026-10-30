@@ -44,7 +44,7 @@ export function AssetMiniAnalysis({ slug }: { slug: string }) {
           )}
           <span className="text-xs text-muted-foreground">· gráfico diário, EMA 50/200</span>
         </div>
-        <Link href={`/analise/${slug}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+        <Link href={`/analise/${slug}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary-ink hover:underline">
           Análise técnica completa <ArrowRight className="size-3.5" />
         </Link>
       </div>

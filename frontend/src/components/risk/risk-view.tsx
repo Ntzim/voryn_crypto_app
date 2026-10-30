@@ -441,7 +441,7 @@ function ScenarioCard({
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-heading text-sm font-medium">
-          <FlaskConical className="size-4 text-primary" aria-hidden /> Simulador de cenários
+          <FlaskConical className="size-4 text-primary-ink" aria-hidden /> Simulador de cenários
         </CardTitle>
       </CardHeader>
       <CardContent>

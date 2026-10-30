@@ -145,7 +145,7 @@ export function IndicatorsCard({ analysis, locale, timeZone }: { analysis: Analy
           label="Volume"
           hint="Volume do último candle fechado comparado à média de 20 candles. Acima de 1,5× é considerado relevante."
           value={s.volume_ratio ? `${formatNumber(s.volume_ratio, locale, { digits: 2 })}× a média` : "—"}
-          tone={Number(s.volume_ratio) >= 1.5 ? "text-primary" : undefined}
+          tone={Number(s.volume_ratio) >= 1.5 ? "text-primary-ink" : undefined}
         />
         <Row
           label="Volatilidade anualizada"

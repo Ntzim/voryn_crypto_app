@@ -30,7 +30,7 @@ type Timeframe = NonNullable<BacktestInput["timeframe"]>;
 
 export const STATUS = {
   queued: { label: "Na fila", className: "text-muted-foreground" },
-  running: { label: "Processando", className: "text-primary" },
+  running: { label: "Processando", className: "text-primary-ink" },
   done: { label: "Concluído", className: "text-success" },
   failed: { label: "Falhou", className: "text-destructive" },
 } as const;

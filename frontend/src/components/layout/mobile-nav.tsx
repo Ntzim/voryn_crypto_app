@@ -49,7 +49,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
                 )}
               >
                 <TabIcon active={active}>
-                  <Icon className={cn("size-5", active && "text-primary")} aria-hidden />
+                  <Icon className={cn("size-5", active && "text-primary-ink")} aria-hidden />
                 </TabIcon>
                 <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
               </Link>
@@ -65,7 +65,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
               )}
             >
               <TabIcon active={moreActive}>
-                <Ellipsis className={cn("size-5", moreActive && "text-primary")} aria-hidden />
+                <Ellipsis className={cn("size-5", moreActive && "text-primary-ink")} aria-hidden />
               </TabIcon>
               Mais
             </SheetTrigger>
@@ -94,7 +94,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
                                 active ? "bg-accent text-foreground" : "text-sidebar-foreground",
                               )}
                             >
-                              <Icon className={cn("size-[18px]", active ? "text-primary" : "text-muted-foreground")} />
+                              <Icon className={cn("size-[18px]", active ? "text-primary-ink" : "text-muted-foreground")} />
                               <span className="flex-1">{item.label}</span>
                               {!item.available && (
                                 <span className="rounded-md border border-border px-1.5 py-px text-[10px] text-subtle-foreground">

@@ -243,7 +243,7 @@ function GridCard({ result, locale }: { result: BacktestResult; locale: Locale }
           </thead>
           <tbody>
             {result.grid.map((g) => (
-              <tr key={JSON.stringify(g.params)} className={cn("border-b border-border last:border-0", g.selected && "text-primary")}>
+              <tr key={JSON.stringify(g.params)} className={cn("border-b border-border last:border-0", g.selected && "text-primary-ink")}>
                 <td className="py-2">
                   {paramsText(g.params)}
                   {g.selected && <span className="ml-2 text-xs">escolhido</span>}
