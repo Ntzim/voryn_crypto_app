@@ -14,7 +14,11 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project --no-cache
 
 FROM base AS runtime
-RUN useradd --system --uid 10001 --home /app voryn
+# pip and ensurepip are not used at runtime (uv builds the venv in the deps stage) and they
+# vendor their own urllib3/msgpack/setuptools, which scanners flag (Trivy, HIGH).
+RUN useradd --system --uid 10001 --home /app voryn \
+    && rm -rf /usr/local/lib/python3.13/site-packages/pip* /usr/local/lib/python3.13/ensurepip \
+              /usr/local/bin/pip*
 COPY --from=deps /opt/venv /opt/venv
 COPY --chown=voryn:voryn alembic.ini ./
 COPY --chown=voryn:voryn alembic ./alembic
