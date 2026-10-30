@@ -105,7 +105,10 @@ def parse_klines(rows: object, now: datetime | None = None) -> list[Candle]:
             rejected += 1
             continue
         consistent = (
-            open_ms > last_open
+            # Decimal() accepts "NaN" and "Infinity": NaN breaks the comparisons below and
+            # infinity would pass them.
+            all(v.is_finite() for v in (o, h, low, c, vol, quote_vol))
+            and open_ms > last_open
             and min(o, h, low, c) > 0
             and h >= max(o, c)
             and low <= min(o, c)

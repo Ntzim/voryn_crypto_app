@@ -60,6 +60,21 @@ def test_binance_parser_rejects_inconsistent_rows_and_flags_live_candle() -> Non
     assert BinanceCandleProvider(client=httpx.AsyncClient()).pair_for("usdt") is None
 
 
+def test_binance_parser_drops_non_finite_values() -> None:
+    """A tampered payload must not store infinite prices or abort the whole series."""
+    ms = int(datetime(2026, 1, 1, tzinfo=UTC).timestamp() * 1000)
+    hour = 3_600_000
+    rows = [
+        [ms, "10", "12", "9", "11", "5", ms + hour - 1, "55"],
+        [ms + hour, "11", "Infinity", "9", "11", "5", ms + 2 * hour - 1, "55"],
+        [ms + 2 * hour, "11", "NaN", "9", "11", "5", ms + 3 * hour - 1, "55"],
+        [ms + 3 * hour, "11", "12", "10", "11", "-Infinity", ms + 4 * hour - 1, "55"],
+        [ms + 4 * hour, "11", "13", "10", "12", "5", ms + 5 * hour - 1, "60"],
+    ]
+    candles = parse_klines(rows, now=datetime(2026, 1, 2, tzinfo=UTC))
+    assert [c.close for c in candles] == [D("11"), D("12")]
+
+
 async def test_candles_are_cached_persisted_and_served_when_provider_fails(
     db: AsyncSession, assets: dict[str, Cryptocurrency]
 ) -> None:
