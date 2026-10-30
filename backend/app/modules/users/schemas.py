@@ -1,3 +1,4 @@
+import re
 import uuid
 import zoneinfo
 from datetime import datetime
@@ -31,16 +32,29 @@ class UserOut(BaseModel):
     settings: UserSettingsOut
 
 
+# Links, domains and e-mail addresses. The name is printed in e-mails sent to the address
+# given at sign-up, which need not belong to whoever signs up: a "name" such as
+# "Conta bloqueada, acesse www.example.com" would reach that inbox from Voryn's domain,
+# and mail clients turn the domain into a link.
+_LINK_LIKE = re.compile(r"[<>@/\\]|:/|www\.|[a-z0-9-]\.[a-z]{2,}", re.IGNORECASE)
+
+
+def validate_full_name(value: str) -> str:
+    value = " ".join(value.split())
+    if len(value) < 2:
+        raise ValueError("Informe seu nome.")
+    if _LINK_LIKE.search(value):
+        raise ValueError("O nome não pode conter links, e-mails ou endereços de sites.")
+    return value
+
+
 class ProfileUpdateIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
 
     @field_validator("full_name")
     @classmethod
-    def _strip(cls, value: str) -> str:
-        value = " ".join(value.split())
-        if len(value) < 2:
-            raise ValueError("Informe seu nome.")
-        return value
+    def _name(cls, value: str) -> str:
+        return validate_full_name(value)
 
 
 class SettingsUpdateIn(BaseModel):

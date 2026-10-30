@@ -2,6 +2,7 @@ import time
 
 import httpx
 import pyotp
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -71,6 +72,38 @@ async def test_duplicate_registration_does_not_reveal_account(
     assert response.status_code == 202
     assert outbox[-1].subject == "Tentativa de cadastro na Voryn"
     assert await db.scalar(select(func.count()).select_from(User)) == 1
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "Conta bloqueada, acesse www.voryn-suporte.com",
+        "Ana https://evil.example",
+        "Ana evil.example",
+        "Ana <b>Souza</b>",
+        "Ana suporte@evil.example",
+    ],
+)
+async def test_link_like_names_are_rejected(
+    client: httpx.AsyncClient, outbox: Outbox, name: str
+) -> None:
+    """The name is printed in an e-mail sent to whatever address is given at sign-up."""
+    response = await client.post(
+        f"{API}/auth/register",
+        json={"email": "victim@example.com", "password": PASSWORD, "full_name": name},
+    )
+    assert response.status_code == 422
+    assert outbox == []
+
+    await register_verified(client, outbox)
+    await login(client)
+    assert (await client.patch(f"{API}/me", json={"full_name": name})).status_code == 422
+
+
+async def test_ordinary_names_are_accepted(client: httpx.AsyncClient, outbox: Outbox) -> None:
+    await register_verified(client, outbox, name="Maria-José D'Ávila J. R. Souza")
+    await login(client)
+    assert (await client.get(f"{API}/me")).json()["full_name"] == "Maria-José D'Ávila J. R. Souza"
 
 
 async def test_weak_password_is_rejected(client: httpx.AsyncClient) -> None:
