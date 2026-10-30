@@ -11,6 +11,9 @@ RUN npm ci && npm cache clean --force
 FROM deps AS dev
 COPY . .
 EXPOSE 3000
+# Root on purpose: the bind-mounted source keeps the host's file owner. Never deployed;
+# the runtime stage below runs as an unprivileged user.
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]
 
 FROM deps AS build
