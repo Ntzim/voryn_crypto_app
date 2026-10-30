@@ -86,17 +86,19 @@ function SidebarLink({ item, active, expanded }: { item: NavItem; active: boolea
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex h-9 items-center justify-center gap-3 rounded-lg px-2.5 text-sm transition-colors",
+        // Quiet navigation (Linear): the current page is marked by a raised surface and full
+        // contrast, not by color; the rest stays a step dimmer than the content.
+        "group relative flex h-9 items-center justify-center gap-3 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-150",
         expanded && "xl:justify-start",
         active
-          ? "bg-sidebar-accent text-foreground"
-          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-foreground",
+          ? "bg-sidebar-accent text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
+          : "text-sidebar-foreground hover:bg-white/4 hover:text-foreground",
       )}
     >
-      {active && (
-        <span className="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-primary" aria-hidden />
-      )}
-      <Icon className={cn("size-[18px] shrink-0", active ? "text-primary-ink" : "text-muted-foreground group-hover:text-foreground")} />
+      <Icon
+        className={cn("size-[17px] shrink-0", active ? "text-foreground" : "text-subtle-foreground group-hover:text-foreground")}
+        strokeWidth={active ? 2.1 : 1.8}
+      />
       <span className={cn("hidden flex-1 truncate", expanded && "xl:inline")}>{item.label}</span>
       {!item.available && (
         <span
