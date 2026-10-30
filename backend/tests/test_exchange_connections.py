@@ -145,6 +145,13 @@ async def test_permissions_flag_anything_beyond_reading() -> None:
     assert perms.write_permissions == ["enableNewThing", "enableWithdrawals"]  # unknown → write
 
 
+async def test_ip_restricted_read_only_key_is_accepted() -> None:
+    """Restricting a key to known IPs makes it safer; it must not count as a write grant."""
+    fake = FakeBinance({"enableReading": True, "enableWithdrawals": False, "ipRestrict": True})
+    perms = await _client(fake).permissions()
+    assert perms.can_read and perms.read_only and perms.write_permissions == []
+
+
 async def test_balances_and_auth_errors() -> None:
     fake = FakeBinance()
     assert await _client(fake).balances() == {"BTC": D("0.5")}

@@ -26,7 +26,8 @@ from app.modules.exchange_connections.connectors.base import (
 )
 
 QUOTES = ("BRL", "USDT", "USDC", "FDUSD")
-READ_FLAGS = {"enableReading", "enableFixReadOnly"}
+#: flags that grant no write capability; ipRestrict only narrows where the key works
+READ_FLAGS = {"enableReading", "enableFixReadOnly", "ipRestrict"}
 INITIAL_LOOKBACK = timedelta(days=365)
 #: Binance accepts at most 90 days per deposit/withdrawal query
 WINDOW = timedelta(days=89)
