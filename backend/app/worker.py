@@ -20,7 +20,10 @@ from app.core.config import get_settings
 from app.core.db import build_engine
 from app.core.email import EmailMessage, send_email
 from app.core.logging import configure_logging, get_logger
+from app.core.security_events import WINDOW_SECONDS, Alert
+from app.core.security_events import check as check_security_events
 from app.modules.alerts import service as alerts
+from app.modules.audit import service as audit
 from app.modules.auth.service import purge_expired
 from app.modules.backtesting import service as backtests
 from app.modules.exchange_connections import service as exchanges
@@ -63,6 +66,9 @@ celery_app.conf.update(
         "prune-notifications": {"task": "alerts.prune", "schedule": 24 * 3600.0},
         # Read-only exchange accounts: incremental, so frequent runs stay cheap.
         "sync-exchanges": {"task": "exchanges.sync_all", "schedule": 6 * 3600.0},
+        # Security monitoring: abnormal event rates in the last 5-minute window.
+        "security-check": {"task": "security.check", "schedule": float(WINDOW_SECONDS)},
+        "prune-audit": {"task": "audit.prune", "schedule": 24 * 3600.0},
     },
 )
 
@@ -79,6 +85,36 @@ def _run[T](job: Callable[[AsyncSession], Awaitable[T]]) -> T:
             await redis_module.close_redis()
 
     return asyncio.run(runner())
+
+
+async def _notify_security(alerts_: list[Alert]) -> None:
+    to = settings.security_alert_email
+    if not to:
+        return
+    lines = "\n".join(
+        f"- {a.kind}: {a.count} eventos em 5 min (limite {a.threshold})" for a in alerts_
+    )
+    await send_email(
+        EmailMessage(
+            to=to,
+            subject="[Voryn] Alerta de segurança",
+            text=f"Atividade anormal detectada:\n\n{lines}\n\n"
+            "Detalhes nos logs: procure por security_event e security_alert.",
+        )
+    )
+
+
+@celery_app.task(name="security.check")
+def security_check_task() -> int:
+    async def job(_: AsyncSession) -> int:
+        return len(await check_security_events(_notify_security))
+
+    return _run(job)
+
+
+@celery_app.task(name="audit.prune")
+def prune_audit_task() -> int:
+    return _run(audit.prune)
 
 
 @celery_app.task(name="email.send", autoretry_for=(Exception,), retry_backoff=True, max_retries=5)

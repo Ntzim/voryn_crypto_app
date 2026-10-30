@@ -11,12 +11,14 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import rate_limit
+from app.core import rate_limit, security_events
+from app.core.authz import owned_or_404
 from app.core.crypto import decrypt, encrypt
-from app.core.errors import AppError, NotFoundError
+from app.core.errors import AppError
 from app.core.logging import get_logger
 from app.core.security import hash_token
 from app.core.tasks import enqueue
+from app.modules.audit.service import AuditAction
 from app.modules.audit.service import record as audit
 from app.modules.exchange_connections import mapping
 from app.modules.exchange_connections.connectors.base import (
@@ -126,7 +128,7 @@ async def create_connection(
     await db.flush()
     audit(
         db,
-        "exchange.connected",
+        AuditAction.EXCHANGE_CONNECTED,
         user_id=user_id,
         ip_address=ip,
         connection_id=str(conn.id),
@@ -149,17 +151,16 @@ async def list_connections(db: AsyncSession, user_id: uuid.UUID) -> list[Exchang
 async def get_owned(
     db: AsyncSession, user_id: uuid.UUID, connection_id: uuid.UUID
 ) -> ExchangeConnection:
-    conn = await db.get(ExchangeConnection, connection_id)
-    if conn is None or conn.user_id != user_id:
-        raise NotFoundError("Conexão não encontrada.")
-    return conn
+    return await owned_or_404(
+        db, ExchangeConnection, connection_id, user_id, "Conexão não encontrada."
+    )
 
 
 async def delete_connection(db: AsyncSession, conn: ExchangeConnection, ip: str | None) -> None:
     """Remove credentials and synced records; imported transactions stay in the portfolio."""
     audit(
         db,
-        "exchange.disconnected",
+        AuditAction.EXCHANGE_DISCONNECTED,
         user_id=conn.user_id,
         ip_address=ip,
         connection_id=str(conn.id),
@@ -254,6 +255,21 @@ def resolver(db: AsyncSession, candles: CandleProvider) -> mapping.Resolver:
     return mapping.Resolver(asset, usd_close)
 
 
+async def _sync_failed(
+    db: AsyncSession, conn: ExchangeConnection, action: str, reason: str
+) -> None:
+    """Persist the failure on this connection only; other connections sync independently.
+
+    The stored and audited message is the connector's user-facing text, never the raw
+    exchange response or the credentials.
+    """
+    audit(db, action, user_id=conn.user_id, connection_id=str(conn.id), reason=reason)
+    await db.commit()
+    await security_events.emit(
+        "exchange_sync_failed", connection_id=str(conn.id), exchange=conn.exchange_id, reason=reason
+    )
+
+
 async def sync(
     db: AsyncSession,
     connection_id: uuid.UUID,
@@ -280,18 +296,18 @@ async def sync(
                 "can_read": perms.can_read,
                 "write_permissions": perms.write_permissions,
             }
-            await db.commit()
+            await _sync_failed(db, conn, AuditAction.EXCHANGE_BLOCKED, "write_permissions")
             return
         balances = await connector.balances()
         known = set(conn.sync_cursor.get("assets", [])) | set(balances)
         batch = await connector.history(conn.sync_cursor, sorted(known))
     except ConnectorAuthError as exc:
         conn.status, conn.last_error = "blocked", exc.message
-        await db.commit()
+        await _sync_failed(db, conn, AuditAction.EXCHANGE_BLOCKED, "key_rejected")
         return
     except ConnectorError as exc:
         conn.status, conn.last_error = "error", exc.message
-        await db.commit()
+        await _sync_failed(db, conn, AuditAction.EXCHANGE_SYNC_FAILED, "exchange_error")
         return
     finally:
         await connector.aclose()

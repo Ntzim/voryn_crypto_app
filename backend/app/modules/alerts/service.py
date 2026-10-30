@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit
+from app.core.authz import owned_or_404
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
 from app.modules.alerts import conditions
@@ -109,12 +110,7 @@ async def _out(db: AsyncSession, alerts: list[Alert]) -> list[AlertOut]:
 
 
 async def get_owned(db: AsyncSession, user_id: uuid.UUID, alert_id: uuid.UUID) -> Alert:
-    alert = (
-        await db.execute(select(Alert).where(Alert.id == alert_id, Alert.user_id == user_id))
-    ).scalar_one_or_none()
-    if alert is None:
-        raise NotFoundError("Alerta não encontrado.")
-    return alert
+    return await owned_or_404(db, Alert, alert_id, user_id, "Alerta não encontrado.")
 
 
 def _apply(alert: Alert, data: AlertIn) -> None:

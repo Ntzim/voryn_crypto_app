@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import distinct_on, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import security_events
 from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
 from app.core.logging import get_logger
@@ -226,8 +227,8 @@ async def generate_graded(
         quote_max_age=timedelta(seconds=get_settings().market_stale_after_seconds),
     )
     if not report.ok:
-        logger.warning(
-            "signal_quality_degraded",
+        await security_events.emit(
+            "signal_blocked",
             asset=crypto.source_id,
             timeframe=timeframe,
             data_quality=report.status,
@@ -469,10 +470,11 @@ async def for_asset(
         raise
     except (AppError, ProviderError) as exc:
         # No fresh analysis: show the most recent stored one, flagged as historical.
-        logger.warning(
+        await security_events.emit(
             "signal_blocked",
             asset=slug,
             timeframe=timeframe,
+            data_quality="unavailable",
             cause=getattr(exc, "code", type(exc).__name__),
         )
         signal = (

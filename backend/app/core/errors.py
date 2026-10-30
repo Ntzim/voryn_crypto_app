@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.core import security_events
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -101,6 +102,8 @@ def _translate(err: Any) -> str:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(request: Request, exc: AppError) -> JSONResponse:
+        if exc.status_code == 429:
+            await security_events.emit("rate_limited", path=request.url.path, code=exc.code)
         return JSONResponse(
             error_body(request, exc.code, exc.message, exc.details),
             status_code=exc.status_code,
@@ -130,6 +133,7 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
         logger.exception("unhandled_error", path=request.url.path)
+        await security_events.emit("server_error", path=request.url.path)
         return JSONResponse(
             error_body(request, "internal_error", "Erro interno. Tente novamente mais tarde."),
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

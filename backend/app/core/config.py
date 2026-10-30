@@ -82,6 +82,8 @@ class Settings(BaseSettings):
     ai_max_turns_per_conversation: int = Field(default=30, ge=2)
 
     sentry_dsn: SecretStr | None = None
+    #: receives security alerts (abnormal failed logins, denied access...); logs only if unset
+    security_alert_email: str | None = None
 
     @field_validator("database_url")
     @classmethod
@@ -148,6 +150,11 @@ class Settings(BaseSettings):
             problems.append("TRUST_PROXY_HEADERS must be true (the API runs behind the web BFF)")
         if self.rate_limit_scale != 1:
             problems.append("RATE_LIMIT_SCALE must be 1 in production")
+        # Outbound calls only ever go to these configured hosts (no user-supplied URLs);
+        # requiring TLS keeps a misconfiguration from sending keys or trusting data in clear.
+        for name in ("coingecko_base_url", "binance_base_url", "binance_private_base_url"):
+            if not getattr(self, name).startswith("https://"):
+                problems.append(f"{name.upper()} must use https")
         if problems:
             raise RuntimeError("Invalid production configuration: " + "; ".join(problems))
 

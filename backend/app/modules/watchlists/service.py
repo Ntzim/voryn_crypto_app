@@ -7,6 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.authz import owned_or_404
 from app.core.errors import AppError, ConflictError, NotFoundError
 from app.modules.market_data.models import Cryptocurrency
 from app.modules.watchlists.models import Watchlist, WatchlistAsset
@@ -52,14 +53,7 @@ async def list_watchlists(
 
 async def get_owned(db: AsyncSession, user_id: uuid.UUID, watchlist_id: uuid.UUID) -> Watchlist:
     """Ownership check: other users' lists are indistinguishable from missing ones."""
-    watchlist = (
-        await db.execute(
-            select(Watchlist).where(Watchlist.id == watchlist_id, Watchlist.user_id == user_id)
-        )
-    ).scalar_one_or_none()
-    if watchlist is None:
-        raise NotFoundError("Lista não encontrada.")
-    return watchlist
+    return await owned_or_404(db, Watchlist, watchlist_id, user_id, "Lista não encontrada.")
 
 
 async def create(db: AsyncSession, user_id: uuid.UUID, name: str) -> Watchlist:
