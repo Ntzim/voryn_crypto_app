@@ -101,6 +101,27 @@ class RsiReversion(Strategy):
         return {"low": self.low, "high": self.high, "period": self.period}
 
 
+class MacdCross(Strategy):
+    key = "macd_cross"
+
+    def __init__(self, fast: int = 12, slow: int = 26, signal: int = 9) -> None:
+        if not 2 <= fast < slow <= 100 or not 2 <= signal <= 50:
+            raise ValueError("A média rápida do MACD deve ser menor que a lenta.")
+        self.fast, self.slow, self.signal = fast, slow, signal
+        self.warmup = slow + signal
+        self._hist: ind.Series = []
+
+    def prepare(self, candles: Sequence[Candle]) -> None:
+        self._hist = ind.macd([c.close for c in candles], self.fast, self.slow, self.signal)[2]
+
+    def decide(self, candles: Sequence[Candle], t: int, in_position: bool) -> bool:
+        value = self._hist[t]
+        return value is not None and value > 0
+
+    def params(self) -> dict[str, int | str]:
+        return {"fast": self.fast, "slow": self.slow, "signal": self.signal}
+
+
 # --------------------------------------------------------------------------- simulation
 
 
@@ -189,6 +210,8 @@ class Metrics:
     trades: int
     win_rate_pct: Decimal | None
     avg_trade_pct: Decimal | None
+    #: gross profit ÷ gross loss of closed trades
+    profit_factor: Decimal | None
     exposure_pct: Decimal
     fees: Decimal
 
@@ -218,6 +241,9 @@ def metrics(run: Run, timeframe: Timeframe, capital: Decimal = INITIAL_CAPITAL) 
         vol = sd * periods.sqrt() * 100
         sharpe = mean / sd * periods.sqrt() if sd > 0 else None
     closed = [t.return_pct for t in run.trades if t.return_pct is not None]
+    pnl = [t.proceeds - t.cost for t in run.trades if t.proceeds is not None]
+    gains = sum((x for x in pnl if x > 0), ZERO)
+    losses = -sum((x for x in pnl if x < 0), ZERO)
     wins = [r for r in closed if r > 0]
     return Metrics(
         start=start,
@@ -232,6 +258,7 @@ def metrics(run: Run, timeframe: Timeframe, capital: Decimal = INITIAL_CAPITAL) 
         trades=len(run.trades),
         win_rate_pct=Decimal(len(wins)) / len(closed) * 100 if closed else None,
         avg_trade_pct=sum(closed, ZERO) / len(closed) if closed else None,
+        profit_factor=gains / losses if losses > 0 else None,
         exposure_pct=Decimal(sum(run.exposure)) / len(run.exposure) * 100 if run.exposure else ZERO,
         fees=run.fees,
     )

@@ -64,6 +64,11 @@ PARAMS: dict[str, list[ParamSpecOut]] = {
         _spec("fast", "EMA rápida", 12, (2, 100), [9, 12, 20]),
         _spec("slow", "EMA lenta", 50, (5, 200), [26, 50, 100]),
     ],
+    "macd_cross": [
+        _spec("fast", "Média rápida", 12, (2, 50), [8, 12]),
+        _spec("slow", "Média lenta", 26, (5, 100), [21, 26, 35]),
+        _spec("signal", "Linha de sinal", 9, (2, 50), [9]),
+    ],
     "rsi_reversion": [
         _spec("low", "Compra com RSI abaixo de", 30, (5, 50), [25, 30, 35]),
         _spec("high", "Venda com RSI acima de", 70, (50, 95), [65, 70, 75]),
@@ -84,6 +89,13 @@ CATALOGUE = [
         label="Cruzamento de médias (EMA)",
         description="Comprado enquanto a média exponencial rápida está acima da lenta.",
         params=PARAMS["ema_cross"],
+        optimizable=True,
+    ),
+    StrategyInfoOut(
+        key="macd_cross",
+        label="MACD",
+        description="Comprado enquanto o histograma do MACD é positivo (linha acima do sinal).",
+        params=PARAMS["macd_cross"],
         optimizable=True,
     ),
     StrategyInfoOut(
@@ -130,6 +142,8 @@ def _param_values(strategy: str, params: dict[str, int]) -> dict[str, int]:
 def _factory(strategy: str) -> Callable[[dict[str, int]], bt.Strategy]:
     if strategy == "ema_cross":
         return lambda p: bt.EmaCross(p["fast"], p["slow"])
+    if strategy == "macd_cross":
+        return lambda p: bt.MacdCross(p["fast"], p["slow"], p["signal"])
     if strategy == "rsi_reversion":
         return lambda p: bt.RsiReversion(p["low"], p["high"])
     return lambda _: bt.BuyAndHold()
@@ -262,6 +276,7 @@ def _metrics_out(m: bt.Metrics) -> MetricsOut:
         trades=m.trades,
         win_rate_pct=q(m.win_rate_pct),
         avg_trade_pct=q(m.avg_trade_pct),
+        profit_factor=q(m.profit_factor),
         exposure_pct=m.exposure_pct.quantize(Decimal("0.01")),
         fees=m.fees.quantize(Decimal("0.01")),
     )

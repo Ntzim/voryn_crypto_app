@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.modules.portfolio.schemas import AssetRef
 
-StrategyKey = Literal["voryn_signal", "ema_cross", "rsi_reversion", "buy_and_hold"]
+StrategyKey = Literal["voryn_signal", "ema_cross", "macd_cross", "rsi_reversion", "buy_and_hold"]
 BacktestTimeframe = Literal["1d", "4h"]
 RunStatus = Literal["queued", "running", "done", "failed"]
 Segment = Literal["train", "validation"]
@@ -54,6 +54,7 @@ class MetricsOut(BaseModel):
     trades: int
     win_rate_pct: Decimal | None
     avg_trade_pct: Decimal | None
+    profit_factor: Decimal | None
     exposure_pct: Decimal
     fees: Decimal
 

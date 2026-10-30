@@ -43,7 +43,13 @@ def wave(n: int, base: float = 100.0) -> list[Candle]:
 
 
 @pytest.mark.parametrize(
-    "make", [lambda: bt.EmaCross(9, 26), lambda: bt.RsiReversion(35, 65), bt.BuyAndHold]
+    "make",
+    [
+        lambda: bt.EmaCross(9, 26),
+        lambda: bt.MacdCross(12, 26, 9),
+        lambda: bt.RsiReversion(35, 65),
+        bt.BuyAndHold,
+    ],
 )
 def test_decisions_never_depend_on_future_candles(make: object) -> None:
     candles = wave(240)
@@ -107,6 +113,18 @@ def test_metrics() -> None:
     m = bt.metrics(run, "1d")
     assert m.total_return_pct == 10 and m.max_drawdown_pct == -25
     assert m.exposure_pct == 50 and m.sharpe is None  # too few observations
+    assert m.profit_factor is None  # no closed trades
+
+
+def test_profit_factor_is_gross_gains_over_gross_losses() -> None:
+    run = bt.Run(equity=[(T0, D(10000))], exposure=[False])
+    run.trades = [
+        bt.Trade(T0, D(1), D(1), D(100), T0, D(1), D(130)),  # +30
+        bt.Trade(T0, D(1), D(1), D(100), T0, D(1), D(90)),  # −10
+        bt.Trade(T0, D(1), D(1), D(100), T0, D(1), D(95)),  # −5
+    ]
+    m = bt.metrics(run, "1d")
+    assert m.profit_factor == 2 and m.win_rate_pct is not None and m.trades == 3
 
 
 def test_optimization_uses_train_only_and_validation_runs_once() -> None:
@@ -176,6 +194,7 @@ async def test_backtest_lifecycle(
     assert {s["key"] for s in catalogue} == {
         "voryn_signal",
         "ema_cross",
+        "macd_cross",
         "rsi_reversion",
         "buy_and_hold",
     }
