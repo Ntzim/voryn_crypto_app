@@ -40,7 +40,8 @@ class Settings(BaseSettings):
     session_ttl_days: int = 30
     session_idle_days: int = 7
 
-    email_backend: Literal["smtp", "console", "memory"] = "console"
+    #: "resend" sends over HTTPS (works where outbound SMTP is blocked, e.g. Railway Hobby)
+    email_backend: Literal["smtp", "resend", "console", "memory"] = "console"
     # "queue" hands delivery to the Celery worker so request latency never depends on SMTP.
     email_delivery: Literal["queue", "inline"] = "queue"
     email_from: str = "Voryn <no-reply@voryn.app>"
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
     smtp_username: str | None = None
     smtp_password: SecretStr | None = None
     smtp_starttls: bool = False
+    resend_api_key: SecretStr | None = None
 
     email_verification_ttl_hours: int = 48
     password_reset_ttl_minutes: int = 30
@@ -91,12 +93,24 @@ class Settings(BaseSettings):
         return value
 
     @field_validator(
-        "anthropic_api_key", "coingecko_api_key", "smtp_password", "sentry_dsn", mode="before"
+        "anthropic_api_key",
+        "coingecko_api_key",
+        "smtp_password",
+        "resend_api_key",
+        "sentry_dsn",
+        mode="before",
     )
     @classmethod
     def _blank_secret_is_none(cls, value: object) -> object:
         # docker compose passes unset optional variables as empty strings.
         return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("frontend_url")
+    @classmethod
+    def _frontend_url_scheme(cls, value: str) -> str:
+        # Railway exposes RAILWAY_PUBLIC_DOMAIN without a scheme; public domains are HTTPS.
+        value = value.strip().rstrip("/")
+        return value if "://" in value else f"https://{value}"
 
     @field_validator("encryption_keys", "cors_origins", mode="before")
     @classmethod
@@ -121,8 +135,19 @@ class Settings(BaseSettings):
             problems.append("ENCRYPTION_KEYS must contain at least one Fernet key")
         if not self.cookie_secure:
             problems.append("COOKIE_SECURE must be true in production")
-        if self.email_backend != "smtp":
-            problems.append("EMAIL_BACKEND must be smtp in production")
+        if self.email_backend not in ("smtp", "resend"):
+            problems.append("EMAIL_BACKEND must be smtp or resend in production")
+        if self.email_backend == "resend" and self.resend_api_key is None:
+            problems.append("RESEND_API_KEY is required with EMAIL_BACKEND=resend")
+        if self.email_backend == "smtp" and self.smtp_host in ("localhost", "127.0.0.1", "mailpit"):
+            problems.append("SMTP_HOST must point to a real mail server in production")
+        if not self.frontend_url.startswith("https://") or "localhost" in self.frontend_url:
+            problems.append("FRONTEND_URL must be the public https address of the web app")
+        if not self.trust_proxy_headers:
+            # Behind the BFF every request would share one IP and one rate-limit bucket.
+            problems.append("TRUST_PROXY_HEADERS must be true (the API runs behind the web BFF)")
+        if self.rate_limit_scale != 1:
+            problems.append("RATE_LIMIT_SCALE must be 1 in production")
         if problems:
             raise RuntimeError("Invalid production configuration: " + "; ".join(problems))
 
