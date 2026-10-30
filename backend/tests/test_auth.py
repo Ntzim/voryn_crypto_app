@@ -306,3 +306,37 @@ async def test_mfa_challenge_attempts_are_limited(
         f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": "000000"}
     )
     assert response.status_code == 429
+
+
+async def test_mfa_failures_are_limited_per_account_across_challenges(
+    client: httpx.AsyncClient,
+    outbox: Outbox,
+) -> None:
+    """A fresh challenge only costs the password, so the cap must span challenges."""
+    await register_verified(client, outbox)
+    await login(client)
+    totp = pyotp.TOTP((await client.post(f"{API}/me/mfa/setup")).json()["secret"])
+    await client.post(f"{API}/me/mfa/enable", json={"code": totp.now()})
+    await client.post(f"{API}/auth/logout")
+    outbox.clear()
+
+    for _ in range(2):  # two challenges, each within its own 5-attempt cap
+        mfa_token = (await login(client)).json()["mfa_token"]
+        for _ in range(5):
+            response = await client.post(
+                f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": "000000"}
+            )
+            assert response.status_code == 401
+
+    # Even the correct code is refused until the window passes.
+    mfa_token = (await login(client)).json()["mfa_token"]
+    code = totp.at(time.time() + 30)
+    response = await client.post(
+        f"{API}/auth/login/mfa", json={"mfa_token": mfa_token, "code": code}
+    )
+    assert response.status_code == 429
+
+    # The owner is warned once: reaching the second factor required the password.
+    notices = [m for m in outbox if m.subject == "Alerta de segurança da Voryn"]
+    assert len(notices) == 1
+    assert "errou o código" in notices[0].text
