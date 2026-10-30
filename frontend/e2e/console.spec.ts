@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 import { login, registerAndVerify, uniqueEmail } from "./helpers";
 
 test("app pages render without hydration errors", async ({ page }) => {
+  // Sign-up plus twelve pages: under the full parallel suite on the dev server, 60 s is tight.
+  test.setTimeout(120_000);
   const problems: string[] = [];
   page.on("console", (m) => {
     if (m.type() === "error" && /hydrat|did not match|instant navigation/i.test(m.text())) problems.push(m.text().slice(0, 300));
