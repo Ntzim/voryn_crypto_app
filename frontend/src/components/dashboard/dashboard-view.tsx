@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Plus, Wallet } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -8,8 +9,6 @@ import { DataStatus } from "@/components/common/data-status";
 import { Hint } from "@/components/common/hint";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { AssetList } from "@/components/market/asset-list";
-import { AllocationChart } from "@/components/portfolio/allocation-chart";
-import { EquityChart } from "@/components/portfolio/equity-chart";
 import { PositionsTable } from "@/components/portfolio/positions-table";
 import { SummaryCards } from "@/components/portfolio/summary-cards";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,25 @@ import { useInsights, usePerformance, usePortfolio, useSummary } from "@/lib/por
 import { useAssets, useMarketOverview, useMe, usePreferences } from "@/lib/queries";
 
 import { AttentionPanel } from "./attention-panel";
+
+// Chart libraries (lightweight-charts, recharts) load after the figures: on a slow connection
+// the summary and the lists render first instead of waiting for them.
+const chartSkeleton = (height: string) =>
+  function ChartSkeleton() {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <Skeleton className={`${height} w-full`} />
+      </div>
+    );
+  };
+const EquityChart = dynamic(() => import("@/components/portfolio/equity-chart").then((m) => m.EquityChart), {
+  ssr: false,
+  loading: chartSkeleton("h-72"),
+});
+const AllocationChart = dynamic(() => import("@/components/portfolio/allocation-chart").then((m) => m.AllocationChart), {
+  ssr: false,
+  loading: chartSkeleton("h-44"),
+});
 
 const UNIVERSE_HINT =
   "Calculado sobre os 100 maiores ativos por capitalização acompanhados pela Voryn, não sobre o mercado inteiro.";
