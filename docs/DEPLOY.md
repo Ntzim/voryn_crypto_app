@@ -109,7 +109,9 @@ O arquivo de infraestrutura mantém os valores que você definir no painel para 
 - **Rotação de segredos:**
   - Trocar `SECRET_KEY` desconecta todos os usuários.
   - Para `ENCRYPTION_KEYS`, use `nova,antiga`: a primeira cifra e todas são aceitas para decifrar. Retire a antiga só depois de recifrar os dados.
-- **Migrations:** rodam sozinhas no pre-deploy da `api`. Sempre crie migrations compatíveis com a versão anterior do código, porque o `worker` pode reiniciar um pouco depois da `api`.
+- **Migrations:** rodam sozinhas no pre-deploy da `api`. O `worker` e o `beat` não esperam por elas e podem subir antes **ou** depois. Em 30/10/2026, o worker com código novo rodou uma tarefa 29 s antes da migration e falhou uma vez (`column ... does not exist`); a execução seguinte funcionou. Por isso:
+  - crie migrations compatíveis com o código anterior;
+  - quando o código novo depender de uma coluna nova, faça o deploy em duas etapas: primeiro a migration, depois o código que a usa.
 
 ## Problemas comuns
 

@@ -93,9 +93,12 @@ jobs:
           docker build -t voryn-api:ci ./backend
           docker build -t voryn-web:ci --target runtime ./frontend
       - name: Dockerfile misconfigurations (root user, unsafe instructions)
-        run: >-
-          docker run --rm -v "$PWD:/src" "$TRIVY" config --quiet
-          --severity HIGH,CRITICAL --exit-code 1 /src/backend/Dockerfile /src/frontend/Dockerfile
+        # `trivy config` takes a single target per run.
+        run: |
+          for dockerfile in backend/Dockerfile frontend/Dockerfile; do
+            docker run --rm -v "$PWD:/src" "$TRIVY" config --quiet \
+              --severity HIGH,CRITICAL --exit-code 1 "/src/$dockerfile"
+          done
       - name: Image vulnerabilities (OS and language packages)
         # --ignore-unfixed: a finding with no released fix cannot be acted on here; it is
         # listed in the log and revisited when a fix ships.
