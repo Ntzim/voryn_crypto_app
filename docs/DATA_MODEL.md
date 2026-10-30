@@ -63,12 +63,15 @@ A entidade `ai_analysis` do projeto original virou duas tabelas: uma conversa te
 | `ai_conversations` | conversas do usuário | `user_id` CASCADE; provedor, modelo e `prompt_version` fixados na criação; `turns` |
 | `ai_messages` | histórico somente de acréscimo | `role` (user, assistant, tool_results); `native` JSONB reenviado ao provedor sem alterações; texto exibido, ferramentas chamadas, fontes (com `as_of`), `stop_reason` e tokens |
 
-## Fases seguintes (projeto)
+## Fase 6 (implementado)
 
-| Tabela | Fase | Chaves e constraints planejadas |
+| Tabela | Propósito | Destaques |
 |---|---|---|
-| `exchange_connections` | 6 | `user_id`, `exchange_id`, `api_key_encrypted`, `api_secret_encrypted`, `permissions` (validado: somente leitura), `last_synced_cursor` |
-| `backtest_runs` | 6 | `user_id`, estratégia/versão, período de treino e validação, custos/slippage, métricas, resultado |
+| `backtest_runs` | execuções de backtest | `status` (queued/running/done/failed, check); estratégia, parâmetros, `optimize`; `fee_bps`/`slippage_bps` 0–100 e `train_pct` 50–90 (checks); resultado JSONB com métricas de treino/validação, curva e operações; `engine_version` |
+| `exchange_connections` | chaves somente leitura | `api_key_encrypted`/`api_secret_encrypted` (Fernet); único (`user_id`, `exchange_id`, `key_fingerprint`); `permissions` validadas; `status` (active/error/blocked, check); `sync_cursor` incremental; `reconciliation` |
+| `exchange_records` | registros sincronizados | único (`connection_id`, `external_id`) para deduplicar; `status` pending/imported/needs_review (check) com motivo; CASCADE da conexão |
+
+Transações importadas usam `source` = exchange e `external_id` = id do registro; a unicidade existente (`portfolio_id`, `source`, `external_id`) impede duplicatas.
 
 ## Política de retenção
 

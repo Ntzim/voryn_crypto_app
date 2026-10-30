@@ -4,7 +4,7 @@
 
 Plataforma de inteligência para investimentos em criptomoedas: patrimônio, mercado, análise técnica, sinais quantitativos transparentes e um assistente de IA que só interpreta dados calculados pela própria plataforma.
 
-**Estado atual: Fase 5 — Voryn AI** (assistente que interpreta os dados da plataforma por ferramentas somente leitura), sobre oportunidades e alertas (Fase 4), inteligência de mercado (Fase 3), carteira (Fase 2) e fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
+**Estado atual: Fase 6 — Recursos avançados** (risco e cenários, backtesting sem look-ahead, conexão somente leitura com a Binance), sobre o Voryn AI (Fase 5), oportunidades e alertas (Fase 4), inteligência de mercado (Fase 3), carteira (Fase 2) e fundação (Fase 1). Plano completo em [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Stack
 
@@ -98,6 +98,9 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 - [Análise técnica: metodologia](docs/TECHNICAL_ANALYSIS.md)
 - [Oportunidades e alertas: metodologia](docs/SIGNALS.md)
 - [Voryn AI: metodologia](docs/AI.md)
+- [Risco: metodologia](docs/RISK.md)
+- [Backtesting: metodologia](docs/BACKTESTING.md)
+- [Exchanges: segurança e importação](docs/EXCHANGES.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)

@@ -44,6 +44,14 @@
 **Decisão:** o modelo consulta os motores por ferramentas tipadas (o próprio modelo escolhe quais, o que faz o roteamento de intenção); o histórico é guardado no formato nativo do provedor e nunca é editado; a resposta é transmitida por SSE via BFF.
 **Motivo:** os números vêm sempre do mesmo código que alimenta as telas (ADR-009), com origem e horário; o histórico intacto preserva o raciocínio do modelo entre mensagens e torna o cache de prompt efetivo; trocar de provedor exige apenas um novo adaptador.
 
+### ADR-013 — Backtests e sincronizações no worker, com estado persistido
+**Decisão:** backtests e sincronização de exchanges rodam no Celery; a API cria o registro (`queued`) e o frontend consulta o status.
+**Motivo:** o `voryn-core` recalcula a análise candle a candle (segundos a dezenas de segundos) e as exchanges impõem limites de requisição; nada disso deve prender uma requisição HTTP nem se perder se o usuário fechar a página.
+
+### ADR-014 — Exchanges: somente leitura verificada na exchange, importação sem valores inventados
+**Decisão:** a permissão da chave é consultada na própria exchange (não declarada pelo usuário), e flags desconhecidas contam como escrita. Registros passam por uma área de preparação deduplicada; o que não puder ser importado com dados reais fica para revisão; a conciliação compara com o saldo da exchange.
+**Motivo:** o risco de uma chave com saque é inaceitável, e a carteira não pode conter preços ou custos estimados apresentados como reais. Exchanges que não permitem verificar permissões (Kraken) ficam de fora até haver outra garantia.
+
 ### ADR-009 — Indicadores e sinais determinísticos; IA apenas interpreta
 **Decisão (para Fases 3–5):** indicadores, scores e métricas de risco são calculados por código testado; o LLM recebe resultados estruturados e nunca gera números.
 **Motivo:** auditabilidade, reprodutibilidade e o princípio do produto de não apresentar previsões como certezas.

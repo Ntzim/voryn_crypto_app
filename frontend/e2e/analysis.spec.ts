@@ -11,7 +11,7 @@ test("technical analysis with real candles, timeframes and indicators", async ({
   await expect(page.getByRole("heading", { name: "Bitcoin" })).toBeVisible();
   await expect(page.getByText("Indicadores", { exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText("RSI (14)")).toBeVisible();
-  await expect(page.getByText("Suportes e resistências")).toBeVisible();
+  await expect(page.getByText("Suportes e resistências", { exact: true })).toBeVisible();
   await expect(page.getByText(/Candles: Binance BTC\/USDT/)).toBeVisible();
   await expect(page.locator("canvas").first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("analise-1d.png"), fullPage: true });

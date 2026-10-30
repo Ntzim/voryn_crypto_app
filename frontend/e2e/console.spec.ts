@@ -10,7 +10,7 @@ test("app pages render without hydration errors", async ({ page }) => {
   const email = uniqueEmail("console");
   await registerAndVerify(page, email);
   await login(page, email);
-  for (const path of ["/dashboard", "/mercado", "/carteira", "/analise", "/analise/bitcoin", "/mercado/bitcoin", "/oportunidades", "/alertas", "/voryn-ai", "/configuracoes"]) {
+  for (const path of ["/dashboard", "/mercado", "/carteira", "/analise", "/analise/bitcoin", "/mercado/bitcoin", "/oportunidades", "/alertas", "/voryn-ai", "/risco", "/estrategias", "/configuracoes"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
   }

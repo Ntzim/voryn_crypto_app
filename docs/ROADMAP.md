@@ -59,7 +59,7 @@ Pendências registradas: edição de pesos pela interface (hoje via nova versão
 ## Fase 5 — Voryn AI ✅
 
 - [x] Camada `LLMProvider` intercambiável; adaptador Anthropic (`claude-opus-5-5`, raciocínio adaptativo, cache de prompt, fallback de recusa)
-- [x] 11 ferramentas somente leitura sobre os motores internos (carteira, rentabilidade, insights, operações realizadas, transações, mercado, análise técnica, sinais), cada uma com origem e horário
+- [x] 11 ferramentas somente leitura (13 com as de risco e cenário da Fase 6) sobre os motores internos (carteira, rentabilidade, insights, operações realizadas, transações, mercado, análise técnica, sinais), cada uma com origem e horário
 - [x] Roteamento de intenção feito pelo próprio modelo ao escolher ferramentas; laço com número de rodadas limitado
 - [x] Respostas separando dados observados / interpretação / hipóteses / riscos, com período e horário; limitações declaradas quando faltam dados
 - [x] Conversas persistidas com histórico somente de acréscimo; limites por hora, dia e conversa
@@ -68,6 +68,16 @@ Pendências registradas: edição de pesos pela interface (hoje via nova versão
 
 Pendências registradas: avaliação da qualidade das respostas com o modelo real (exige `ANTHROPIC_API_KEY` e um conjunto de perguntas de referência); acesso a notícias (fora do escopo até haver uma fonte confiável integrada).
 
-## Fase 6 — Recursos avançados
+## Fase 6 — Recursos avançados ✅ (com pendências registradas)
 
-Conectores de exchange somente leitura (Binance, Coinbase, Kraken) com sync incremental, deduplicação e reconciliação; análise de risco (volatilidade, drawdown, correlação, VaR histórico, concentração, stablecoins, liquidez) e simulador de cenários; backtesting sem look-ahead, com custos/slippage e separação treino/validação; otimizações de performance.
+- [x] Análise de risco da carteira atual: volatilidade, drawdown, VaR histórico 95/99% e expected shortfall, beta ao BTC, piores janelas, correlação, concentração (HHI), stablecoins, liquidez e contribuição ao risco, com pontos de atenção por regra ([RISK.md](RISK.md))
+- [x] Simulador de cenários: variação do BTC propagada por beta, com ajustes por ativo
+- [x] Backtesting sem look-ahead (decisão em t, execução na abertura de t+1), com taxa e slippage, treino/validação e otimização só no treino; estratégias `voryn-core`, EMA, MACD, RSI e comprar e manter; execução no worker ([BACKTESTING.md](BACKTESTING.md))
+- [x] Conector Binance somente leitura: validação de permissões na própria exchange, credenciais cifradas, sync incremental, deduplicação, importação sem valores inventados, registros para revisão e conciliação de saldos ([EXCHANGES.md](EXCHANGES.md))
+- [x] Voryn AI com ferramentas de risco e de cenário
+- [x] Otimizações: cache de candles por tamanho de histórico, processamento pesado (backtests, sync) fora da requisição
+
+Pendências registradas:
+- **Coinbase** (próxima: a API expõe as permissões da chave) e **Kraken** (a API não permite verificar se a chave é somente leitura; exige outra garantia antes de integrar).
+- Binance: Convert, Earn, P2P, margem/futuros e mercados entre duas criptos não são lidos (aparecem como diferença na conciliação).
+- Backtests: um ativo por teste; slippage fixo, sem livro de ofertas.

@@ -27,6 +27,8 @@
 
 IP do cliente: por padrão `request.client`. Com `TRUST_PROXY_HEADERS=true` (somente atrás de proxy controlado), usa a entrada **mais à direita** de `X-Forwarded-For`, a única que o cliente não consegue forjar.
 
+Backtests: 10 execuções/h por usuário. Conexões de exchange: 5 por hora; sincronização manual a cada 2 min no mínimo.
+
 Voryn AI: 30 mensagens/h e 150/dia por usuário, 30 mensagens por conversa, rodadas de ferramentas limitadas por resposta.
 
 ## Voryn AI
@@ -45,7 +47,7 @@ Toda consulta a dados do usuário filtra por `user_id` vindo da sessão — nunc
 ## Segredos
 
 - `SECRET_KEY`: HMAC de tokens. `ENCRYPTION_KEYS`: Fernet para segredos em repouso (TOTP hoje; chaves de exchange na Fase 6). Em produção a aplicação **recusa iniciar** sem valores fortes.
-- Credenciais de exchange (Fase 6): apenas permissões de leitura; chaves com permissão de saque serão rejeitadas na validação; armazenamento cifrado.
+- Credenciais de exchange: só chaves **somente leitura**, verificadas na própria exchange ao conectar e a cada sincronização. Qualquer outra permissão, inclusive uma desconhecida, é recusada ou bloqueia a conexão. Chave e segredo ficam cifrados (Fernet), nunca voltam ao navegador e são identificados por HMAC e pelos 4 últimos caracteres. Conectar e desconectar entram na auditoria ([EXCHANGES.md](EXCHANGES.md)).
 - Auditoria (`audit_logs`) nunca registra senhas, tokens ou códigos.
 
 ## Cabeçalhos e transporte

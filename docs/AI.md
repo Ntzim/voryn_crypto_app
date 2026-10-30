@@ -26,6 +26,8 @@ O número de rodadas de ferramentas por resposta é limitado (`AI_MAX_TOOL_ROUND
 | `get_technical_analysis` | indicadores do último candle fechado, tendência, níveis |
 | `get_asset_signal`, `list_signals` | motor de sinais (`voryn-core`) |
 | `get_market_overview` | panorama agregado do mercado |
+| `get_portfolio_risk` | módulo de risco (volatilidade, VaR, drawdown, beta, liquidez…) |
+| `simulate_scenario` | simulador de cenários (variação do BTC propagada por beta) |
 | `search_asset` | catálogo de ativos |
 
 Não existe ferramenta de escrita: o assistente não cria transações, não altera alertas e não envia ordens. Também não há acesso a notícias ou à internet, e o prompt instrui o modelo a dizer isso quando perguntado.
