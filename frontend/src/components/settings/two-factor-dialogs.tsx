@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Copy, Download, LoaderCircle } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { Field, FormError } from "@/components/auth/form-parts";
@@ -17,7 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import type { MfaSetup, RecoveryCodes, User } from "@/lib/api/types";
 import { queryKeys } from "@/lib/queries";
@@ -41,11 +40,16 @@ export function TwoFactorSetupDialog({ open, onOpenChange }: DialogProps) {
 
 function SetupContent({ onOpenChange }: Pick<DialogProps, "onOpenChange">) {
   const markMfa = useMarkMfa();
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [codes, setCodes] = useState<string[] | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const setup = useMutation({ mutationFn: () => api<MfaSetup>("/me/mfa/setup", { method: "POST" }) });
+  // The password is confirmed first so a stolen session cannot enrol another authenticator.
+  const setup = useMutation({
+    mutationFn: () => api<MfaSetup>("/me/mfa/setup", { method: "POST", body: { password } }),
+    onSuccess: () => setPassword(""),
+  });
   const enable = useMutation({
     mutationFn: (value: string) => api<RecoveryCodes>("/me/mfa/enable", { method: "POST", body: { code: value } }),
     onSuccess: (data) => {
@@ -55,9 +59,10 @@ function SetupContent({ onOpenChange }: Pick<DialogProps, "onOpenChange">) {
     onError: () => setCode(""),
   });
 
-  // The secret expires server-side after 10 minutes.
-  const { mutate: startSetup } = setup;
-  useEffect(() => startSetup(), [startSetup]);
+  const confirmPassword = (event: FormEvent) => {
+    event.preventDefault();
+    setup.mutate();
+  };
 
   // Recovery codes are shown once; don't let an accidental outside click dismiss them.
   const blockDismiss = (event: Event) => {
@@ -73,6 +78,32 @@ function SetupContent({ onOpenChange }: Pick<DialogProps, "onOpenChange">) {
     >
         {codes ? (
           <RecoveryCodesStep codes={codes} saved={saved} onSavedChange={setSaved} onDone={() => onOpenChange(false)} />
+        ) : !setup.data ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Ativar autenticação em dois fatores</DialogTitle>
+              <DialogDescription>Confirme sua senha para continuar.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={confirmPassword} className="space-y-4" noValidate>
+              <FormError error={setup.error} />
+              <Field
+                label="Senha"
+                type="password"
+                autoComplete="current-password"
+                autoFocus
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={setup.isPending || !password}>
+                  {setup.isPending && <LoaderCircle className="animate-spin" />} Continuar
+                </Button>
+              </DialogFooter>
+            </form>
+          </>
         ) : (
           <>
             <DialogHeader>
@@ -82,23 +113,16 @@ function SetupContent({ onOpenChange }: Pick<DialogProps, "onOpenChange">) {
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4">
-              {setup.data ? (
-                <>
-                  <div className="rounded-xl bg-white p-3">
-                    <QRCodeSVG value={setup.data.otpauth_uri} size={168} level="M" />
-                  </div>
-                  <details className="w-full text-center text-xs text-muted-foreground">
-                    <summary className="cursor-pointer hover:text-foreground">Não consegue escanear? Digite a chave</summary>
-                    <code className="mt-2 block rounded-md bg-surface px-3 py-2 font-mono text-[13px] tracking-wider break-all text-foreground select-all">
-                      {setup.data.secret}
-                    </code>
-                  </details>
-                </>
-              ) : setup.isError ? (
-                <FormError error={setup.error} />
-              ) : (
-                <Skeleton className="size-[192px] rounded-xl" />
-              )}
+              {/* The secret expires server-side after 10 minutes. */}
+              <div className="rounded-xl bg-white p-3">
+                <QRCodeSVG value={setup.data.otpauth_uri} size={168} level="M" />
+              </div>
+              <details className="w-full text-center text-xs text-muted-foreground">
+                <summary className="cursor-pointer hover:text-foreground">Não consegue escanear? Digite a chave</summary>
+                <code className="mt-2 block rounded-md bg-surface px-3 py-2 font-mono text-[13px] tracking-wider break-all text-foreground select-all">
+                  {setup.data.secret}
+                </code>
+              </details>
               <FormError error={enable.error} />
               <InputOTP
                 maxLength={6}
@@ -107,7 +131,7 @@ function SetupContent({ onOpenChange }: Pick<DialogProps, "onOpenChange">) {
                   setCode(value);
                   if (value.length === 6) enable.mutate(value);
                 }}
-                disabled={!setup.data || enable.isPending}
+                disabled={enable.isPending}
                 inputMode="numeric"
                 pattern="^[0-9]*$"
                 aria-label="Código de 6 dígitos"

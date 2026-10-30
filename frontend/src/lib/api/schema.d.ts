@@ -1690,9 +1690,15 @@ export interface components {
              * @default Binance
              */
             label: string;
-            /** Api Key */
+            /**
+             * Api Key
+             * Format: password
+             */
             api_key: string;
-            /** Api Secret */
+            /**
+             * Api Secret
+             * Format: password
+             */
             api_secret: string;
         };
         /** ConnectionOut */
@@ -2147,6 +2153,11 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** PasswordIn */
+        PasswordIn: {
+            /** Password */
+            password: string;
         };
         /** PasswordResetIn */
         PasswordResetIn: {
@@ -3492,7 +3503,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3501,6 +3516,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MfaSetupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

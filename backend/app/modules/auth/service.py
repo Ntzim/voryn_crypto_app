@@ -518,9 +518,12 @@ async def change_password(
 # --------------------------------------------------------------------------- 2FA
 
 
-async def start_mfa_setup(user: User) -> tuple[str, str]:
+async def start_mfa_setup(user: User, password: str) -> tuple[str, str]:
     if user.mfa_enabled:
         raise ConflictError("A autenticação em dois fatores já está ativa.")
+    # A session alone is not enough: with a stolen one, an attacker could enrol their own
+    # authenticator and lock the owner out of the next sign-in.
+    await _require_password(user, password)
     secret = mfa.new_secret()
     await get_redis().set(f"mfa_setup:{user.id}", encrypt(secret), ex=MFA_SETUP_TTL)
     return secret, mfa.provisioning_uri(secret, user.email)

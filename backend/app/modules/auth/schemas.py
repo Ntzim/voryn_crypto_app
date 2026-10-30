@@ -63,6 +63,10 @@ class PasswordResetIn(BaseModel):
         return validate_password_strength(value)
 
 
+class PasswordIn(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+
+
 class MfaSetupOut(BaseModel):
     secret: str
     otpauth_uri: str

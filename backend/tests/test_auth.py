@@ -255,7 +255,7 @@ async def test_two_factor_lifecycle(
     await register_verified(client, outbox)
     await login(client)
 
-    setup = (await client.post(f"{API}/me/mfa/setup")).json()
+    setup = (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()
     assert setup["otpauth_uri"].startswith("otpauth://totp/Voryn")
     totp = pyotp.TOTP(setup["secret"])
 
@@ -319,13 +319,28 @@ async def test_two_factor_lifecycle(
     assert (await login(client)).json()["status"] == "authenticated"
 
 
+async def test_mfa_setup_requires_the_password(client: httpx.AsyncClient, outbox: Outbox) -> None:
+    """A stolen session must not be able to enrol the attacker's authenticator."""
+    await register_verified(client, outbox)
+    await login(client)
+    assert (await client.post(f"{API}/me/mfa/setup", json={})).status_code == 422
+    wrong = await client.post(f"{API}/me/mfa/setup", json={"password": "not-the-password"})
+    assert wrong.status_code == 401 and "secret" not in wrong.text
+    # No secret was staged, so enabling has nothing to confirm.
+    assert (await client.post(f"{API}/me/mfa/enable", json={"code": "123456"})).status_code == 400
+    ok = await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})
+    assert ok.status_code == 200 and ok.json()["secret"]
+
+
 async def test_mfa_challenge_attempts_are_limited(
     client: httpx.AsyncClient,
     outbox: Outbox,
 ) -> None:
     await register_verified(client, outbox)
     await login(client)
-    secret = (await client.post(f"{API}/me/mfa/setup")).json()["secret"]
+    secret = (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()[
+        "secret"
+    ]
     await client.post(f"{API}/me/mfa/enable", json={"code": pyotp.TOTP(secret).now()})
     await client.post(f"{API}/auth/logout")
 
@@ -348,7 +363,9 @@ async def test_mfa_failures_are_limited_per_account_across_challenges(
     """A fresh challenge only costs the password, so the cap must span challenges."""
     await register_verified(client, outbox)
     await login(client)
-    totp = pyotp.TOTP((await client.post(f"{API}/me/mfa/setup")).json()["secret"])
+    totp = pyotp.TOTP(
+        (await client.post(f"{API}/me/mfa/setup", json={"password": PASSWORD})).json()["secret"]
+    )
     await client.post(f"{API}/me/mfa/enable", json={"code": totp.now()})
     await client.post(f"{API}/auth/logout")
     outbox.clear()

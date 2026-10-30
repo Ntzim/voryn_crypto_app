@@ -193,7 +193,7 @@ Não existe papel de administrador. A escalação vertical de privilégio não s
 1. **Validação da V-01 em produção.** O Railway documenta que sobrescreve o `X-Real-IP`, mas há relatos de que, com o CDN deles ativo, o cabeçalho traz o IP do CDN. Nesse caso os clientes compartilhariam baldes: seria mais restritivo, não burlável. Depois do deploy, repetir o teste das 22 tentativas com `X-Real-IP` e `X-Forwarded-For` forjados: deve aparecer `429` na 21ª.
 2. **Chave do Resend exposta** em conversa durante o deploy. Gere uma nova no Resend e troque a variável compartilhada `RESEND_API_KEY`.
 3. **Bloqueio direcionado de conta.** Qualquer pessoa pode bloquear o login de outra por 15 min (5 falhas) ou o 2FA por 1 h (10 falhas). Isso é intencional (bloqueio temporário, não permanente), mas é um vetor de incômodo.
-4. **Ativar 2FA não pede a senha.** Uma sessão roubada pode cadastrar o autenticador do atacante. Recomendado: exigir a senha em `/me/mfa/setup`. Muda a experiência, então não foi implementado sem decisão de produto.
+4. ~~**Ativar 2FA não pedia a senha.**~~ **Resolvido** após aprovação: `/me/mfa/setup` exige a senha (limite de 5 tentativas a cada 15 min) antes de gerar o segredo. Testes: `test_mfa_setup_requires_the_password` e o e2e `two-factor.spec.ts` (desktop e celular).
 5. **CSP com `script-src 'unsafe-inline'`**, exigido pelos scripts de inicialização do Next.js. Nonces exigem renderização dinâmica de todas as páginas.
 6. **Banco com um único usuário de privilégio total** (padrão do Railway) e sem Row Level Security. O isolamento depende só da aplicação, coberta por testes.
 7. **Backups do Postgres:** não verificados. Ativar os backups do volume no Railway e testar uma restauração.
@@ -209,7 +209,7 @@ Não existe papel de administrador. A escalação vertical de privilégio não s
 3. Trocar a `RESEND_API_KEY`.
 
 **P1:**
-- Exigir a senha para ativar o 2FA.
+- ~~Exigir a senha para ativar o 2FA.~~ Feito.
 - Ativar e testar os backups do Postgres.
 
 **P2:**
