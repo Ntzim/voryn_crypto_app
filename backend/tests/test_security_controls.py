@@ -122,6 +122,41 @@ async def test_no_endpoint_ever_returns_exchange_credentials(
         assert KEY not in json.dumps(entry.context) and SECRET not in json.dumps(entry.context)
 
 
+async def test_encryption_key_rotation_lets_the_old_key_be_retired(
+    exchange_user: tuple[httpx.AsyncClient, dict[str, Any]],  # noqa: F811
+    db: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from cryptography.fernet import Fernet
+
+    from app.core import crypto
+    from app.core.config import get_settings
+    from app.core.key_rotation import rotate_all
+
+    def use_keys(keys: str) -> None:
+        monkeypatch.setenv("ENCRYPTION_KEYS", keys)
+        get_settings.cache_clear()
+        crypto._fernet.cache_clear()
+
+    old, new = Fernet.generate_key().decode(), Fernet.generate_key().decode()
+    use_keys(old)
+    client, _ = exchange_user
+    assert (await client.post(f"{API}/exchange-connections", json=CONNECT)).status_code == 201
+
+    use_keys(f"{new},{old}")  # step 1: new key first, old still accepted
+    report = await rotate_all(db)
+    assert (report.rotated, report.failed) == (1, 0)
+
+    use_keys(new)  # step 3: old key removed
+    stored = (await db.execute(select(ExchangeConnection))).scalar_one()
+    await db.refresh(stored)
+    assert crypto.decrypt(stored.api_key_encrypted) == KEY
+    assert crypto.decrypt(stored.api_secret_encrypted) == SECRET
+    monkeypatch.delenv("ENCRYPTION_KEYS")
+    get_settings.cache_clear()
+    crypto._fernet.cache_clear()
+
+
 # --------------------------------------------------------------------------- 3. integrations
 
 

@@ -35,6 +35,14 @@ def encrypt(plaintext: str) -> str:
     return _fernet().encrypt(plaintext.encode()).decode()
 
 
+def rotate(ciphertext: str) -> str:
+    """Re-encrypt with the first (current) key; the plaintext never leaves this call."""
+    try:
+        return _fernet().rotate(ciphertext.encode()).decode()
+    except InvalidToken as exc:
+        raise DecryptionError("Unable to decrypt value with configured keys") from exc
+
+
 def decrypt(ciphertext: str) -> str:
     try:
         return _fernet().decrypt(ciphertext.encode()).decode()
