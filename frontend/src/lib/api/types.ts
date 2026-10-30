@@ -68,3 +68,10 @@ export type RiskFlag = Schemas["RiskFlagOut"];
 export type ScenarioInput = Schemas["ScenarioIn"];
 export type Scenario = Schemas["ScenarioOut"];
 export type ScenarioMethod = Scenario["lines"][number]["method"];
+
+export type BacktestStrategy = Schemas["StrategyInfoOut"];
+export type BacktestInput = Schemas["BacktestIn"];
+export type Backtest = Schemas["BacktestOut"];
+export type BacktestSummary = Schemas["BacktestSummaryOut"];
+export type BacktestResult = Schemas["BacktestResultOut"];
+export type BacktestMetrics = Schemas["MetricsOut"];

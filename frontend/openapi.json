@@ -2751,6 +2751,173 @@
         }
       }
     },
+    "/api/v1/backtests/strategies": {
+      "get": {
+        "tags": [
+          "backtesting"
+        ],
+        "summary": "Strategies",
+        "operationId": "strategies_api_v1_backtests_strategies_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StrategyInfoOut"
+                  },
+                  "type": "array",
+                  "title": "Response Strategies Api V1 Backtests Strategies Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backtests": {
+      "get": {
+        "tags": [
+          "backtesting"
+        ],
+        "summary": "List Backtests",
+        "operationId": "list_backtests_api_v1_backtests_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BacktestSummaryOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Backtests Api V1 Backtests Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "backtesting"
+        ],
+        "summary": "Create Backtest",
+        "description": "Queue a backtest; poll GET /backtests/{id} until status is done or failed.",
+        "operationId": "create_backtest_api_v1_backtests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BacktestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backtests/{run_id}": {
+      "get": {
+        "tags": [
+          "backtesting"
+        ],
+        "summary": "Get Backtest",
+        "operationId": "get_backtest_api_v1_backtests__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "backtesting"
+        ],
+        "summary": "Delete Backtest",
+        "operationId": "delete_backtest_api_v1_backtests__run_id__delete",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/exchanges": {
       "get": {
         "tags": [
@@ -3817,6 +3984,443 @@
         ],
         "title": "AssetRiskOut"
       },
+      "BacktestIn": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Asset Id"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "4h"
+            ],
+            "title": "Timeframe",
+            "default": "1d"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "voryn_signal",
+              "ema_cross",
+              "macd_cross",
+              "rsi_reversion",
+              "buy_and_hold"
+            ],
+            "title": "Strategy"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "maxProperties": 4,
+            "title": "Params"
+          },
+          "optimize": {
+            "type": "boolean",
+            "title": "Optimize",
+            "default": false
+          },
+          "fee_bps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Fee Bps",
+            "default": "10"
+          },
+          "slippage_bps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Slippage Bps",
+            "default": "5"
+          },
+          "train_pct": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 50.0,
+            "title": "Train Pct",
+            "default": 70
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_id",
+          "strategy"
+        ],
+        "title": "BacktestIn"
+      },
+      "BacktestOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "4h"
+            ],
+            "title": "Timeframe"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "voryn_signal",
+              "ema_cross",
+              "macd_cross",
+              "rsi_reversion",
+              "buy_and_hold"
+            ],
+            "title": "Strategy"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "validation_return_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Return Pct"
+          },
+          "benchmark_return_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Return Pct"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Params"
+          },
+          "optimize": {
+            "type": "boolean",
+            "title": "Optimize"
+          },
+          "fee_bps": {
+            "type": "string",
+            "title": "Fee Bps"
+          },
+          "slippage_bps": {
+            "type": "string",
+            "title": "Slippage Bps"
+          },
+          "train_pct": {
+            "type": "integer",
+            "title": "Train Pct"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BacktestResultOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "asset",
+          "timeframe",
+          "strategy",
+          "status",
+          "validation_return_pct",
+          "benchmark_return_pct",
+          "created_at",
+          "finished_at",
+          "params",
+          "optimize",
+          "fee_bps",
+          "slippage_bps",
+          "train_pct",
+          "engine_version",
+          "error",
+          "result"
+        ],
+        "title": "BacktestOut"
+      },
+      "BacktestResultOut": {
+        "properties": {
+          "selected_params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Selected Params"
+          },
+          "grid": {
+            "items": {
+              "$ref": "#/components/schemas/GridRowOut"
+            },
+            "type": "array",
+            "title": "Grid"
+          },
+          "train": {
+            "$ref": "#/components/schemas/SegmentOut"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/SegmentOut"
+          },
+          "equity": {
+            "items": {
+              "$ref": "#/components/schemas/EquityPointOut"
+            },
+            "type": "array",
+            "title": "Equity"
+          },
+          "trades": {
+            "items": {
+              "$ref": "#/components/schemas/TradeOut"
+            },
+            "type": "array",
+            "title": "Trades"
+          },
+          "initial_capital": {
+            "type": "string",
+            "title": "Initial Capital"
+          },
+          "quote": {
+            "type": "string",
+            "title": "Quote"
+          },
+          "candles": {
+            "type": "integer",
+            "title": "Candles"
+          },
+          "warmup": {
+            "type": "integer",
+            "title": "Warmup"
+          },
+          "first_candle": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Candle"
+          },
+          "last_candle": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Candle"
+          },
+          "split_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Split At"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "data_fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Fetched At"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "selected_params",
+          "grid",
+          "train",
+          "validation",
+          "equity",
+          "trades",
+          "initial_capital",
+          "quote",
+          "candles",
+          "warmup",
+          "first_candle",
+          "last_candle",
+          "split_at",
+          "data_source",
+          "data_fetched_at",
+          "notes"
+        ],
+        "title": "BacktestResultOut"
+      },
+      "BacktestSummaryOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "4h"
+            ],
+            "title": "Timeframe"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "voryn_signal",
+              "ema_cross",
+              "macd_cross",
+              "rsi_reversion",
+              "buy_and_hold"
+            ],
+            "title": "Strategy"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "validation_return_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Validation Return Pct"
+          },
+          "benchmark_return_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Return Pct"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "asset",
+          "timeframe",
+          "strategy",
+          "status",
+          "validation_return_pct",
+          "benchmark_return_pct",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "BacktestSummaryOut"
+      },
       "CandleOut": {
         "properties": {
           "time": {
@@ -4357,6 +4961,39 @@
         ],
         "title": "EmailIn"
       },
+      "EquityPointOut": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time"
+          },
+          "segment": {
+            "type": "string",
+            "enum": [
+              "train",
+              "validation"
+            ],
+            "title": "Segment"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy"
+          },
+          "benchmark": {
+            "type": "string",
+            "title": "Benchmark"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "segment",
+          "strategy",
+          "benchmark"
+        ],
+        "title": "EquityPointOut"
+      },
       "ExchangeOut": {
         "properties": {
           "id": {
@@ -4379,6 +5016,51 @@
           "kind"
         ],
         "title": "ExchangeOut"
+      },
+      "GridRowOut": {
+        "properties": {
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Params"
+          },
+          "train_sharpe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Train Sharpe"
+          },
+          "train_return_pct": {
+            "type": "string",
+            "title": "Train Return Pct"
+          },
+          "selected": {
+            "type": "boolean",
+            "title": "Selected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "params",
+          "train_sharpe",
+          "train_return_pct",
+          "selected"
+        ],
+        "title": "GridRowOut"
       },
       "HTTPValidationError": {
         "properties": {
@@ -4825,6 +5507,147 @@
         ],
         "title": "MessageOut"
       },
+      "MetricsOut": {
+        "properties": {
+          "start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "bars": {
+            "type": "integer",
+            "title": "Bars"
+          },
+          "final_equity": {
+            "type": "string",
+            "title": "Final Equity"
+          },
+          "total_return_pct": {
+            "type": "string",
+            "title": "Total Return Pct"
+          },
+          "cagr_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cagr Pct"
+          },
+          "max_drawdown_pct": {
+            "type": "string",
+            "title": "Max Drawdown Pct"
+          },
+          "volatility_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volatility Pct"
+          },
+          "sharpe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sharpe"
+          },
+          "trades": {
+            "type": "integer",
+            "title": "Trades"
+          },
+          "win_rate_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Win Rate Pct"
+          },
+          "avg_trade_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Trade Pct"
+          },
+          "profit_factor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profit Factor"
+          },
+          "exposure_pct": {
+            "type": "string",
+            "title": "Exposure Pct"
+          },
+          "fees": {
+            "type": "string",
+            "title": "Fees"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start",
+          "end",
+          "bars",
+          "final_equity",
+          "total_return_pct",
+          "cagr_pct",
+          "max_drawdown_pct",
+          "volatility_pct",
+          "sharpe",
+          "trades",
+          "win_rate_pct",
+          "avg_trade_pct",
+          "profit_factor",
+          "exposure_pct",
+          "fees"
+        ],
+        "title": "MetricsOut"
+      },
       "MfaCodeIn": {
         "properties": {
           "code": {
@@ -5013,6 +5836,47 @@
           "read_at"
         ],
         "title": "NotificationOut"
+      },
+      "ParamSpecOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "default": {
+            "type": "integer",
+            "title": "Default"
+          },
+          "min": {
+            "type": "integer",
+            "title": "Min"
+          },
+          "max": {
+            "type": "integer",
+            "title": "Max"
+          },
+          "grid": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Grid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "default",
+          "min",
+          "max",
+          "grid"
+        ],
+        "title": "ParamSpecOut"
       },
       "PasswordChangeIn": {
         "properties": {
@@ -5819,6 +6683,22 @@
         ],
         "title": "ScenarioOverride"
       },
+      "SegmentOut": {
+        "properties": {
+          "strategy": {
+            "$ref": "#/components/schemas/MetricsOut"
+          },
+          "benchmark": {
+            "$ref": "#/components/schemas/MetricsOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "strategy",
+          "benchmark"
+        ],
+        "title": "SegmentOut"
+      },
       "SeriesPoint": {
         "properties": {
           "day": {
@@ -6482,6 +7362,49 @@
         "title": "Snapshot",
         "description": "Latest values computed on the last *closed* candle (no repainting)."
       },
+      "StrategyInfoOut": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "voryn_signal",
+              "ema_cross",
+              "macd_cross",
+              "rsi_reversion",
+              "buy_and_hold"
+            ],
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "params": {
+            "items": {
+              "$ref": "#/components/schemas/ParamSpecOut"
+            },
+            "type": "array",
+            "title": "Params"
+          },
+          "optimizable": {
+            "type": "boolean",
+            "title": "Optimizable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "params",
+          "optimizable"
+        ],
+        "title": "StrategyInfoOut"
+      },
       "StrategyOut": {
         "properties": {
           "key": {
@@ -6695,6 +7618,71 @@
           "token"
         ],
         "title": "TokenIn"
+      },
+      "TradeOut": {
+        "properties": {
+          "segment": {
+            "type": "string",
+            "enum": [
+              "train",
+              "validation"
+            ],
+            "title": "Segment"
+          },
+          "entry_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entry Time"
+          },
+          "entry_price": {
+            "type": "string",
+            "title": "Entry Price"
+          },
+          "exit_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Time"
+          },
+          "exit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Price"
+          },
+          "return_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment",
+          "entry_time",
+          "entry_price",
+          "exit_time",
+          "exit_price",
+          "return_pct"
+        ],
+        "title": "TradeOut"
       },
       "TransactionIn": {
         "properties": {

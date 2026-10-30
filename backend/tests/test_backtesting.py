@@ -221,6 +221,7 @@ async def test_backtest_lifecycle(
     assert len(result["grid"]) == 9 and sum(g["selected"] for g in result["grid"]) == 1
     assert result["validation"]["benchmark"]["trades"] == 1
     assert any("sem uso de dados futuros" in n for n in result["notes"])
+    assert "taxa de 0,10% e slippage de 0,05% no preço." in " ".join(result["notes"])
     listing = (await client.get(f"{API}/backtests")).json()
     assert listing[0]["id"] == queued["id"]
     assert (

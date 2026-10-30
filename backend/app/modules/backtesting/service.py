@@ -387,12 +387,16 @@ def backtest(
     }
 
 
+def _pct(bps: Decimal) -> str:
+    return f"{Decimal(bps) / 100:.2f}".replace(".", ",") + "%"
+
+
 def _notes(run: BacktestRun) -> list[str]:
     notes = [
         "Decisão no fechamento de cada candle, execução na abertura do candle seguinte "
         "(sem uso de dados futuros).",
-        f"Custos por operação: taxa de {run.fee_bps / 100:.2f}% e slippage de "
-        f"{run.slippage_bps / 100:.2f}% no preço.".replace(".", ","),
+        f"Custos por operação: taxa de {_pct(run.fee_bps)} e slippage de "
+        f"{_pct(run.slippage_bps)} no preço.",
         "Sempre 100% comprado ou 100% fora; sem alavancagem, sem venda a descoberto; capital "
         "parado não rende.",
         f"Treino: primeiros {run.train_pct}% do histórico útil. Validação: o restante, "

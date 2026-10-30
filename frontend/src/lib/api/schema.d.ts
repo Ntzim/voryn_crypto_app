@@ -914,6 +914,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backtests/strategies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Strategies */
+        get: operations["strategies_api_v1_backtests_strategies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backtests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Backtests */
+        get: operations["list_backtests_api_v1_backtests_get"];
+        put?: never;
+        /**
+         * Create Backtest
+         * @description Queue a backtest; poll GET /backtests/{id} until status is done or failed.
+         */
+        post: operations["create_backtest_api_v1_backtests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backtests/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Backtest */
+        get: operations["get_backtest_api_v1_backtests__run_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Backtest */
+        delete: operations["delete_backtest_api_v1_backtests__run_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exchanges": {
         parameters: {
             query?: never;
@@ -1308,6 +1364,183 @@ export interface components {
              */
             liquidity: "high" | "medium" | "low" | "unknown";
         };
+        /** BacktestIn */
+        BacktestIn: {
+            /**
+             * Asset Id
+             * Format: uuid
+             */
+            asset_id: string;
+            /**
+             * Timeframe
+             * @default 1d
+             * @enum {string}
+             */
+            timeframe: "1d" | "4h";
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "voryn_signal" | "ema_cross" | "macd_cross" | "rsi_reversion" | "buy_and_hold";
+            /** Params */
+            params?: {
+                [key: string]: number;
+            };
+            /**
+             * Optimize
+             * @default false
+             */
+            optimize: boolean;
+            /**
+             * Fee Bps
+             * @default 10
+             */
+            fee_bps: number | string;
+            /**
+             * Slippage Bps
+             * @default 5
+             */
+            slippage_bps: number | string;
+            /**
+             * Train Pct
+             * @default 70
+             */
+            train_pct: number;
+        };
+        /** BacktestOut */
+        BacktestOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            asset: components["schemas"]["AssetRef"];
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "1d" | "4h";
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "voryn_signal" | "ema_cross" | "macd_cross" | "rsi_reversion" | "buy_and_hold";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Validation Return Pct */
+            validation_return_pct: string | null;
+            /** Benchmark Return Pct */
+            benchmark_return_pct: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Params */
+            params: {
+                [key: string]: number;
+            };
+            /** Optimize */
+            optimize: boolean;
+            /** Fee Bps */
+            fee_bps: string;
+            /** Slippage Bps */
+            slippage_bps: string;
+            /** Train Pct */
+            train_pct: number;
+            /** Engine Version */
+            engine_version: string;
+            /** Error */
+            error: string | null;
+            result: components["schemas"]["BacktestResultOut"] | null;
+        };
+        /** BacktestResultOut */
+        BacktestResultOut: {
+            /** Selected Params */
+            selected_params: {
+                [key: string]: number | string;
+            };
+            /** Grid */
+            grid: components["schemas"]["GridRowOut"][];
+            train: components["schemas"]["SegmentOut"];
+            validation: components["schemas"]["SegmentOut"];
+            /** Equity */
+            equity: components["schemas"]["EquityPointOut"][];
+            /** Trades */
+            trades: components["schemas"]["TradeOut"][];
+            /** Initial Capital */
+            initial_capital: string;
+            /** Quote */
+            quote: string;
+            /** Candles */
+            candles: number;
+            /** Warmup */
+            warmup: number;
+            /**
+             * First Candle
+             * Format: date-time
+             */
+            first_candle: string;
+            /**
+             * Last Candle
+             * Format: date-time
+             */
+            last_candle: string;
+            /**
+             * Split At
+             * Format: date-time
+             */
+            split_at: string;
+            /** Data Source */
+            data_source: string;
+            /**
+             * Data Fetched At
+             * Format: date-time
+             */
+            data_fetched_at: string;
+            /** Notes */
+            notes: string[];
+        };
+        /** BacktestSummaryOut */
+        BacktestSummaryOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            asset: components["schemas"]["AssetRef"];
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "1d" | "4h";
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "voryn_signal" | "ema_cross" | "macd_cross" | "rsi_reversion" | "buy_and_hold";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "done" | "failed";
+            /** Validation Return Pct */
+            validation_return_pct: string | null;
+            /** Benchmark Return Pct */
+            benchmark_return_pct: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Finished At */
+            finished_at: string | null;
+        };
         /** CandleOut */
         CandleOut: {
             /**
@@ -1491,6 +1724,23 @@ export interface components {
              */
             email: string;
         };
+        /** EquityPointOut */
+        EquityPointOut: {
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+            /**
+             * Segment
+             * @enum {string}
+             */
+            segment: "train" | "validation";
+            /** Strategy */
+            strategy: string;
+            /** Benchmark */
+            benchmark: string;
+        };
         /** ExchangeOut */
         ExchangeOut: {
             /** Id */
@@ -1499,6 +1749,19 @@ export interface components {
             name: string;
             /** Kind */
             kind: string;
+        };
+        /** GridRowOut */
+        GridRowOut: {
+            /** Params */
+            params: {
+                [key: string]: number | string;
+            };
+            /** Train Sharpe */
+            train_sharpe: string | null;
+            /** Train Return Pct */
+            train_return_pct: string;
+            /** Selected */
+            selected: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1627,6 +1890,39 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** MetricsOut */
+        MetricsOut: {
+            /** Start */
+            start: string | null;
+            /** End */
+            end: string | null;
+            /** Bars */
+            bars: number;
+            /** Final Equity */
+            final_equity: string;
+            /** Total Return Pct */
+            total_return_pct: string;
+            /** Cagr Pct */
+            cagr_pct: string | null;
+            /** Max Drawdown Pct */
+            max_drawdown_pct: string;
+            /** Volatility Pct */
+            volatility_pct: string | null;
+            /** Sharpe */
+            sharpe: string | null;
+            /** Trades */
+            trades: number;
+            /** Win Rate Pct */
+            win_rate_pct: string | null;
+            /** Avg Trade Pct */
+            avg_trade_pct: string | null;
+            /** Profit Factor */
+            profit_factor: string | null;
+            /** Exposure Pct */
+            exposure_pct: string;
+            /** Fees */
+            fees: string;
+        };
         /** MfaCodeIn */
         MfaCodeIn: {
             /** Code */
@@ -1693,6 +1989,21 @@ export interface components {
             created_at: string;
             /** Read At */
             read_at: string | null;
+        };
+        /** ParamSpecOut */
+        ParamSpecOut: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Default */
+            default: number;
+            /** Min */
+            min: number;
+            /** Max */
+            max: number;
+            /** Grid */
+            grid: number[];
         };
         /** PasswordChangeIn */
         PasswordChangeIn: {
@@ -1956,6 +2267,11 @@ export interface components {
             /** Change Pct */
             change_pct: number | string;
         };
+        /** SegmentOut */
+        SegmentOut: {
+            strategy: components["schemas"]["MetricsOut"];
+            benchmark: components["schemas"]["MetricsOut"];
+        };
         /** SeriesPoint */
         SeriesPoint: {
             /**
@@ -2162,6 +2478,22 @@ export interface components {
             /** Volatility Annualized Pct */
             volatility_annualized_pct: string | null;
         };
+        /** StrategyInfoOut */
+        StrategyInfoOut: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "voryn_signal" | "ema_cross" | "macd_cross" | "rsi_reversion" | "buy_and_hold";
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /** Params */
+            params: components["schemas"]["ParamSpecOut"][];
+            /** Optimizable */
+            optimizable: boolean;
+        };
         /** StrategyOut */
         StrategyOut: {
             /** Key */
@@ -2248,6 +2580,27 @@ export interface components {
         TokenIn: {
             /** Token */
             token: string;
+        };
+        /** TradeOut */
+        TradeOut: {
+            /**
+             * Segment
+             * @enum {string}
+             */
+            segment: "train" | "validation";
+            /**
+             * Entry Time
+             * Format: date-time
+             */
+            entry_time: string;
+            /** Entry Price */
+            entry_price: string;
+            /** Exit Time */
+            exit_time: string | null;
+            /** Exit Price */
+            exit_price: string | null;
+            /** Return Pct */
+            return_pct: string | null;
         };
         /** TransactionIn */
         TransactionIn: {
@@ -4274,6 +4627,139 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ScenarioOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    strategies_api_v1_backtests_strategies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyInfoOut"][];
+                };
+            };
+        };
+    };
+    list_backtests_api_v1_backtests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacktestSummaryOut"][];
+                };
+            };
+        };
+    };
+    create_backtest_api_v1_backtests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BacktestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacktestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_backtest_api_v1_backtests__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BacktestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_backtest_api_v1_backtests__run_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

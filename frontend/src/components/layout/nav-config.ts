@@ -45,7 +45,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/voryn-ai", label: "Voryn AI", icon: Sparkles, available: true },
       { href: "/risco", label: "Risco", icon: ShieldHalf, available: true },
-      { href: "/estrategias", label: "Estratégias", icon: FlaskConical, available: false },
+      { href: "/estrategias", label: "Estratégias", icon: FlaskConical, available: true },
     ],
   },
   {
