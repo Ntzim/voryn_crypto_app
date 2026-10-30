@@ -75,3 +75,7 @@ export type Backtest = Schemas["BacktestOut"];
 export type BacktestSummary = Schemas["BacktestSummaryOut"];
 export type BacktestResult = Schemas["BacktestResultOut"];
 export type BacktestMetrics = Schemas["MetricsOut"];
+
+export type ExchangeConnection = Schemas["ConnectionOut"];
+export type ExchangeConnectionInput = Schemas["ConnectionIn"];
+export type ExchangeRecord = Schemas["RecordOut"];

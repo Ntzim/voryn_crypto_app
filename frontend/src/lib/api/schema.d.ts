@@ -970,6 +970,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exchange-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Connections */
+        get: operations["list_connections_api_v1_exchange_connections_get"];
+        put?: never;
+        /**
+         * Create Connection
+         * @description Connect a read-only API key. Keys with any trading, withdrawal or transfer
+         *     permission are rejected. The first sync is queued immediately.
+         */
+        post: operations["create_connection_api_v1_exchange_connections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exchange-connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Connection */
+        get: operations["get_connection_api_v1_exchange_connections__connection_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Connection
+         * @description Delete the credentials and synced records. Imported transactions are kept.
+         */
+        delete: operations["delete_connection_api_v1_exchange_connections__connection_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exchange-connections/{connection_id}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review Records
+         * @description Synced records not imported into the portfolio, with the reason.
+         */
+        get: operations["review_records_api_v1_exchange_connections__connection_id__records_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exchange-connections/{connection_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Connection */
+        post: operations["sync_connection_api_v1_exchange_connections__connection_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exchanges": {
         parameters: {
             query?: never;
@@ -1598,6 +1678,62 @@ export interface components {
             /** Stablecoin Pct */
             stablecoin_pct: string;
         };
+        /** ConnectionIn */
+        ConnectionIn: {
+            /**
+             * Exchange Id
+             * @constant
+             */
+            exchange_id: "binance";
+            /**
+             * Label
+             * @default Binance
+             */
+            label: string;
+            /** Api Key */
+            api_key: string;
+            /** Api Secret */
+            api_secret: string;
+        };
+        /** ConnectionOut */
+        ConnectionOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Exchange Id */
+            exchange_id: string;
+            /** Exchange Name */
+            exchange_name: string;
+            /** Label */
+            label: string;
+            /** Key Hint */
+            key_hint: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "error" | "blocked";
+            /** Write Permissions */
+            write_permissions: string[];
+            /** Last Synced At */
+            last_synced_at: string | null;
+            /** Last Error */
+            last_error: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Imported */
+            imported: number;
+            /** Needs Review */
+            needs_review: number;
+            /** Pending */
+            pending: number;
+            reconciliation: components["schemas"]["ReconciliationOut"] | null;
+        };
         /** CorrelationOut */
         CorrelationOut: {
             /** Symbols */
@@ -2104,6 +2240,62 @@ export interface components {
         ProfileUpdateIn: {
             /** Full Name */
             full_name: string;
+        };
+        /** ReconciliationOut */
+        ReconciliationOut: {
+            /**
+             * As Of
+             * Format: date-time
+             */
+            as_of: string;
+            /** Ok */
+            ok: boolean;
+            /** Assets */
+            assets: components["schemas"]["ReconciliationRowOut"][];
+        };
+        /** ReconciliationRowOut */
+        ReconciliationRowOut: {
+            /** Symbol */
+            symbol: string;
+            /** Asset Id */
+            asset_id: string | null;
+            /** Exchange */
+            exchange: string;
+            /** Voryn */
+            voryn: string;
+            /** Difference */
+            difference: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "divergent";
+        };
+        /** RecordOut */
+        RecordOut: {
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "trade" | "deposit" | "withdrawal";
+            /** External Id */
+            external_id: string;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "imported" | "needs_review";
+            /** Reason */
+            reason: string | null;
+            /** Summary */
+            summary: string;
         };
         /** RegisterIn */
         RegisterIn: {
@@ -4760,6 +4952,181 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_connections_api_v1_exchange_connections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"][];
+                };
+            };
+        };
+    };
+    create_connection_api_v1_exchange_connections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_connection_api_v1_exchange_connections__connection_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_connection_api_v1_exchange_connections__connection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_records_api_v1_exchange_connections__connection_id__records_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_connection_api_v1_exchange_connections__connection_id__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"];
+                };
             };
             /** @description Validation Error */
             422: {
