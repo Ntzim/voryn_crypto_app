@@ -21,8 +21,18 @@ const HOP_BY_HOP = new Set([
 
 const UPSTREAM_TIMEOUT_MS = 30_000;
 
+/**
+ * API address on the private network. Either a full URL (API_INTERNAL_URL) or, on Railway,
+ * the API service's private domain (API_PRIVATE_HOST, a variable reference) and its port.
+ */
 function apiBaseUrl(): string {
-  return process.env.API_INTERNAL_URL ?? "http://localhost:8010";
+  if (process.env.API_INTERNAL_URL) return process.env.API_INTERNAL_URL;
+  const host = process.env.API_PRIVATE_HOST;
+  if (host) {
+    const bracketed = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+    return `http://${bracketed}:${process.env.API_PRIVATE_PORT ?? "8000"}`;
+  }
+  return "http://localhost:8010";
 }
 
 function errorResponse(status: number, code: string, message: string): Response {

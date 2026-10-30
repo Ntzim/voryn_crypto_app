@@ -83,7 +83,7 @@ def _run[T](job: Callable[[AsyncSession], Awaitable[T]]) -> T:
 
 @celery_app.task(name="email.send", autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
 def send_email_task(message: dict[str, Any]) -> None:
-    asyncio.run(send_email(EmailMessage(**message)))
+    asyncio.run(send_email(EmailMessage(**message), raise_errors=True))
 
 
 async def _sync_markets(db: AsyncSession) -> int:

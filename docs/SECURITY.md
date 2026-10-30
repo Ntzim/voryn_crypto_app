@@ -46,7 +46,7 @@ Toda consulta a dados do usuário filtra por `user_id` vindo da sessão — nunc
 
 ## Segredos
 
-- `SECRET_KEY`: HMAC de tokens. `ENCRYPTION_KEYS`: Fernet para segredos em repouso (TOTP hoje; chaves de exchange na Fase 6). Em produção a aplicação **recusa iniciar** sem valores fortes.
+- `SECRET_KEY`: HMAC de tokens. `ENCRYPTION_KEYS`: Fernet para segredos em repouso (TOTP hoje; chaves de exchange na Fase 6). Em produção a aplicação **recusa iniciar** sem valores fortes, sem `FRONTEND_URL` https, sem provedor de e-mail real, sem `TRUST_PROXY_HEADERS` (a API fica atrás do BFF) ou com limites de requisição relaxados.
 - Credenciais de exchange: só chaves **somente leitura**, verificadas na própria exchange ao conectar e a cada sincronização. Qualquer outra permissão, inclusive uma desconhecida, é recusada ou bloqueia a conexão. Chave e segredo ficam cifrados (Fernet), nunca voltam ao navegador e são identificados por HMAC e pelos 4 últimos caracteres. Conectar e desconectar entram na auditoria ([EXCHANGES.md](EXCHANGES.md)).
 - Auditoria (`audit_logs`) nunca registra senhas, tokens ou códigos.
 

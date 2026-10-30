@@ -1,10 +1,12 @@
-"""Outbound e-mail with pluggable backends (smtp, console, memory)."""
+"""Outbound e-mail with pluggable backends (smtp, resend, console, memory)."""
 
 import asyncio
 import smtplib
 from dataclasses import asdict, dataclass
 from email.message import EmailMessage as MimeMessage
 from typing import Protocol
+
+import httpx
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
@@ -45,6 +47,39 @@ class SMTPBackend:
         await asyncio.to_thread(self._send_sync, message)
 
 
+class ResendBackend:
+    """Resend transactional e-mail over HTTPS (https://resend.com/docs/api-reference)."""
+
+    URL = "https://api.resend.com/emails"
+
+    def __init__(self, transport: httpx.AsyncBaseTransport | None = None) -> None:
+        self._transport = transport
+
+    async def send(self, message: EmailMessage) -> None:
+        settings = get_settings()
+        if settings.resend_api_key is None:
+            raise RuntimeError("RESEND_API_KEY is not configured")
+        payload: dict[str, object] = {
+            "from": settings.email_from,
+            "to": [message.to],
+            "subject": message.subject,
+            "text": message.text,
+        }
+        if message.html:
+            payload["html"] = message.html
+        async with httpx.AsyncClient(timeout=15, transport=self._transport) as client:
+            response = await client.post(
+                self.URL,
+                json=payload,
+                headers={"Authorization": f"Bearer {settings.resend_api_key.get_secret_value()}"},
+            )
+        if response.status_code >= 400:
+            # The body explains the problem (domain not verified, invalid from…); no secrets.
+            raise RuntimeError(
+                f"Resend rejected the e-mail: {response.status_code} {response.text[:300]}"
+            )
+
+
 class ConsoleBackend:
     async def send(self, message: EmailMessage) -> None:
         logger.info("email_console", to=message.to, subject=message.subject, body=message.text)
@@ -68,6 +103,7 @@ def get_email_backend() -> EmailBackend:
     if _backend is None:
         backends: dict[str, type[EmailBackend]] = {
             "smtp": SMTPBackend,
+            "resend": ResendBackend,
             "console": ConsoleBackend,
             "memory": MemoryBackend,
         }
@@ -80,12 +116,17 @@ def set_email_backend(backend: EmailBackend | None) -> None:
     _backend = backend
 
 
-async def send_email(message: EmailMessage) -> None:
-    """Send without failing the caller: auth flows must not leak delivery errors to clients."""
+async def send_email(message: EmailMessage, *, raise_errors: bool = False) -> None:
+    """Send without failing the caller: auth flows must not leak delivery errors to clients.
+
+    The worker passes raise_errors=True so a failed delivery is retried with backoff.
+    """
     try:
         await get_email_backend().send(message)
     except Exception:
         logger.exception("email_send_failed", subject=message.subject)
+        if raise_errors:
+            raise
 
 
 async def deliver(message: EmailMessage) -> None:

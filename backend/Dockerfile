@@ -23,5 +23,7 @@ USER voryn
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD python -c "import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\",\"8000\")}/health/live', timeout=3)"
-# Railway injects $PORT. Client IPs are resolved by the app (TRUST_PROXY_HEADERS), not uvicorn.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Railway injects $PORT; HOST=:: listens dual-stack (IPv6 + IPv4) for its private network.
+# Client IPs are resolved by the app (TRUST_PROXY_HEADERS), not uvicorn.
+# The same image runs the worker and beat with another start command (docs/DEPLOY.md).
+CMD ["python", "-m", "app.serve"]

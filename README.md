@@ -79,16 +79,15 @@ cd ../frontend && npm run gen:api
 
 ## Deploy (Railway)
 
-Um serviço por processo, a partir dos Dockerfiles do repositório:
+Seis serviços em um projeto: `web` (público), `api` (só rede privada), `worker`, `beat`, PostgreSQL e Redis. A configuração está em [`.railway/railway.ts`](.railway/railway.ts) (Infrastructure as Code do Railway):
 
-| Serviço | Origem | Comando |
-|---|---|---|
-| `web` | `frontend/` (target `runtime`) | padrão (`node server.js`) — defina `API_INTERNAL_URL` com o endereço privado da API |
-| `api` | `backend/` | padrão; *pre-deploy*: `alembic upgrade head` |
-| `worker` | `backend/` | `celery -A app.worker.celery_app worker -Q voryn` |
-| `beat` | `backend/` | `celery -A app.worker.celery_app beat` |
+```bash
+cd backend && uv run python scripts/generate_secrets.py   # crie as shared variables
+railway login && railway link
+railway config plan && railway config apply
+```
 
-Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela se recusa a iniciar sem elas): `ENVIRONMENT=production`, `SECRET_KEY`, `ENCRYPTION_KEYS`, `DATABASE_URL`, `REDIS_URL`, `FRONTEND_URL`, `EMAIL_BACKEND=smtp` + `SMTP_*`, `TRUST_PROXY_HEADERS=true`. Opcionais: `COINGECKO_API_KEY`, `SENTRY_DSN`, `ANTHROPIC_API_KEY` (habilita o Voryn AI; `AI_MODEL`, `AI_EFFORT` e os limites `AI_*` têm padrões).
+Passo a passo, variáveis, e-mail (Resend, porque o Railway bloqueia SMTP no plano Hobby), domínio, verificação e problemas comuns: **[docs/DEPLOY.md](docs/DEPLOY.md)**. Em produção a API recusa iniciar com configuração insegura e lista o que falta.
 
 ## Documentação
 
@@ -101,6 +100,7 @@ Plugins: PostgreSQL e Redis. Variáveis obrigatórias da API em produção (ela 
 - [Risco: metodologia](docs/RISK.md)
 - [Backtesting: metodologia](docs/BACKTESTING.md)
 - [Exchanges: segurança e importação](docs/EXCHANGES.md)
+- [Deploy no Railway](docs/DEPLOY.md)
 - [Segurança](docs/SECURITY.md)
 - [Decisões técnicas](docs/DECISIONS.md)
 - [Plano de implementação](docs/ROADMAP.md)
