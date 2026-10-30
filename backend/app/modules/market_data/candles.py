@@ -116,6 +116,8 @@ async def get_candles(
 ) -> CandleSet:
     redis = get_redis()
     cache_key = f"candles:{crypto.id}:{timeframe}"
+    if limit != CANDLE_LIMIT:  # longer histories (backtests) are cached separately
+        cache_key += f":{limit}"
     pair_key = f"candles:pair:{crypto.id}"
 
     cached = await redis.get(cache_key)

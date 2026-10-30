@@ -5,6 +5,7 @@ a NullPool engine, so no connection is shared across loops.
 """
 
 import asyncio
+import uuid
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from typing import Any
@@ -21,6 +22,7 @@ from app.core.email import EmailMessage, send_email
 from app.core.logging import configure_logging, get_logger
 from app.modules.alerts import service as alerts
 from app.modules.auth.service import purge_expired
+from app.modules.backtesting import service as backtests
 from app.modules.market_data import candles
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import CandleProvider, ProviderError
@@ -126,6 +128,18 @@ async def _refresh_history(db: AsyncSession) -> int:
     finally:
         await provider.aclose()
         await fx.aclose()
+
+
+@celery_app.task(name=backtests.TASK)
+def run_backtest_task(run_id: str) -> None:
+    async def job(db: AsyncSession) -> None:
+        provider = BinanceCandleProvider()
+        try:
+            await backtests.execute(db, uuid.UUID(run_id), provider)
+        finally:
+            await provider.aclose()
+
+    _run(job)
 
 
 @celery_app.task(name="portfolio.refresh_history")

@@ -22,6 +22,7 @@ from app.modules.alerts.router import notifications_router
 from app.modules.alerts.router import router as alerts_router
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.router import security_router
+from app.modules.backtesting.router import router as backtests_router
 from app.modules.health.router import router as health_router
 from app.modules.market_data.router import router as market_router
 from app.modules.portfolio.router import exchanges_router
@@ -89,6 +90,7 @@ def create_app() -> FastAPI:
     api.include_router(ai_router)
     api.include_router(portfolio_router)
     api.include_router(risk_router)
+    api.include_router(backtests_router)
     api.include_router(exchanges_router)
     app.include_router(api)
     app.include_router(health_router)
