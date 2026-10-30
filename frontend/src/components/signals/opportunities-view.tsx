@@ -1,5 +1,6 @@
 "use client";
 
+import { Hint } from "@/components/common/hint";
 import { cn } from "cn";
 import { ArrowRight, Info, Radar } from "lucide-react";
 import Link from "next/link";
@@ -12,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Segmented } from "@/components/ui/segmented";
 import { useWatchlists } from "@/lib/analysis-queries";
 import type { Signal, SignalClass, Timeframe } from "@/lib/api/types";
 import { formatNumber } from "@/lib/format";
@@ -72,25 +73,17 @@ export function OpportunitiesView() {
         title="Oportunidades"
         description="Sinais quantitativos transparentes: cada score vem com componentes, justificativa, riscos e condições de invalidação."
         actions={
-          <div role="radiogroup" aria-label="Intervalo" className="inline-flex rounded-lg border border-border bg-surface p-0.5">
-            {TIMEFRAMES.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                role="radio"
-                aria-checked={timeframe === t.value}
-                onClick={() => update({ tf: t.value === "1d" ? null : t.value })}
-                className={cn("h-8 rounded-md px-3 text-xs font-medium", timeframe === t.value ? "bg-card text-foreground ring-1 ring-border-strong" : "text-muted-foreground hover:text-foreground")}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="Intervalo"
+            value={timeframe}
+            onChange={(tf) => update({ tf: tf === "1d" ? null : tf })}
+            options={TIMEFRAMES.map((t) => ({ value: t.value, label: t.label }))}
+          />
         }
       />
 
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="-mx-4 scroll-row gap-1.5 scroll-px-4 px-4 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           <FilterChip active={!filter} onClick={() => update({ classe: null })}>
             Todos <span className="num text-subtle-foreground">{query.data?.items.length ?? 0}</span>
           </FilterChip>
@@ -114,12 +107,7 @@ export function OpportunitiesView() {
             </SelectContent>
           </Select>
           {strategy && (
-            <Tooltip>
-              <TooltipTrigger className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-                <Info className="size-3.5" /> Metodologia
-              </TooltipTrigger>
-              <TooltipContent className="max-w-80 space-y-1.5">
-                <p className="font-medium">{strategy.name}</p>
+            <Hint className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground" content={<><p className="font-medium">{strategy.name}</p>
                 <p>
                   Pesos: tendência {strategy.weights_pct.trend}%, momentum {strategy.weights_pct.momentum}%, volume{" "}
                   {strategy.weights_pct.volume}%, volatilidade {strategy.weights_pct.volatility}%, suportes/resistências{" "}
@@ -128,9 +116,9 @@ export function OpportunitiesView() {
                 <p>
                   Score ≥ {formatNumber(strategy.buy_threshold, locale, { digits: 0 })}: potencial de compra · ≤{" "}
                   {formatNumber(strategy.sell_threshold, locale, { digits: 0 })}: potencial de venda.
-                </p>
-              </TooltipContent>
-            </Tooltip>
+                </p></>}>
+              <Info className="size-3.5" /> Metodologia
+            </Hint>
           )}
         </div>
       </div>

@@ -1,11 +1,11 @@
 "use client";
 
+import { Hint } from "@/components/common/hint";
 import { cn } from "cn";
 import { Info, ShieldAlert, TriangleAlert } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Insight } from "@/lib/api/types";
 
 const STYLE = {
@@ -50,12 +50,9 @@ export function InsightsPanel({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-foreground">{item.title}</p>
                     <p className="mt-0.5 text-sm text-muted-foreground">{item.message}</p>
-                    <Tooltip>
-                      <TooltipTrigger className="mt-1 text-[11px] text-subtle-foreground underline decoration-dotted underline-offset-2 hover:text-foreground">
-                        Como é calculado
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-72">{item.basis}</TooltipContent>
-                    </Tooltip>
+                    <Hint className="mt-1 text-[11px] text-subtle-foreground hover:text-foreground" content={<>{item.basis}</>}>
+                      Como é calculado
+                    </Hint>
                   </div>
                 </li>
               );

@@ -1,11 +1,11 @@
 "use client";
 
+import { Hint } from "@/components/common/hint";
 import { cn } from "cn";
 import { ArrowDownRight, ArrowUpRight, Minus, TrendingDown, TrendingUp, Waves, HelpCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Analysis, Level, Locale, Trend } from "@/lib/api/types";
 import { formatDateTime, formatNumber, formatPercent, formatPrice } from "@/lib/format";
 
@@ -70,12 +70,9 @@ export function TrendCard({ trend }: { trend: Trend }) {
 function Row({ label, value, hint, tone }: { label: string; value: React.ReactNode; hint: string; tone?: string }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2.5">
-      <Tooltip>
-        <TooltipTrigger className="text-left text-sm text-muted-foreground underline decoration-dotted decoration-subtle-foreground/50 underline-offset-4">
-          {label}
-        </TooltipTrigger>
-        <TooltipContent className="max-w-72">{hint}</TooltipContent>
-      </Tooltip>
+      <Hint className="text-sm text-muted-foreground" content={<>{hint}</>}>
+        {label}
+      </Hint>
       <span className={cn("num text-right text-sm font-medium text-foreground", tone)}>{value}</span>
     </div>
   );
@@ -184,15 +181,10 @@ export function LevelsCard({ analysis, locale }: { analysis: Analysis; locale: L
     <Card>
       <CardHeader>
         <CardTitle className="font-heading text-sm font-medium">Suportes e resistências</CardTitle>
-        <Tooltip>
-          <TooltipTrigger className="w-fit text-left text-xs text-muted-foreground underline decoration-dotted underline-offset-2">
-            Como são calculados
-          </TooltipTrigger>
-          <TooltipContent className="max-w-80">
-            Topos e fundos locais (máxima/mínima estrita entre 3 candles de cada lado) agrupados quando distam menos de
-            0,5 × ATR. A força é o número de toques. Níveis não garantem reação do preço.
-          </TooltipContent>
-        </Tooltip>
+        <Hint className="w-fit text-xs text-muted-foreground" content={<>Topos e fundos locais (máxima/mínima estrita entre 3 candles de cada lado) agrupados quando distam menos de
+            0,5 × ATR. A força é o número de toques. Níveis não garantem reação do preço.</>}>
+          Como são calculados
+        </Hint>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <div>

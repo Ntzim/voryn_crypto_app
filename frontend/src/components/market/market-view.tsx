@@ -124,6 +124,8 @@ export function MarketView() {
             maxLength={64}
           />
         </div>
+        {/* Phones: list and sort side by side under the search; wider screens keep one row. */}
+        <div className="grid grid-cols-2 gap-2 sm:contents">
         <Select value={watchlistId ?? ALL_ASSETS} onValueChange={(v) => update({ lista: v === ALL_ASSETS ? null : v, pagina: null })}>
           <SelectTrigger className="h-10 w-full bg-surface sm:w-48" aria-label="Lista">
             <SelectValue />
@@ -155,6 +157,7 @@ export function MarketView() {
               )}
             </SelectContent>
           </Select>
+        </div>
         </div>
       </div>
 

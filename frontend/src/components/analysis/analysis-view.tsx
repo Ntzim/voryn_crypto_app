@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { ArrowLeft, CandlestickChart, SearchX } from "lucide-react";
+import { ArrowLeft, CandlestickChart, ChevronDown, SearchX, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -12,11 +12,13 @@ import { ChangeBadge } from "@/components/common/change-badge";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Segmented } from "@/components/ui/segmented";
 import { TIMEFRAMES, useAnalysis } from "@/lib/analysis-queries";
 import { isApiError } from "@/lib/api/client";
 import type { Timeframe } from "@/lib/api/types";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatRelative } from "@/lib/format";
 import { useAsset, usePreferences } from "@/lib/queries";
+import { SIGNAL_META, useAssetSignal } from "@/lib/signal-queries";
 
 import { IndicatorsCard, LevelsCard, SourceNote, TrendBadge, TrendCard } from "./analysis-panels";
 import { CandleChart, OVERLAY_COLORS, type Oscillator, type Overlay } from "./candle-chart";
@@ -80,8 +82,8 @@ export function AnalysisView({ slug }: { slug: string }) {
         <ArrowLeft className="size-4" /> Visão geral do ativo
       </Link>
 
-      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div className="flex items-center gap-3">
+      <div className="mb-5 flex items-start justify-between gap-3 md:items-end">
+        <div className="flex min-w-0 items-center gap-3">
           {info ? <AssetIcon src={info.image_url} symbol={info.symbol} size={40} /> : <Skeleton className="size-10 rounded-full" />}
           <div>
             <div className="flex flex-wrap items-center gap-2">
@@ -99,26 +101,17 @@ export function AnalysisView({ slug }: { slug: string }) {
         {info && <WatchlistMenu assetId={info.id} />}
       </div>
 
+      <SignalSnapshot slug={slug} timeframe={timeframe} />
+
       <Card className="gap-3 py-4">
         <div className="flex flex-col gap-3 px-4 lg:flex-row lg:items-center lg:justify-between">
-          <div role="radiogroup" aria-label="Intervalo" className="inline-flex w-fit rounded-lg border border-border bg-surface p-0.5">
-            {TIMEFRAMES.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                role="radio"
-                aria-checked={timeframe === t.value}
-                onClick={() => router.replace(`${pathname}?tf=${t.value}`, { scroll: false })}
-                className={cn(
-                  "num h-8 min-w-11 rounded-md px-2.5 text-xs font-medium transition-colors",
-                  timeframe === t.value ? "bg-card text-foreground ring-1 ring-border-strong" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1">
+          <Segmented
+            label="Intervalo"
+            value={timeframe}
+            onChange={(tf) => router.replace(`${pathname}?tf=${tf}`, { scroll: false })}
+            options={TIMEFRAMES.map((t) => ({ value: t.value, label: t.label }))}
+          />
+          <div className="-mx-4 scroll-row gap-1 scroll-px-4 px-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
             {OVERLAYS.map((o) => (
               <Chip key={o.key} active={overlays.has(o.key)} color={o.color} onClick={() => setOverlays((s) => toggle(s, o.key))}>
                 {o.label}
@@ -155,7 +148,7 @@ export function AnalysisView({ slug }: { slug: string }) {
 
       {data && (
         <>
-          <div className="mt-4">
+          <div id="sinal" className="mt-4 scroll-mt-20">
             <AssetSignalCard slug={slug} timeframe={timeframe} />
           </div>
           <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -174,5 +167,42 @@ export function AnalysisView({ slug }: { slug: string }) {
         </p>
       )}
     </>
+  );
+}
+
+/**
+ * The current scenario before the chart: what the signal says, how strong, how fresh and
+ * whether its data can be trusted. Shares the query (and cache) of the full signal card.
+ */
+function SignalSnapshot({ slug, timeframe }: { slug: string; timeframe: Timeframe }) {
+  const { locale } = usePreferences();
+  const signal = useAssetSignal(slug, timeframe).data;
+  if (!signal) return null;
+  const meta = SIGNAL_META[signal.classification];
+  const trusted = signal.is_current && signal.data_quality === "valid";
+  return (
+    <a
+      href="#sinal"
+      className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-xl border border-border bg-card px-4 py-3 text-sm transition-colors hover:bg-card-hover"
+    >
+      <span className="text-xs text-muted-foreground">Sinal {timeframe}</span>
+      <span className={cn("inline-flex rounded-md border px-1.5 py-px text-xs font-medium", meta.tone, !signal.is_current && "opacity-60")}>
+        {meta.label}
+      </span>
+      <span className="num font-medium text-foreground">
+        {Number(signal.score).toFixed(0)}
+        <span className="text-muted-foreground">/100</span>
+      </span>
+      {!trusted && (
+        <span className="inline-flex items-center gap-1 text-xs text-warning">
+          <TriangleAlert className="size-3.5" aria-hidden />
+          {signal.is_current ? "dados com problema" : "análise histórica"}
+        </span>
+      )}
+      <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
+        {formatRelative(signal.generated_at, locale)}
+        <ChevronDown className="size-3.5" aria-hidden />
+      </span>
+    </a>
   );
 }

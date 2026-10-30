@@ -37,10 +37,10 @@ export function AllocationChart({ summary, locale }: { summary: PortfolioSummary
       </CardHeader>
       <CardContent>
         {!summary ? (
-          <Skeleton className="mx-auto size-44 rounded-full" />
+          <Skeleton className="mx-auto size-28 rounded-full sm:size-44" />
         ) : (
-          <div className="flex flex-col items-center gap-5 sm:flex-row lg:flex-col 2xl:flex-row">
-            <div className="relative size-44 shrink-0">
+          <div className="flex items-center gap-5 lg:flex-col 2xl:flex-row">
+            <div className="relative size-28 shrink-0 sm:size-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -66,7 +66,7 @@ export function AllocationChart({ summary, locale }: { summary: PortfolioSummary
                 </PieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[11px] text-muted-foreground">{summary.positions.length} ativo(s)</span>
+                <span className="text-[11px] text-muted-foreground">{summary.positions.length} {summary.positions.length === 1 ? "ativo" : "ativos"}</span>
               </div>
             </div>
             <ul className="w-full space-y-2.5">

@@ -1,12 +1,12 @@
 "use client";
 
+import { Hint } from "@/components/common/hint";
 import { cn } from "cn";
 import Link from "next/link";
 
 import { AssetIcon } from "@/components/common/asset-icon";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Currency, Locale, Position } from "@/lib/api/types";
 import { formatMoney, formatNumber, formatPercent, formatPrice, trendOf } from "@/lib/format";
 
@@ -26,14 +26,9 @@ function Pnl({ value, pct, currency, locale }: { value: string; pct: string | nu
 function Price({ position, currency, locale }: { position: Position; currency: Currency; locale: Locale }) {
   if (!position.price_estimated) return <>{formatPrice(position.price, currency, locale)}</>;
   return (
-    <Tooltip>
-      <TooltipTrigger className="text-warning underline decoration-dotted underline-offset-2">
-        sem cotação
-      </TooltipTrigger>
-      <TooltipContent className="max-w-60">
-        Ainda não há cotação ao vivo para este ativo; o valor usa o preço da última transação.
-      </TooltipContent>
-    </Tooltip>
+    <Hint className="text-warning" content={<>Ainda não há cotação ao vivo para este ativo; o valor usa o preço da última transação.</>}>
+      sem cotação
+    </Hint>
   );
 }
 
@@ -78,9 +73,7 @@ export function PositionsTable({
               </div>
               <div className="num text-right">
                 <p className="text-sm font-medium text-foreground">{formatMoney(p.market_value, currency, locale)}</p>
-                <p className={cn("text-xs", TREND[trendOf(p.unrealized_pnl)])}>
-                  {formatPercent(p.unrealized_pct, locale)}
-                </p>
+                <ChangeBadge value={p.unrealized_pct} locale={locale} className="text-xs" />
               </div>
             </Link>
           </li>
