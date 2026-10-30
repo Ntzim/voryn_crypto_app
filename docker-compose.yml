@@ -1,0 +1,108 @@
+# Local development stack. `docker compose up --build` then open http://localhost:3010
+# Mailpit (captured e-mails): http://localhost:8035
+# Host ports are overridable (VORYN_*_PORT) to coexist with other local stacks.
+
+name: voryn
+
+x-backend-env: &backend-env
+  ENVIRONMENT: development
+  LOG_JSON: "false"
+  DATABASE_URL: postgresql+asyncpg://voryn:voryn@postgres:5432/voryn
+  REDIS_URL: redis://redis:6379/0
+  FRONTEND_URL: http://localhost:${VORYN_WEB_PORT:-3010}
+  TRUST_PROXY_HEADERS: "true"
+  COOKIE_SECURE: "false"
+  # Local only: lets e2e suites create many accounts from one IP. Production uses 1.
+  RATE_LIMIT_SCALE: "20"
+  EMAIL_BACKEND: smtp
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
+  COINGECKO_API_PLAN: ${COINGECKO_API_PLAN:-public}
+  # Voryn AI (optional). Without a key the assistant is shown as unavailable.
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: voryn
+      POSTGRES_PASSWORD: voryn
+      POSTGRES_DB: voryn
+    ports: ["${VORYN_POSTGRES_PORT:-5442}:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voryn -d voryn"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["${VORYN_REDIS_PORT:-6389}:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports: ["${VORYN_MAILPIT_PORT:-8035}:8025"]
+
+  migrate:
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend-env
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: ./backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      <<: *backend-env
+      WATCHFILES_FORCE_POLLING: "true"
+    ports: ["${VORYN_API_PORT:-8010}:8000"]
+    volumes: ["./backend/app:/app/app"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./backend
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=INFO", "--concurrency=2", "-Q", "voryn"]
+    environment: *backend-env
+    healthcheck: { disable: true }  # the image's HTTP check is for the API process
+    volumes: ["./backend/app:/app/app"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+
+  beat:
+    build: ./backend
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
+    environment: *backend-env
+    healthcheck: { disable: true }
+    depends_on:
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      # Bind-mounted sources do not emit file events from a Windows/macOS host.
+      NEXT_WATCH_POLL_MS: "1000"
+    ports: ["${VORYN_WEB_PORT:-3010}:3000"]
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on: [api]
+
+volumes:
+  postgres-data:
+  redis-data:
