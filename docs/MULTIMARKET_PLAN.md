@@ -132,6 +132,17 @@ Custos de infraestrutura no Railway: mais armazenamento de histórico e tarefas 
    - Adaptador do provedor licenciado.
    - Comparador de ativos, alertas novos (variação %, resultados, proventos) e otimizações (paginação e virtualização das listas).
 
+### Andamento
+
+- **Fase 1 — implementada** (branch `feat/multimarket-foundation`, não publicada em produção):
+  - Migration `3b9d2f61c0a4` (aditiva e reversível): `market`, `asset_type`, `exchange`, `currency` e `sector` no catálogo; `delay_seconds` nas cotações; ticker único por mercado.
+  - Todas as consultas de cripto filtram `market = 'CRYPTO'`; watchlists, alertas, backtests e transações recusam ativos de outros mercados.
+  - `MARKETS_ENABLED` (padrão `CRYPTO`); a sincronização e os endpoints de B3 só funcionam com o mercado listado.
+  - Adaptador brapi: catálogo completo com cotação em 3 requisições (~2.270 instrumentos), histórico diário, retry com Retry-After, reparo de acentuação, contador mensal de uso no Redis.
+  - Calendários B3 (BVMF) e EUA (NYSE) com feriados; a hora de referência da cotação é a hora da coleta menos o atraso, limitada ao fechamento do pregão.
+  - Endpoints `GET /market/markets` e `GET /market/instruments/search`.
+  - Não modelado ainda: meio pregão (vésperas de feriado nos EUA, Quarta-feira de Cinzas na B3).
+
 Cada fase termina com diagnóstico, implementação, validação e próximos passos, em commits separados.
 
 ## 6. Riscos
