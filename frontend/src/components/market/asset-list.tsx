@@ -48,7 +48,7 @@ export function AssetList({
         <li key={asset.id}>
           <Link
             href={`${hrefBase}/${asset.slug}`}
-            className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-card-hover"
+            className="pressable -mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-card-hover active:bg-card-hover"
           >
             {showRank && (
               <span className="num w-5 text-right text-xs text-subtle-foreground">{asset.market_cap_rank ?? "—"}</span>

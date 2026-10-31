@@ -138,9 +138,9 @@ export function EquityChart({ performance, locale }: { performance: Performance 
 
   return (
     <Card className="gap-3">
-      <CardHeader className="flex flex-wrap items-center justify-between gap-3">
+      <CardHeader className="flex items-center justify-between gap-3">
         <CardTitle className="font-heading text-sm font-medium">Evolução da carteira</CardTitle>
-        <CardAction className="flex flex-wrap gap-2">
+        <CardAction>
           <Segmented
             label="Visualização"
             value={mode}
@@ -148,17 +148,6 @@ export function EquityChart({ performance, locale }: { performance: Performance 
             options={[
               { value: "value", label: "Patrimônio", short: "Valor" },
               { value: "return", label: "Rentabilidade", short: "Retorno" },
-            ]}
-          />
-          <Segmented
-            label="Período"
-            value={range}
-            onChange={setRange}
-            options={[
-              { value: "30", label: "30D" },
-              { value: "90", label: "90D" },
-              { value: "365", label: "1A" },
-              { value: "all", label: "Tudo" },
             ]}
           />
         </CardAction>
@@ -173,6 +162,19 @@ export function EquityChart({ performance, locale }: { performance: Performance 
         ) : (
           <div ref={container} className="h-64 w-full md:h-72" />
         )}
+        {/* Period under the chart, full width: where the thumb is (as in Apple's Stocks). */}
+        <Segmented
+          label="Período"
+          value={range}
+          onChange={setRange}
+          className="mt-3 flex w-full *:flex-1"
+          options={[
+            { value: "30", label: "30D" },
+            { value: "90", label: "90D" },
+            { value: "365", label: "1A" },
+            { value: "all", label: "Tudo" },
+          ]}
+        />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {mode === "value" ? (
             <>

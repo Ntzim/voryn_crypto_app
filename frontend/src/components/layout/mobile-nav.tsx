@@ -29,11 +29,13 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
   const moreActive = pathname !== null && !PRIMARY.some((item) => isActive(pathname, item.href));
 
   return (
+    // Floating glass tab bar (HIG: the tab bar floats above content on Liquid Glass and
+    // stays visible). Inset from the edges and lifted above the home indicator.
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/90 pb-safe backdrop-blur-lg md:hidden"
+      className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 md:hidden"
     >
-      <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
+      <ul className="glass mx-auto grid h-16 max-w-md grid-cols-5 rounded-[1.75rem] px-1">
         {PRIMARY.map((item) => {
           const active = pathname !== null && isActive(pathname, item.href);
           const Icon = item.icon;
@@ -49,7 +51,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
                 )}
               >
                 <TabIcon active={active}>
-                  <Icon className={cn("size-5", active && "text-primary-ink")} aria-hidden />
+                  <Icon className={cn("size-[22px]", active ? "text-foreground" : "text-muted-foreground")} strokeWidth={active ? 2.25 : 1.75} aria-hidden />
                 </TabIcon>
                 <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
               </Link>
@@ -65,7 +67,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
               )}
             >
               <TabIcon active={moreActive}>
-                <Ellipsis className={cn("size-5", moreActive && "text-primary-ink")} aria-hidden />
+                <Ellipsis className={cn("size-[22px]", moreActive ? "text-foreground" : "text-muted-foreground")} strokeWidth={moreActive ? 2.25 : 1.75} aria-hidden />
               </TabIcon>
               Mais
             </SheetTrigger>
@@ -130,8 +132,8 @@ function TabIcon({ active, children }: { active: boolean; children: React.ReactN
   return (
     <span
       className={cn(
-        "flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-150 group-active:bg-accent",
-        active && "bg-primary/15",
+        "flex h-7 w-12 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-(--ease-out-soft) group-active:scale-90 group-active:bg-white/10",
+        active && "bg-white/12",
       )}
     >
       {children}

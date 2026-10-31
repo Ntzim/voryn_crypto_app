@@ -7,52 +7,59 @@
 /*
  * Voryn design tokens. Dark is the product's only theme for now; the token layer
  * (shadcn variable names) keeps a light theme possible without touching components.
+ *
+ * Neutral graphite instead of the former blue-tinted slate: data and the brand color carry
+ * the hue, surfaces stay quiet. Three surface steps (background → surface → elevated) give
+ * depth without borders on every element. Every text color is checked against all three
+ * (WCAG 2.2 AA, 4.5:1 for body text); the minimum ratio is noted next to each.
  */
 :root {
-  --background: #080f14;
-  --foreground: #f8fafc;
-  --surface: #101820;
-  --card: #151d28;
-  --card-foreground: #f8fafc;
-  --card-hover: #19222f;
-  --popover: #151d28;
-  --popover-foreground: #f8fafc;
-  /* Fills (buttons, active states): white text on it is 4.8:1 (WCAG AA). */
+  --background: #0b0d12;
+  --foreground: #f5f5f7; /* 15.0:1 */
+  --surface: #151820;
+  --card: #151820;
+  --card-foreground: #f5f5f7;
+  --card-hover: #1c2029;
+  --elevated: #1c2029;
+  --popover: #1c2029;
+  --popover-foreground: #f5f5f7;
+  /* Fills (buttons, active states): white text on it is 4.6:1. */
   --primary: #585bef;
-  /* Brand color as text or icon on the dark surfaces: 5.6:1 or more on all of them. */
+  /* Brand color as text or icon: 5.9:1. */
   --primary-ink: #8b93f8;
-  --primary-foreground: #f8fafc;
+  --primary-foreground: #f5f5f7;
   --violet: #8b5cf6;
-  --secondary: #101820;
-  --secondary-foreground: #f8fafc;
-  --muted: #101820;
-  --muted-foreground: #94a3b8;
-  /* Captions and small labels: 4.7:1 or more on every surface (was 3.3:1). */
-  --subtle-foreground: #8190a6;
-  --accent: #1b2533;
-  --accent-foreground: #f8fafc;
-  /* Losses and errors, read as text: 4.8:1 or more on every surface. */
-  --destructive: #f25f5f;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --border: rgb(148 163 184 / 0.12);
-  --border-strong: rgb(148 163 184 / 0.2);
-  --input: rgb(148 163 184 / 0.16);
-  --ring: #6366f1;
+  --secondary: #1c2029;
+  --secondary-foreground: #f5f5f7;
+  --muted: #1c2029;
+  --muted-foreground: #8e919a; /* secondary text, 5.2:1 */
+  --subtle-foreground: #858893; /* captions, 4.6:1 */
+  --accent: #232733;
+  --accent-foreground: #f5f5f7;
+  --destructive: #ff6678; /* losses, 5.8:1 */
+  --success: #30d19a; /* gains, 8.3:1 */
+  --warning: #f5b041; /* 8.7:1 */
+  --border: rgb(255 255 255 / 0.08);
+  --border-strong: rgb(255 255 255 / 0.14);
+  --input: rgb(255 255 255 / 0.1);
+  --ring: #8b93f8;
   --chart-1: #6366f1;
   --chart-2: #8b5cf6;
-  --chart-3: #22c55e;
-  --chart-4: #f59e0b;
+  --chart-3: #30d19a;
+  --chart-4: #f5b041;
   --chart-5: #38bdf8;
-  --radius: 0.625rem;
-  --sidebar: #0a1218;
-  --sidebar-foreground: #cbd5e1;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #151d28;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: rgb(148 163 184 / 0.1);
-  --sidebar-ring: #6366f1;
+  --radius: 0.75rem;
+  /* The sidebar recedes (same tone as the page) so the content leads. */
+  --sidebar: #0b0d12;
+  --sidebar-foreground: #a4a7b0;
+  --sidebar-primary: #585bef;
+  --sidebar-primary-foreground: #f5f5f7;
+  --sidebar-accent: #1c2029;
+  --sidebar-accent-foreground: #f5f5f7;
+  --sidebar-border: rgb(255 255 255 / 0.06);
+  --sidebar-ring: #8b93f8;
+  /* Motion: short and natural (150–300 ms), never on the critical path. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -60,7 +67,9 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-sora), var(--font-inter), ui-sans-serif, sans-serif;
+  /* One typeface for reading and headings (Inter); Sora stays for the brand wordmark. */
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-brand: var(--font-sora), var(--font-inter), ui-sans-serif, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -98,6 +107,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-card-hover: var(--card-hover);
+  --color-elevated: var(--elevated);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -142,6 +152,55 @@
 
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/*
+ * Glass: a web take on Apple's Liquid Glass "regular" variant, for the functional layer only
+ * (tab bar, header, menus, popovers) — never for content cards, per the HIG ("Don't use
+ * Liquid Glass in the content layer"). Blur plus a dark tint keeps text legible over any
+ * content; without backdrop-filter, or when people ask for less transparency or more
+ * contrast, it falls back to an opaque elevated surface.
+ */
+@layer components {
+  .glass {
+    background-color: rgb(28 32 41 / 0.8);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid rgb(255 255 255 / 0.08);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 8px 32px rgb(0 0 0 / 0.45);
+  }
+
+  /* Press feedback for tappable surfaces (rows, cards that are links). */
+  .pressable {
+    transition:
+      transform 150ms var(--ease-out-soft),
+      background-color 150ms var(--ease-out-soft);
+  }
+  .pressable:active {
+    transform: scale(0.985);
+  }
+}
+
+/* Fallbacks kept outside the layer so an unsupported condition can never drop the classes. */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: var(--elevated);
+  }
+}
+@media (prefers-contrast: more) {
+  .glass {
+    background-color: var(--elevated);
+    backdrop-filter: none;
+    border-color: rgb(255 255 255 / 0.18);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background-color: var(--elevated);
+    backdrop-filter: none;
+  }
 }
 
 /* Horizontal chip rows on phones: one swipeable line instead of wrapping into several.

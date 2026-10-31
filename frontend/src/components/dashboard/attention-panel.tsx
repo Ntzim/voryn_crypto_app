@@ -40,7 +40,7 @@ export function AttentionPanel({
   const empty = !loading && flagged.length === 0 && unread === 0 && (insights?.length ?? 0) === 0;
 
   return (
-    <section aria-labelledby="attention-title" className="rounded-2xl border border-border bg-card">
+    <section aria-labelledby="attention-title" className="rounded-2xl bg-card ring-1 ring-white/6">
       <header className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
         <h2 id="attention-title" className="font-heading text-sm font-medium">
           Precisa da sua atenção
@@ -125,7 +125,7 @@ function Row({ href, icon, title, detail }: { href: string; icon: ReactNode; tit
     <li>
       <Link
         href={href}
-        className="flex min-h-14 items-center gap-3 rounded-xl px-3 py-2.5 transition-colors outline-none hover:bg-card-hover focus-visible:ring-2 focus-visible:ring-ring/70"
+        className="pressable flex min-h-14 items-center gap-3 rounded-xl px-3 py-2.5 transition-colors outline-none hover:bg-card-hover focus-visible:ring-2 focus-visible:ring-ring/70"
       >
         <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface">{icon}</span>
         <span className="min-w-0 flex-1">

@@ -108,3 +108,64 @@ O total de JavaScript praticamente não mudou; o que mudou foi a ordem de carreg
 4. **Leitor de tela:** auditoria com NVDA/VoiceOver e verificação automatizada (axe) no CI.
 5. **Gráfico de candles:** pinça para zoom no celular, sem conflito com a rolagem.
 6. **Indicador de atualização:** marcar "dados de 5 min atrás" no resumo da carteira, como já é feito no mercado.
+
+---
+
+# Refinamento "Apple-grade" (30/10/2026)
+
+Branch `ux/apple-grade`, construída sobre o redesign anterior (PR #4).
+
+## Referências consultadas
+
+| Referência | Acesso | O que foi usado |
+|---|---|---|
+| Apple HIG: *Materials*, *Tab bars*, *Layout* | lidas pela versão JSON da documentação (a página web é renderizada por JavaScript) | Liquid Glass só na camada de controles ("Don't use Liquid Glass in the content layer", "use sparingly"); variante *regular* (desfoque e escurecimento) onde há texto; barra de abas flutuante, sempre visível, para navegação e não para ações, com rótulos de uma palavra; ordem por importância, *progressive disclosure* e espaçamento consistente |
+| Apple — guia de design da WWDC26 | lido | só menções gerais ao Liquid Glass; os detalhes estão na HIG acima |
+| Apple Design Resources (UI Kits) | **não consultado** | são arquivos do Figma e do Sketch |
+| Linear — *Behind the latest design refresh* | lido | barra lateral mais discreta que o conteúdo, cinzas menos saturados, menos separadores e mais suaves, menos ícones decorativos ("Don't compete for attention you haven't earned") |
+| Mobbin | **parcial** | a página pública não mostra telas; a biblioteca de apps financeiros (Finance+) é de planos pagos |
+| 21st.dev | **parcial** | catálogo genérico; nenhuma dependência adicionada |
+
+## O que mudou
+
+**Paleta**
+- Grafite neutro em três degraus (fundo #0b0d12, superfície #151820, elevado #1c2029).
+- Texto: #f5f5f7 (primário), #8e919a (secundário), #858893 (legendas).
+- Ganhos #30d19a e perdas #ff6678.
+- Contraste mínimo medido em todas as superfícies: 4,6:1 (legendas), 5,2:1 (texto secundário), 5,8:1 (perdas), 8,3:1 (ganhos).
+- O índigo da marca foi mantido.
+
+**Tipografia:** Inter em títulos e texto. A Sora fica só no logotipo.
+
+**Vidro (`.glass`)**
+- Desfoque de 24px, saturação 1,6 e tom escuro com 80% de opacidade, mais borda e brilho internos sutis.
+- Aplicado só na barra de abas, no cabeçalho ao rolar, em menus, seletores e popovers. Nunca nos cartões de conteúdo.
+- Vira fundo opaco quando o navegador não suporta desfoque, ou quando o usuário pede mais contraste ou menos transparência.
+
+**Celular**
+- Barra de abas flutuante de vidro, afastada das bordas e acima da área do indicador de início. A aba ativa tem fundo elevado e ícone mais grosso, não só cor.
+- Cabeçalho transparente no topo, que vira vidro com linha fina ao rolar (efeito *scroll edge*).
+- Diálogos viram folhas inferiores, com alça e animação de subida.
+- Seletor de período abaixo do gráfico, na largura toda.
+- Patrimônio sem moldura, com 42px, como elemento principal da tela.
+
+**Desktop**
+- Barra lateral no tom da página, com rótulos mais discretos; a página atual é marcada por uma superfície elevada.
+- Cartões com contorno fino em vez de borda.
+
+**Ordem do dashboard:** patrimônio → variação → gráfico → principais posições → o que precisa de atenção → distribuição e mercado.
+
+**Movimento** (150–300 ms, desligado com `prefers-reduced-motion`): botões encolhem ao toque, abas e páginas entram com *fade*, linhas respondem ao toque.
+
+## Testes
+
+| Teste | Resultado |
+|---|---|
+| E2E Playwright, desktop e celular emulado | 41 aprovados, 3 pulados por desenho |
+| Vitest / ESLint / `tsc` / `next build` | 28 aprovados / sem problemas |
+| Transbordo horizontal: 11 páginas × 8 larguras (320–1440px) | nenhum |
+| Vidro aplicado: estilo calculado da barra de abas | `blur(24px) saturate(1.6)` |
+
+**Limitações**
+- **Navegador:** Chromium emulado. Não houve aparelho físico nem Safari/iOS, onde o `backdrop-filter` e a *safe area* precisam de verificação real.
+- **Media query `prefers-reduced-transparency`:** o Safari ainda não a suporta. Lá o fallback de transparência depende só de "mais contraste".

@@ -23,7 +23,12 @@ RUN npm run build
 # Production image: standalone server only, non-root. API_INTERNAL_URL is read at runtime.
 FROM base AS runtime
 ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000
-RUN addgroup -S -g 10001 voryn && adduser -S -u 10001 -G voryn voryn
+# The standalone server only needs `node`. npm, corepack and yarn are build tools that ship
+# their own dependency trees (Trivy flagged HIGH advisories in npm's bundled undici and
+# brace-expansion), so they are removed from the image that runs in production.
+RUN addgroup -S -g 10001 voryn && adduser -S -u 10001 -G voryn voryn \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /opt/yarn-* \
+              /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=build --chown=voryn:voryn /app/.next/standalone ./
 COPY --from=build --chown=voryn:voryn /app/.next/static ./.next/static
 COPY --from=build --chown=voryn:voryn /app/public ./public

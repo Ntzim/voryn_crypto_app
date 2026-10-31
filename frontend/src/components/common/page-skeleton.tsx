@@ -26,7 +26,7 @@ export function PageSkeleton({ variant = "panel", label }: { variant?: Variant; 
 }
 
 function Surface({ className = "", children }: { className?: string; children: React.ReactNode }) {
-  return <div className={`rounded-2xl border border-border bg-card p-5 ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-card ring-1 ring-white/6 p-5 ${className}`}>{children}</div>;
 }
 
 function Rows({ count }: { count: number }) {

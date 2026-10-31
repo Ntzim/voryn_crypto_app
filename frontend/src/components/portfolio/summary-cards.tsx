@@ -47,40 +47,42 @@ export function SummaryCards({
   const flows = s ? Number(s.change_24h.net_flows) : 0;
 
   return (
-    <section aria-label="Resumo da carteira" className="rounded-2xl border border-border bg-card">
-      <div className="flex flex-col gap-5 px-5 pt-5 pb-4 md:px-7 md:pt-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="min-w-0">
-          <Label hint="Valor de mercado das posições abertas a preços atuais.">Patrimônio</Label>
-          {loading || !s ? (
-            <Skeleton className="mt-2 h-10 w-56" />
-          ) : (
-            <p className="num mt-1.5 font-heading text-[2rem] leading-tight font-semibold tracking-tight text-foreground md:text-[2.5rem]">
-              {formatMoney(s.market_value, s.currency, locale)}
-            </p>
-          )}
-          {loading || !s ? (
-            <Skeleton className="mt-3 h-5 w-64" />
-          ) : (
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
-              <span className="num inline-flex items-center gap-1.5 font-medium">
-                <SignedMoney value={s.change_24h.market_effect} summary={s} locale={locale} />
-                <ChangeBadge value={s.change_24h.pct} locale={locale} variant="pill" />
-                <span className="font-normal text-muted-foreground">em 24h</span>
-                <Hint
-                  label="Variação em 24 horas"
-                  content="Diferença do patrimônio em 24h, separando o efeito de mercado dos aportes e retiradas do período."
-                />
-              </span>
-              <span className="num text-muted-foreground">
-                {otherValue && `${formatMoney(otherValue, other, locale)} · `}
-                {s.positions.length} {s.positions.length === 1 ? "ativo" : "ativos"}
-                {flows !== 0 && ` · aportes líquidos ${formatMoney(s.change_24h.net_flows, s.currency, locale)}`}
-              </span>
-            </div>
-          )}
-        </div>
+    // The value sits on the page itself, unframed, as the most important thing on screen;
+    // the supporting figures are grouped in one quiet surface beside (desktop) or below it.
+    <section aria-label="Resumo da carteira" className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+      <div className="min-w-0 px-1">
+        <Label hint="Valor de mercado das posições abertas a preços atuais.">Patrimônio</Label>
+        {loading || !s ? (
+          <Skeleton className="mt-2 h-12 w-64" />
+        ) : (
+          <p className="num mt-1 font-heading text-[2.625rem] leading-[1.05] font-semibold tracking-[-0.035em] text-foreground md:text-[3.25rem]">
+            {formatMoney(s.market_value, s.currency, locale)}
+          </p>
+        )}
+        {loading || !s ? (
+          <Skeleton className="mt-3 h-5 w-64" />
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+            <span className="num inline-flex items-center gap-1.5 font-medium">
+              <SignedMoney value={s.change_24h.market_effect} summary={s} locale={locale} />
+              <ChangeBadge value={s.change_24h.pct} locale={locale} variant="pill" />
+              <span className="font-normal text-muted-foreground">em 24h</span>
+              <Hint
+                label="Variação em 24 horas"
+                content="Diferença do patrimônio em 24h, separando o efeito de mercado dos aportes e retiradas do período."
+              />
+            </span>
+            <span className="num text-muted-foreground">
+              {otherValue && `${formatMoney(otherValue, other, locale)} · `}
+              {s.positions.length} {s.positions.length === 1 ? "ativo" : "ativos"}
+              {flows !== 0 && ` · aportes líquidos ${formatMoney(s.change_24h.net_flows, s.currency, locale)}`}
+            </span>
+          </div>
+        )}
+      </div>
 
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-border pt-4 lg:min-w-[380px] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
+      <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-white/6 lg:w-[460px] lg:shrink-0">
+        <dl className="grid grid-cols-2 divide-x divide-white/6 px-1 py-4">
           <Metric
             label="Resultado"
             hint="Realizado (vendas, conversões e taxas) + não realizado (valor atual − custo de aquisição)."
@@ -123,32 +125,32 @@ export function SummaryCards({
             }
           />
         </dl>
-      </div>
 
-      <div className="border-t border-border px-2 md:px-4">
-        {performance ? (
-          <dl className="num grid grid-cols-5" aria-label="Rentabilidade por período">
-            {PERIODS.map(([key, label]) => {
-              const value = performance.returns[key];
-              return (
-                <div key={key} className="px-1 py-2.5 text-center">
-                  <dt className="text-[11px] text-subtle-foreground">{label}</dt>
-                  <dd className={cn("text-[13px] font-medium", TREND[trendOf(value)])}>
-                    {value === null ? (
-                      <span className="text-subtle-foreground" title="A carteira ainda não tem o período completo">
-                        —
-                      </span>
-                    ) : (
-                      formatPercent(value, locale, 1)
-                    )}
-                  </dd>
-                </div>
-              );
-            })}
-          </dl>
-        ) : (
-          <Skeleton className="my-3 h-8 w-full" />
-        )}
+        <div className="border-t border-white/6 px-2">
+          {performance ? (
+            <dl className="num grid grid-cols-5" aria-label="Rentabilidade por período">
+              {PERIODS.map(([key, label]) => {
+                const value = performance.returns[key];
+                return (
+                  <div key={key} className="px-1 py-2.5 text-center">
+                    <dt className="text-[11px] text-subtle-foreground">{label}</dt>
+                    <dd className={cn("text-[13px] font-medium", TREND[trendOf(value)])}>
+                      {value === null ? (
+                        <span className="text-subtle-foreground" title="A carteira ainda não tem o período completo">
+                          —
+                        </span>
+                      ) : (
+                        formatPercent(value, locale, 1)
+                      )}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          ) : (
+            <Skeleton className="my-3 h-8 w-full" />
+          )}
+        </div>
       </div>
     </section>
   );
@@ -177,7 +179,7 @@ function Metric({
   loading: boolean;
 }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 px-4">
       <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         {label}
         <Hint label={label} content={hint} />
