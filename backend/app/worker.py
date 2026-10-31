@@ -7,7 +7,7 @@ a NullPool engine, so no connection is shared across loops.
 import asyncio
 import uuid
 from collections.abc import Awaitable, Callable
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from celery import Celery
@@ -27,11 +27,13 @@ from app.modules.audit import service as audit
 from app.modules.auth.service import purge_expired
 from app.modules.backtesting import service as backtests
 from app.modules.exchange_connections import service as exchanges
-from app.modules.market_data import candles
+from app.modules.market_data import calendars, candles
+from app.modules.market_data import exchanges as exchange_markets
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import CandleProvider, ProviderError
 from app.modules.market_data.providers.bcb import BcbPtaxProvider
 from app.modules.market_data.providers.binance import BinanceCandleProvider
+from app.modules.market_data.providers.brapi import BrapiProvider
 from app.modules.market_data.providers.coingecko import CoinGeckoProvider
 from app.modules.portfolio import service as portfolio
 from app.modules.signals import service as signals
@@ -71,6 +73,11 @@ celery_app.conf.update(
         "prune-audit": {"task": "audit.prune", "schedule": 24 * 3600.0},
     },
 )
+if settings.market_enabled("B3"):
+    celery_app.conf.beat_schedule["sync-b3"] = {
+        "task": "market.sync_b3",
+        "schedule": float(settings.b3_sync_interval_seconds),
+    }
 
 
 def _run[T](job: Callable[[AsyncSession], Awaitable[T]]) -> T:
@@ -221,6 +228,32 @@ def sync_markets_task() -> int:
     return _run(_sync_markets)
 
 
+async def _sync_b3(db: AsyncSession) -> int:
+    if not settings.market_enabled("B3"):
+        return 0
+    # Closed market: once a sync has captured the session close there is nothing new.
+    current = calendars.status("B3", exchange_markets.utcnow())
+    last = await exchange_markets.sync_status("B3")
+    if current.state == "closed" and current.last_close is not None and last:
+        synced_at = datetime.fromisoformat(str(last["at"]))
+        delay = timedelta(seconds=BrapiProvider.delay_for(settings.brapi_plan))
+        if synced_at - delay >= current.last_close:
+            return 0
+    provider = BrapiProvider()
+    try:
+        return await exchange_markets.sync_b3(db, provider)
+    except ProviderError as exc:
+        logger.error("b3_sync_failed", error=str(exc))
+        return 0
+    finally:
+        await provider.aclose()
+
+
+@celery_app.task(name="market.sync_b3")
+def sync_b3_task() -> int:
+    return _run(_sync_b3)
+
+
 @celery_app.task(name="market.sync_fx")
 def sync_fx_task() -> str | None:
     return _run(_sync_fx)
@@ -274,5 +307,7 @@ def _bootstrap(**_: Any) -> None:
     # Populate data right away instead of waiting for the first beat tick.
     sync_fx_task.delay()
     sync_markets_task.delay()
+    if settings.market_enabled("B3"):
+        sync_b3_task.delay()
     refresh_history_task.delay()
     generate_signals_task.delay()
