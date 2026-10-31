@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.authz import owned_or_404
 from app.core.errors import AppError, ConflictError, NotFoundError
-from app.modules.market_data.models import Cryptocurrency
+from app.modules.market_data import service as market
 from app.modules.watchlists.models import Watchlist, WatchlistAsset
 
 DEFAULT_NAME = "Favoritos"
@@ -89,7 +89,7 @@ async def remove(db: AsyncSession, watchlist: Watchlist) -> None:
 
 
 async def add_asset(db: AsyncSession, watchlist: Watchlist, asset_id: uuid.UUID) -> None:
-    if await db.get(Cryptocurrency, asset_id) is None:
+    if await market.get_crypto(db, asset_id) is None:
         raise NotFoundError("Ativo não encontrado.")
     count = (
         await db.scalar(select(func.count()).where(WatchlistAsset.watchlist_id == watchlist.id))

@@ -20,7 +20,7 @@ from app.core.errors import AppError, NotFoundError
 from app.core.tasks import enqueue
 from app.modules.audit.service import record
 from app.modules.market_data import service as market
-from app.modules.market_data.models import Cryptocurrency, MarketTicker
+from app.modules.market_data.models import Cryptocurrency, MarketTicker, crypto_only
 from app.modules.market_data.providers.base import FxHistoryProvider, ProviderError
 from app.modules.portfolio import insights as insight_rules
 from app.modules.portfolio.engine import (
@@ -650,7 +650,9 @@ async def _cryptos_by_slug(db: AsyncSession, slugs: Sequence[str]) -> list[Crypt
     return list(
         (
             await db.execute(
-                select(Cryptocurrency).where(Cryptocurrency.source_id.in_(list(slugs)))
+                select(Cryptocurrency).where(
+                    Cryptocurrency.source_id.in_(list(slugs)), crypto_only()
+                )
             )
         ).scalars()
     )

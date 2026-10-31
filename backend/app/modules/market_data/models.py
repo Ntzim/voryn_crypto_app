@@ -33,6 +33,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.db import Base, TimestampMixin
 
@@ -42,9 +43,33 @@ Amount = Numeric(38, 8)
 Percent = Numeric(18, 8)
 
 
+MARKETS = ("CRYPTO", "B3", "US")
+ASSET_TYPES = ("CRYPTO", "STOCK", "FII", "ETF", "BDR")
+
+
 class Cryptocurrency(TimestampMixin, Base):
+    """Instrument catalogue. Named for its origin; since the multimarket expansion it also
+    holds B3/US instruments, told apart by `market`. Every crypto-only query must filter
+    on `market == "CRYPTO"` (see `crypto_only`).
+    """
+
     __tablename__ = "cryptocurrencies"
-    __table_args__ = (UniqueConstraint("source", "source_id"),)
+    __table_args__ = (
+        UniqueConstraint("source", "source_id"),
+        CheckConstraint("market IN ('CRYPTO', 'B3', 'US')", name="market_supported"),
+        CheckConstraint(
+            "asset_type IN ('CRYPTO', 'STOCK', 'FII', 'ETF', 'BDR')", name="asset_type_supported"
+        ),
+        # Exchange tickers are unique within a market; crypto symbols are not (many tokens
+        # share a symbol), so crypto keeps relying on (source, source_id).
+        Index(
+            "uq_instruments_market_symbol",
+            "market",
+            "symbol",
+            unique=True,
+            postgresql_where="market <> 'CRYPTO'",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     source: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -54,6 +79,15 @@ class Cryptocurrency(TimestampMixin, Base):
     image_url: Mapped[str | None] = mapped_column(String(512))
     market_cap_rank: Mapped[int | None] = mapped_column(Integer)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    market: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default="CRYPTO", index=True
+    )
+    asset_type: Mapped[str] = mapped_column(String(8), nullable=False, server_default="CRYPTO")
+    # ISO 10383 MIC of the listing venue (BVMF, XNAS, XNYS); NULL for crypto.
+    exchange: Mapped[str | None] = mapped_column(String(8))
+    # Currency the instrument trades in; crypto quotes are stored in USD.
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default="USD")
+    sector: Mapped[str | None] = mapped_column(String(128))
 
     ticker: Mapped["MarketTicker | None"] = relationship(
         back_populates="cryptocurrency", lazy="raise", uselist=False
@@ -95,7 +129,16 @@ class MarketTicker(_QuoteColumns, Base):
         ForeignKey("cryptocurrencies.id", ondelete="CASCADE"), nullable=False
     )
 
+    # Declared provider delay in seconds (0 = real time). Exchange data on free/cheap plans
+    # is delayed; the UI must label it instead of presenting it as live.
+    delay_seconds: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+
     cryptocurrency: Mapped[Cryptocurrency] = relationship(back_populates="ticker", lazy="raise")
+
+
+def crypto_only() -> ColumnElement[bool]:
+    """WHERE clause restricting a query to crypto instruments."""
+    return Cryptocurrency.market == "CRYPTO"
 
 
 class MarketPrice(_QuoteColumns, Base):

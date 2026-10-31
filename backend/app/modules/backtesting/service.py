@@ -161,7 +161,7 @@ def _build(strategy: str, params: dict[str, int]) -> bt.Strategy:
 
 
 async def create_run(db: AsyncSession, user_id: uuid.UUID, body: BacktestIn) -> BacktestRun:
-    crypto = await db.get(Cryptocurrency, body.asset_id)
+    crypto = await market.get_crypto(db, body.asset_id)
     if crypto is None:
         raise NotFoundError("Ativo não encontrado.")
     if crypto.symbol.upper() in STABLECOINS:

@@ -21,7 +21,7 @@ from app.core.logging import get_logger
 from app.core.redis import get_redis
 from app.modules.market_data import candles as candle_service
 from app.modules.market_data import service as market
-from app.modules.market_data.models import Cryptocurrency, MarketTicker
+from app.modules.market_data.models import Cryptocurrency, MarketTicker, crypto_only
 from app.modules.market_data.providers.base import (
     TIMEFRAME_SECONDS,
     CandleProvider,
@@ -148,6 +148,7 @@ async def market_context(
                 select(MarketTicker.change_pct_24h)
                 .join(Cryptocurrency, Cryptocurrency.id == MarketTicker.cryptocurrency_id)
                 .where(
+                    crypto_only(),
                     Cryptocurrency.is_active.is_(True),
                     MarketTicker.quote_currency == "USD",
                     MarketTicker.change_pct_24h.is_not(None),
@@ -300,7 +301,7 @@ async def universe(db: AsyncSession) -> dict[uuid.UUID, Cryptocurrency]:
         (
             await db.execute(
                 select(Cryptocurrency)
-                .where(Cryptocurrency.is_active.is_(True))
+                .where(Cryptocurrency.is_active.is_(True), crypto_only())
                 .order_by(Cryptocurrency.market_cap_rank.asc().nulls_last())
                 .limit(UNIVERSE_TOP_N)
             )
@@ -446,7 +447,7 @@ async def list_latest(
     # Defence in depth: signals stored before a stablecoin was recognised stay hidden.
     latest = latest.join(
         Cryptocurrency, Cryptocurrency.id == AnalysisSignal.cryptocurrency_id
-    ).where(func.upper(Cryptocurrency.symbol).not_in(sorted(STABLECOINS)))
+    ).where(func.upper(Cryptocurrency.symbol).not_in(sorted(STABLECOINS)), crypto_only())
     rows = list((await db.execute(latest)).scalars())
     if classification:
         rows = [r for r in rows if r.classification == classification]
