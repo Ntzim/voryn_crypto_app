@@ -403,6 +403,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/markets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Markets
+         * @description Enabled markets with session state, quote delay and data attribution.
+         */
+        get: operations["list_markets_api_v1_market_markets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/instruments/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search Instruments
+         * @description Global search across the enabled markets (disabled markets are never returned).
+         */
+        get: operations["search_instruments_api_v1_market_instruments_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/assets/{slug}/analysis": {
         parameters: {
             query?: never;
@@ -1969,6 +2009,41 @@ export interface components {
              */
             as_of: string;
         };
+        /** InstrumentHitOut */
+        InstrumentHitOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Market
+             * @enum {string}
+             */
+            market: "CRYPTO" | "B3" | "US";
+            /** Asset Type */
+            asset_type: string;
+            /** Exchange */
+            exchange: string | null;
+            /** Symbol */
+            symbol: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Image Url */
+            image_url: string | null;
+            /** Currency */
+            currency: string;
+            /** Price */
+            price: string | null;
+            /** Change Pct */
+            change_pct: string | null;
+            /** Delay Seconds */
+            delay_seconds: number | null;
+            /** As Of */
+            as_of: string | null;
+        };
         /** LevelOut */
         LevelOut: {
             /** Price */
@@ -2003,6 +2078,36 @@ export interface components {
             user?: components["schemas"]["UserOut"] | null;
             /** Mfa Token */
             mfa_token?: string | null;
+        };
+        /**
+         * MarketOut
+         * @description An enabled market with its session state and data terms.
+         */
+        MarketOut: {
+            /**
+             * Market
+             * @enum {string}
+             */
+            market: "CRYPTO" | "B3" | "US";
+            /** Label */
+            label: string;
+            /** Currency */
+            currency: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "open" | "closed" | "always_open";
+            /** Last Close */
+            last_close: string | null;
+            /** Next Open */
+            next_open: string | null;
+            /** Delay Seconds */
+            delay_seconds: number;
+            /** Attribution */
+            attribution: string;
+            /** Last Sync At */
+            last_sync_at: string | null;
         };
         /**
          * MarketOverviewOut
@@ -3754,6 +3859,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketOverviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_markets_api_v1_market_markets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketOut"][];
+                };
+            };
+        };
+    };
+    search_instruments_api_v1_market_instruments_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                market?: ("CRYPTO" | "B3" | "US") | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstrumentHitOut"][];
                 };
             };
             /** @description Validation Error */
