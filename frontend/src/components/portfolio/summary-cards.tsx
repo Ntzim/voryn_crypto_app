@@ -81,8 +81,8 @@ export function SummaryCards({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-white/6 lg:w-[460px] lg:shrink-0">
-        <dl className="grid grid-cols-2 divide-x divide-white/6 px-1 py-4">
+      <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-foreground/6 lg:w-[460px] lg:shrink-0">
+        <dl className="grid grid-cols-2 divide-x divide-foreground/6 px-1 py-4">
           <Metric
             label="Resultado"
             hint="Realizado (vendas, conversões e taxas) + não realizado (valor atual − custo de aquisição)."
@@ -126,7 +126,7 @@ export function SummaryCards({
           />
         </dl>
 
-        <div className="border-t border-white/6 px-2">
+        <div className="border-t border-foreground/6 px-2">
           {performance ? (
             <dl className="num grid grid-cols-5" aria-label="Rentabilidade por período">
               {PERIODS.map(([key, label]) => {

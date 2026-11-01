@@ -6,6 +6,8 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { NotificationBell } from "@/components/alerts/notification-bell";
 import { Logo } from "@/components/brand/logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { ThemeSync, useThemeSetting } from "@/components/theme/use-theme-setting";
 
 import { MobileNav, MobileNavBar } from "./mobile-nav";
 import { Sidebar } from "./sidebar";
@@ -23,10 +25,16 @@ function useScrolled(threshold = 4): boolean {
   return scrolled;
 }
 
+function HeaderThemeToggle() {
+  const { theme, setTheme } = useThemeSetting();
+  return <ThemeToggle resolved={theme?.resolved} onChange={setTheme} />;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const scrolled = useScrolled();
   return (
     <div className="flex min-h-dvh">
+      <ThemeSync />
       {/* Navigation reads the pathname (request-time URL data); the fallback reserves its width. */}
       <Suspense fallback={<div className="hidden h-dvh w-[68px] shrink-0 border-r border-sidebar-border bg-sidebar md:block" />}>
         <Sidebar />
@@ -45,7 +53,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Logo />
           </Link>
           <div className="hidden md:block" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
+            <HeaderThemeToggle />
             <NotificationBell />
             <UserMenu />
           </div>

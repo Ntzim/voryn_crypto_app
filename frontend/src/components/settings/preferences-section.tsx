@@ -1,15 +1,19 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Monitor, Moon, Sun } from "lucide-react";
 import { useMemo } from "react";
 import { toast } from "sonner";
 
+import { useThemeSetting } from "@/components/theme/use-theme-setting";
 import { Label } from "@/components/ui/label";
+import { Segmented } from "@/components/ui/segmented";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, isApiError } from "@/lib/api/client";
 import type { SettingsUpdate, User, UserSettings } from "@/lib/api/types";
 import { queryKeys, useMe } from "@/lib/queries";
+import type { ThemePreference } from "@/lib/theme";
 
 import { SettingsSection } from "./section";
 
@@ -23,8 +27,15 @@ function timeZones(): string[] {
   }
 }
 
+const THEME_OPTIONS = [
+  { value: "system", label: <><Monitor className="size-4" aria-hidden /> Sistema</> },
+  { value: "light", label: <><Sun className="size-4" aria-hidden /> Claro</> },
+  { value: "dark", label: <><Moon className="size-4" aria-hidden /> Escuro</> },
+] satisfies { value: ThemePreference; label: React.ReactNode }[];
+
 export function PreferencesSection() {
   const { data: user } = useMe();
+  const { theme, setTheme } = useThemeSetting();
   const queryClient = useQueryClient();
   const zones = useMemo(() => timeZones(), []);
 
@@ -45,6 +56,21 @@ export function PreferencesSection() {
   return (
     <SettingsSection title="Exibição" description="Como valores, datas e horários aparecem na Voryn.">
       <div className="grid max-w-xl gap-5 sm:grid-cols-2">
+        <div className="space-y-2 sm:col-span-2">
+          <p className="text-sm leading-none font-medium">
+            Tema
+          </p>
+          <Segmented
+            label="Tema"
+            value={theme?.preference ?? settings.theme}
+            onChange={setTheme}
+            options={THEME_OPTIONS}
+            className="[&_button]:inline-flex [&_button]:items-center [&_button]:gap-1.5"
+          />
+          <p className="text-xs text-subtle-foreground">
+            “Sistema” acompanha o modo claro ou escuro do seu dispositivo. A escolha fica salva na sua conta.
+          </p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="pref-currency">Moeda base</Label>
           <Select value={settings.base_currency} onValueChange={(v) => save.mutate({ base_currency: v as UserSettings["base_currency"] })}>

@@ -21,14 +21,15 @@ import { useAsset, usePreferences } from "@/lib/queries";
 import { SIGNAL_META, useAssetSignal } from "@/lib/signal-queries";
 
 import { IndicatorsCard, LevelsCard, SourceNote, TrendBadge, TrendCard } from "./analysis-panels";
-import { CandleChart, OVERLAY_COLORS, type Oscillator, type Overlay } from "./candle-chart";
+import { CandleChart, type Oscillator, type Overlay } from "./candle-chart";
 import { WatchlistMenu } from "./watchlist-button";
 
+// Same tokens as overlayColors() in the chart (HTML can use the CSS variables directly).
 const OVERLAYS: { key: Overlay; label: string; color?: string }[] = [
-  { key: "ema9", label: "EMA 9", color: OVERLAY_COLORS.ema9 },
-  { key: "ema21", label: "EMA 21", color: OVERLAY_COLORS.ema21 },
-  { key: "ema50", label: "EMA 50", color: OVERLAY_COLORS.ema50 },
-  { key: "ema200", label: "EMA 200", color: OVERLAY_COLORS.ema200 },
+  { key: "ema9", label: "EMA 9", color: "var(--chart-5)" },
+  { key: "ema21", label: "EMA 21", color: "var(--chart-2)" },
+  { key: "ema50", label: "EMA 50", color: "var(--chart-4)" },
+  { key: "ema200", label: "EMA 200", color: "var(--chart-emphasis)" },
   { key: "bollinger", label: "Bollinger" },
   { key: "levels", label: "Suporte/Resistência" },
 ];

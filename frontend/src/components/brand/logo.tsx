@@ -1,6 +1,9 @@
 import { cn } from "cn";
 
-/** Voryn mark: two converging strokes forming a "V" — signal meeting evidence. */
+/**
+ * Voryn mark: two converging strokes forming a "V" — signal meeting evidence.
+ * The graphite tile is part of the mark (like an app icon), so it stays the same in both themes.
+ */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <svg

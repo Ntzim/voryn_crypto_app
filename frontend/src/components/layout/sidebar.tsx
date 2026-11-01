@@ -91,8 +91,8 @@ function SidebarLink({ item, active, expanded }: { item: NavItem; active: boolea
         "group relative flex h-9 items-center justify-center gap-3 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-150",
         expanded && "xl:justify-start",
         active
-          ? "bg-sidebar-accent text-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.04)]"
-          : "text-sidebar-foreground hover:bg-white/4 hover:text-foreground",
+          ? "bg-sidebar-accent text-foreground shadow-raised"
+          : "text-sidebar-foreground hover:bg-foreground/4 hover:text-foreground",
       )}
     >
       <Icon

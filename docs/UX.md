@@ -169,3 +169,26 @@ Branch `ux/apple-grade`, construída sobre o redesign anterior (PR #4).
 **Limitações**
 - **Navegador:** Chromium emulado. Não houve aparelho físico nem Safari/iOS, onde o `backdrop-filter` e a *safe area* precisam de verificação real.
 - **Media query `prefers-reduced-transparency`:** o Safari ainda não a suporta. Lá o fallback de transparência depende só de "mais contraste".
+
+## Temas claro e escuro
+
+**Arquitetura.** Um único conjunto de tokens em `globals.css`: `:root` é o tema claro, `.dark` (em `<html>`) o escuro. Componentes só usam tokens (`bg-surface`, `text-muted-foreground`, `ring-foreground/6`...), então trocar de tema troca variáveis e nunca toca em componente.
+
+- `lib/theme-script.ts`: constantes e o script inline do `<head>`, que aplica o tema antes da primeira pintura (sem flash). Ordem: preferência salva → `prefers-color-scheme`. Sem React, porque o layout raiz é Server Component.
+- `lib/theme.ts`: store único (`useSyncExternalStore`) que aplica a classe, `color-scheme` e `theme-color`, acompanha o sistema ao vivo e sincroniza abas. A troca usa View Transitions (crossfade) e suspende as transições dos elementos durante a troca, exceto as do próprio switch. Os assinantes só são avisados depois que os tokens novos estão ativos.
+- `lib/chart-theme.ts`: `useChartPalette()` lê os tokens do tema ativo para canvas (lightweight-charts) e atributos SVG (recharts), que não aceitam variáveis CSS. Os gráficos se redesenham na troca. Legendas em HTML usam `var(--chart-*)` direto.
+- **Preferência por usuário.** Fica em `user_settings.theme` (`system` | `light` | `dark`, migration `5c1e8a7d2b90`). O `localStorage` é só o cache para o primeiro paint. `ThemeSync` aplica a preferência da conta ao entrar, então duas pessoas no mesmo navegador não herdam o tema uma da outra.
+- **Onde trocar.** Switch sol/lua no cabeçalho (desktop e celular, área de toque de 44 px, tooltip "Alternar tema"). Também nas telas de login (só no dispositivo) e em Configurações → Preferências → Tema (Sistema, Claro, Escuro).
+
+**Tema claro.**
+- Fundo `#f5f5f7` com superfícies brancas e sombras suaves (`--card-shadow`).
+- Texto `#1d1d1f`.
+- Semânticas escurecidas para AA: sucesso `#08734e`, perda `#c42238`, alerta `#8c5300`. Todo texto tem ≥ 4,5:1 sobre fundo, superfície, hover e o próprio chip tingido a 10%.
+- O vidro (`.glass`) usa branco a 86%.
+- O logo mantém o ladrilho grafite nos dois temas: ele faz parte da marca, como um ícone de app.
+
+**Regras.**
+- Não usar `white/x` nem `black/x` para sobreposições; usar `foreground/x`, que se inverte com o tema.
+- `--card-shadow` no escuro é `0 0 #0000`, não `none`: no Tailwind v4 ela é combinada com o ring na mesma `box-shadow`, e `none` invalidaria a declaração.
+- Exceção às sobreposições: o fundo do QR code do 2FA continua branco, porque o QR precisa ser lido.
+

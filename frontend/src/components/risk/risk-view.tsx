@@ -364,7 +364,11 @@ function CorrelationCard({ data, locale }: { data: Risk | undefined; locale: Loc
                     <th className="pr-2 text-right font-medium text-muted-foreground">{symbols[i]}</th>
                     {row.map((rho, j) => {
                       const n = rho === null ? null : Number(rho);
-                      const color = n === null ? undefined : n >= 0 ? `rgba(99,102,241,${0.12 + n * 0.55})` : `rgba(34,197,94,${0.12 - n * 0.55})`;
+                      // Theme tokens mixed by strength: brand for positive correlation, green for negative.
+                      const color =
+                        n === null
+                          ? undefined
+                          : `color-mix(in srgb, var(${n >= 0 ? "--chart-1" : "--chart-3"}) ${Math.round((0.12 + Math.abs(n) * 0.55) * 100)}%, transparent)`;
                       return (
                         <td key={symbols[j]} className="p-0.5">
                           <span

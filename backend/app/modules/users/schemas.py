@@ -10,6 +10,7 @@ from app.modules.auth.passwords import validate_password_strength
 
 Currency = Literal["BRL", "USD"]
 Locale = Literal["pt-BR", "en-US"]
+Theme = Literal["system", "light", "dark"]
 
 
 class UserSettingsOut(BaseModel):
@@ -18,6 +19,7 @@ class UserSettingsOut(BaseModel):
     base_currency: Currency
     locale: Locale
     timezone: str
+    theme: Theme
 
 
 class UserOut(BaseModel):
@@ -61,6 +63,7 @@ class SettingsUpdateIn(BaseModel):
     base_currency: Currency | None = None
     locale: Locale | None = None
     timezone: str | None = Field(default=None, max_length=64)
+    theme: Theme | None = None
 
     @field_validator("timezone")
     @classmethod

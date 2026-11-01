@@ -8,6 +8,7 @@ import { AssetIcon } from "@/components/common/asset-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Locale, Signal, SignalClass, SignalHistoryPoint } from "@/lib/api/types";
 import { formatDateTime, formatNumber, formatPercent, formatPrice } from "@/lib/format";
+import { useChartPalette } from "@/lib/chart-theme";
 import { SIGNAL_META } from "@/lib/signal-queries";
 
 export function ClassificationBadge({ value, className }: { value: SignalClass; className?: string }) {
@@ -26,11 +27,11 @@ export function ScoreGauge({ score, classification, size = 88 }: { score: string
   return (
     <div className="relative shrink-0" style={{ width: size, height: size * 0.62 }} role="img" aria-label={`Score ${formatNumber(score, "pt-BR", { digits: 0 })} de 100`}>
       <svg viewBox="0 0 100 60" className="h-full w-full">
-        <path d="M10 52 A40 40 0 0 1 90 52" fill="none" stroke="rgb(148 163 184 / 0.15)" strokeWidth="8" strokeLinecap="round" />
+        <path d="M10 52 A40 40 0 0 1 90 52" fill="none" className="stroke-foreground/10" strokeWidth="8" strokeLinecap="round" />
         <path
           d="M10 52 A40 40 0 0 1 90 52"
           fill="none"
-          stroke={SIGNAL_META[classification].color}
+          style={{ stroke: SIGNAL_META[classification].color }}
           strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={`${(value / 100) * circumference} ${circumference}`}
@@ -163,7 +164,8 @@ export function SignalProvenance({ signal, locale, timeZone }: { signal: Signal;
 }
 
 export function ScoreHistory({ points, loading, locale }: { points: SignalHistoryPoint[] | undefined; loading: boolean; locale: Locale }) {
-  if (loading || !points) return <Skeleton className="h-28 w-full rounded-lg" />;
+  const palette = useChartPalette();
+  if (loading || !points || !palette) return <Skeleton className="h-28 w-full rounded-lg" />;
   if (points.length < 2) {
     return <p className="text-sm text-muted-foreground">O histórico de score aparece a partir do segundo candle analisado.</p>;
   }
@@ -172,15 +174,15 @@ export function ScoreHistory({ points, loading, locale }: { points: SignalHistor
     <div className="h-28 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 6, right: 4, bottom: 0, left: -24 }}>
-          <YAxis domain={[0, 100]} ticks={[35, 65]} tick={{ fill: "#64748B", fontSize: 10 }} axisLine={false} tickLine={false} />
-          <ReferenceLine y={65} stroke="rgba(34,197,94,0.35)" strokeDasharray="3 3" />
-          <ReferenceLine y={35} stroke="rgba(239,68,68,0.35)" strokeDasharray="3 3" />
+          <YAxis domain={[0, 100]} ticks={[35, 65]} tick={{ fill: palette.text, fontSize: 10 }} axisLine={false} tickLine={false} />
+          <ReferenceLine y={65} stroke={palette.alpha(palette.up, 0.4)} strokeDasharray="3 3" />
+          <ReferenceLine y={35} stroke={palette.alpha(palette.down, 0.4)} strokeDasharray="3 3" />
           <Tooltip
-            contentStyle={{ background: "#151D28", border: "1px solid rgba(148,163,184,.2)", borderRadius: 8, fontSize: 12 }}
+            contentStyle={{ background: "var(--popover)", border: "1px solid var(--border-strong)", borderRadius: 8, fontSize: 12, color: "var(--popover-foreground)" }}
             labelFormatter={(t) => formatDateTime(String(t), locale)}
             formatter={(v) => [formatNumber(Number(v), locale, { digits: 0 }), "Score"]}
           />
-          <Line type="monotone" dataKey="score" stroke="#6366F1" strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="score" stroke={palette.primary} strokeWidth={2} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

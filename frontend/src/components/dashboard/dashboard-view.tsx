@@ -25,7 +25,7 @@ import { AttentionPanel } from "./attention-panel";
 const chartSkeleton = (height: string) =>
   function ChartSkeleton() {
     return (
-      <div className="rounded-2xl bg-card ring-1 ring-white/6 p-5">
+      <div className="rounded-2xl bg-card shadow-card ring-1 ring-foreground/6 p-5">
         <Skeleton className={`${height} w-full`} />
       </div>
     );
@@ -79,7 +79,7 @@ export function DashboardView() {
             <div className="order-last lg:order-none">
               <AllocationChart summary={summary.data} locale={locale} />
             </div>
-            <section aria-labelledby="positions-title" className="overflow-hidden rounded-2xl bg-card ring-1 ring-white/6 lg:col-span-2">
+            <section aria-labelledby="positions-title" className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-foreground/6 lg:col-span-2">
               <SectionHeader id="positions-title" title="Principais posições" href="/carteira" linkLabel="Ver carteira" />
               <PositionsTable positions={summary.data?.positions.slice(0, 6)} currency={currency} locale={locale} compact />
             </section>
@@ -91,7 +91,7 @@ export function DashboardView() {
           </div>
         </div>
       ) : (
-        <section className="rounded-2xl bg-card ring-1 ring-white/6">
+        <section className="rounded-2xl bg-card shadow-card ring-1 ring-foreground/6">
           <EmptyState
             icon={Wallet}
             title="Comece pela sua carteira"
@@ -156,7 +156,7 @@ function MarketToday() {
       </div>
 
       {overview.isError ? (
-        <div className="rounded-2xl bg-card ring-1 ring-white/6">
+        <div className="rounded-2xl bg-card shadow-card ring-1 ring-foreground/6">
           <ErrorState error={overview.error} onRetry={() => overview.refetch()} />
         </div>
       ) : (
@@ -191,7 +191,7 @@ function MarketToday() {
             </Figure>
           </dl>
 
-          <div className="min-w-0 rounded-2xl bg-card ring-1 ring-white/6 p-4 lg:col-span-2">
+          <div className="min-w-0 rounded-2xl bg-card shadow-card ring-1 ring-foreground/6 p-4 lg:col-span-2">
             <Tabs defaultValue="gainers">
               <TabsList className="w-full sm:w-fit">
                 <TabsTrigger value="gainers">Altas 24h</TabsTrigger>

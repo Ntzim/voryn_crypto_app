@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/brand/logo";
+import { DeviceThemeToggle } from "@/components/theme/device-theme-toggle";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
   return (
@@ -11,7 +12,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           className="pointer-events-none absolute inset-0 opacity-[0.35]"
           style={{
             backgroundImage:
-              "linear-gradient(rgb(148 163 184 / 0.07) 1px, transparent 1px), linear-gradient(90deg, rgb(148 163 184 / 0.07) 1px, transparent 1px)",
+              "linear-gradient(var(--chart-grid) 1px, transparent 1px), linear-gradient(90deg, var(--chart-grid) 1px, transparent 1px)",
             backgroundSize: "48px 48px",
             maskImage: "radial-gradient(ellipse at 30% 40%, black 20%, transparent 75%)",
           }}
@@ -32,8 +33,9 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
           A Voryn não promete lucros. Análises são baseadas em dados e incluem riscos e limitações.
         </p>
       </aside>
-      <main className="flex flex-col px-4 py-8 sm:px-8">
-        <Link href="/entrar" className="mb-10 lg:hidden">
+      <main className="relative flex flex-col px-4 py-8 sm:px-8">
+        <DeviceThemeToggle className="absolute top-5 right-3 sm:right-6" />
+        <Link href="/entrar" className="mb-10 self-start lg:hidden">
           <Logo />
         </Link>
         <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center pb-10">{children}</div>

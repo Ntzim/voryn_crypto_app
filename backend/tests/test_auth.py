@@ -48,6 +48,7 @@ async def test_full_registration_flow(client: httpx.AsyncClient, outbox: Outbox)
         "base_currency": "BRL",
         "locale": "pt-BR",
         "timezone": "America/Sao_Paulo",
+        "theme": "system",
     }
     cookie = response.headers["set-cookie"]
     assert "voryn_session=" in cookie and "HttpOnly" in cookie and "SameSite=lax" in cookie
@@ -244,7 +245,10 @@ async def test_profile_and_settings_update(
     )
     assert response.status_code == 200
     assert response.json()["base_currency"] == "USD"
-    for invalid in ({"timezone": "Mars/Base"}, {"base_currency": "EUR"}):
+    response = await client.patch(f"{API}/me/settings", json={"theme": "light"})
+    assert response.json()["theme"] == "light"
+    assert (await client.get(f"{API}/me")).json()["settings"]["theme"] == "light"
+    for invalid in ({"timezone": "Mars/Base"}, {"base_currency": "EUR"}, {"theme": "sepia"}):
         assert (await client.patch(f"{API}/me/settings", json=invalid)).status_code == 422
 
 

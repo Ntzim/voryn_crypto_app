@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Sora } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { THEME_COLORS, THEME_SCRIPT } from "@/lib/theme-script";
 
 import "./globals.css";
 
@@ -17,8 +18,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#080F14",
-  colorScheme: "dark",
+  // Updated to the active theme by THEME_SCRIPT / lib/theme.ts.
+  themeColor: THEME_COLORS.dark,
+  colorScheme: "light dark",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -26,7 +28,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`dark ${inter.variable} ${sora.variable} h-full`}>
+    // The theme class and color-scheme are set by THEME_SCRIPT before React hydrates, so
+    // they legitimately differ from the server HTML on this one element.
+    <html lang="pt-BR" className={`${inter.variable} ${sora.variable} h-full`} suppressHydrationWarning>
+      <head>
+        {/* Blocking on purpose: applies the saved/system theme before first paint (no flash). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-full">
         <Providers>{children}</Providers>
       </body>

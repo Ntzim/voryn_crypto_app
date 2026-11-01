@@ -15,11 +15,12 @@ import type {
 } from "@/lib/api/types";
 import { useHydrationSafe } from "@/lib/use-hydrated";
 
+/** `color` is a CSS variable: use it in `style` (HTML or SVG), not as an SVG attribute. */
 export const SIGNAL_META: Record<SignalClass, { label: string; short: string; tone: string; color: string }> = {
-  buy_potential: { label: "Potencial de compra", short: "Compra", tone: "text-success bg-success/10 border-success/30", color: "#22C55E" },
-  neutral: { label: "Neutro", short: "Neutro", tone: "text-muted-foreground bg-muted border-border-strong", color: "#94A3B8" },
-  attention: { label: "Atenção", short: "Atenção", tone: "text-warning bg-warning/10 border-warning/30", color: "#F59E0B" },
-  sell_potential: { label: "Potencial de venda", short: "Venda", tone: "text-destructive bg-destructive/10 border-destructive/30", color: "#EF4444" },
+  buy_potential: { label: "Potencial de compra", short: "Compra", tone: "text-success bg-success/10 border-success/30", color: "var(--chart-up)" },
+  neutral: { label: "Neutro", short: "Neutro", tone: "text-muted-foreground bg-muted border-border-strong", color: "var(--chart-neutral)" },
+  attention: { label: "Atenção", short: "Atenção", tone: "text-warning bg-warning/10 border-warning/30", color: "var(--chart-4)" },
+  sell_potential: { label: "Potencial de venda", short: "Venda", tone: "text-destructive bg-destructive/10 border-destructive/30", color: "var(--chart-down)" },
 };
 
 export function useSignals(timeframe: Timeframe, watchlistId?: string) {

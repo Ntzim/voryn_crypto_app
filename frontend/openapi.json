@@ -7739,6 +7739,22 @@
               }
             ],
             "title": "Timezone"
+          },
+          "theme": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "system",
+                  "light",
+                  "dark"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme"
           }
         },
         "type": "object",
@@ -9044,13 +9060,23 @@
           "timezone": {
             "type": "string",
             "title": "Timezone"
+          },
+          "theme": {
+            "type": "string",
+            "enum": [
+              "system",
+              "light",
+              "dark"
+            ],
+            "title": "Theme"
           }
         },
         "type": "object",
         "required": [
           "base_currency",
           "locale",
-          "timezone"
+          "timezone",
+          "theme"
         ],
         "title": "UserSettingsOut"
       },
