@@ -19,7 +19,6 @@ from app.modules.alerts.models import INDICATOR_TYPES, Alert, AlertType, Notific
 from app.modules.alerts.schemas import AlertIn, AlertOut, NotificationOut
 from app.modules.market_data import candles as candle_service
 from app.modules.market_data import service as market
-from app.modules.market_data.models import Cryptocurrency
 from app.modules.market_data.providers.base import CandleProvider, ProviderError
 from app.modules.portfolio.schemas import AssetRef
 from app.modules.technical_analysis.service import analyze
@@ -136,7 +135,7 @@ async def create(db: AsyncSession, user_id: uuid.UUID, data: AlertIn) -> AlertOu
     count = await db.scalar(select(func.count()).where(Alert.user_id == user_id)) or 0
     if count >= MAX_ALERTS:
         raise AppError(f"Limite de {MAX_ALERTS} alertas atingido.", code="limit_reached")
-    if data.asset_id and await db.get(Cryptocurrency, data.asset_id) is None:
+    if data.asset_id and await market.get_crypto(db, data.asset_id) is None:
         raise NotFoundError("Ativo não encontrado.")
     alert = Alert(user_id=user_id, created_at=utcnow(), trigger_count=0)
     _apply(alert, data)
@@ -146,7 +145,7 @@ async def create(db: AsyncSession, user_id: uuid.UUID, data: AlertIn) -> AlertOu
 
 
 async def update_alert(db: AsyncSession, alert: Alert, data: AlertIn) -> AlertOut:
-    if data.asset_id and await db.get(Cryptocurrency, data.asset_id) is None:
+    if data.asset_id and await market.get_crypto(db, data.asset_id) is None:
         raise NotFoundError("Ativo não encontrado.")
     _apply(alert, data)
     await db.commit()

@@ -82,3 +82,38 @@ class MarketOverviewOut(BaseModel):
     top_gainers: list[AssetOut]
     top_losers: list[AssetOut]
     status: DataStatus
+
+
+Market = Literal["CRYPTO", "B3", "US"]
+
+
+class MarketOut(BaseModel):
+    """An enabled market with its session state and data terms."""
+
+    market: Market
+    label: str
+    currency: str
+    state: Literal["open", "closed", "always_open"]
+    last_close: datetime | None
+    next_open: datetime | None
+    #: provider delay in seconds; 0 means real time
+    delay_seconds: int
+    attribution: str
+    last_sync_at: datetime | None
+
+
+class InstrumentHitOut(BaseModel):
+    id: uuid.UUID
+    market: Market
+    asset_type: str
+    exchange: str | None
+    symbol: str
+    slug: str
+    name: str
+    image_url: str | None
+    currency: str
+    price: Decimal | None
+    change_pct: Decimal | None
+    delay_seconds: int | None
+    #: when the quote data was current (not when it was fetched)
+    as_of: datetime | None

@@ -1013,6 +1013,114 @@
         }
       }
     },
+    "/api/v1/market/markets": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "List Markets",
+        "description": "Enabled markets with session state, quote delay and data attribution.",
+        "operationId": "list_markets_api_v1_market_markets_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MarketOut"
+                  },
+                  "type": "array",
+                  "title": "Response List Markets Api V1 Market Markets Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/instruments/search": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Search Instruments",
+        "description": "Global search across the enabled markets (disabled markets are never returned).",
+        "operationId": "search_instruments_api_v1_market_instruments_search_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Q"
+            }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "CRYPTO",
+                    "B3",
+                    "US"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Market"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstrumentHitOut"
+                  },
+                  "title": "Response Search Instruments Api V1 Market Instruments Search Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/market/assets/{slug}/analysis": {
       "get": {
         "tags": [
@@ -5727,6 +5835,128 @@
         ],
         "title": "InsightsOut"
       },
+      "InstrumentHitOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "market": {
+            "type": "string",
+            "enum": [
+              "CRYPTO",
+              "B3",
+              "US"
+            ],
+            "title": "Market"
+          },
+          "asset_type": {
+            "type": "string",
+            "title": "Asset Type"
+          },
+          "exchange": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchange"
+          },
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          },
+          "delay_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delay Seconds"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "market",
+          "asset_type",
+          "exchange",
+          "symbol",
+          "slug",
+          "name",
+          "image_url",
+          "currency",
+          "price",
+          "change_pct",
+          "delay_seconds",
+          "as_of"
+        ],
+        "title": "InstrumentHitOut"
+      },
       "LevelOut": {
         "properties": {
           "price": {
@@ -5815,6 +6045,94 @@
           "status"
         ],
         "title": "LoginOut"
+      },
+      "MarketOut": {
+        "properties": {
+          "market": {
+            "type": "string",
+            "enum": [
+              "CRYPTO",
+              "B3",
+              "US"
+            ],
+            "title": "Market"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed",
+              "always_open"
+            ],
+            "title": "State"
+          },
+          "last_close": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Close"
+          },
+          "next_open": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Open"
+          },
+          "delay_seconds": {
+            "type": "integer",
+            "title": "Delay Seconds"
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution"
+          },
+          "last_sync_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sync At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market",
+          "label",
+          "currency",
+          "state",
+          "last_close",
+          "next_open",
+          "delay_seconds",
+          "attribution",
+          "last_sync_at"
+        ],
+        "title": "MarketOut",
+        "description": "An enabled market with its session state and data terms."
       },
       "MarketOverviewOut": {
         "properties": {

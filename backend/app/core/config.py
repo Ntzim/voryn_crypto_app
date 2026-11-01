@@ -9,6 +9,9 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 Environment = Literal["development", "test", "production"]
 
 
+MarketCode = Literal["CRYPTO", "B3", "US"]
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -69,6 +72,18 @@ class Settings(BaseSettings):
     market_stale_after_seconds: int = Field(default=900, ge=60)
     market_history_retention_days: int = Field(default=7, ge=1)
 
+    # Multimarket. Exchange markets stay off until their data license is settled: the
+    # catalogue, sync jobs and endpoints for a market only run when it is listed here.
+    markets_enabled: Annotated[list[MarketCode], NoDecode] = Field(
+        default_factory=lambda: list[MarketCode](["CRYPTO"])
+    )
+    #: brapi.dev (B3). The token is server-side only; never sent to the browser.
+    brapi_base_url: str = "https://brapi.dev/api"
+    brapi_token: SecretStr | None = None
+    #: plan decides the declared quote delay (free 30 min, startup 15 min, pro 5 min)
+    brapi_plan: Literal["free", "startup", "pro"] = "free"
+    b3_sync_interval_seconds: int = Field(default=1800, ge=300)
+
     # Voryn AI. "disabled" (or a missing key) turns the assistant off gracefully.
     ai_provider: Literal["anthropic", "disabled"] = "anthropic"
     anthropic_api_key: SecretStr | None = None
@@ -97,6 +112,7 @@ class Settings(BaseSettings):
     @field_validator(
         "anthropic_api_key",
         "coingecko_api_key",
+        "brapi_token",
         "smtp_password",
         "resend_api_key",
         "sentry_dsn",
@@ -114,12 +130,22 @@ class Settings(BaseSettings):
         value = value.strip().rstrip("/")
         return value if "://" in value else f"https://{value}"
 
-    @field_validator("encryption_keys", "cors_origins", mode="before")
+    @field_validator("encryption_keys", "cors_origins", "markets_enabled", mode="before")
     @classmethod
     def _split_csv(cls, value: object) -> object:
         if isinstance(value, str):
             return [part.strip() for part in value.split(",") if part.strip()]
         return value
+
+    @field_validator("markets_enabled")
+    @classmethod
+    def _crypto_always_enabled(cls, value: list[MarketCode]) -> list[MarketCode]:
+        # Crypto is the core product; the flag only gates the exchange markets.
+        rest: list[MarketCode] = sorted({m for m in value if m != "CRYPTO"})
+        return ["CRYPTO", *rest]
+
+    def market_enabled(self, market: str) -> bool:
+        return market in self.markets_enabled
 
     @property
     def is_production(self) -> bool:
@@ -152,7 +178,12 @@ class Settings(BaseSettings):
             problems.append("RATE_LIMIT_SCALE must be 1 in production")
         # Outbound calls only ever go to these configured hosts (no user-supplied URLs);
         # requiring TLS keeps a misconfiguration from sending keys or trusting data in clear.
-        for name in ("coingecko_base_url", "binance_base_url", "binance_private_base_url"):
+        for name in (
+            "coingecko_base_url",
+            "binance_base_url",
+            "binance_private_base_url",
+            "brapi_base_url",
+        ):
             if not getattr(self, name).startswith("https://"):
                 problems.append(f"{name.upper()} must use https")
         if problems:

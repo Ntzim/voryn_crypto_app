@@ -25,6 +25,7 @@ from app.modules.market_data.models import (
     FxRate,
     MarketPrice,
     MarketTicker,
+    crypto_only,
 )
 from app.modules.market_data.providers.base import (
     FxHistoryProvider,
@@ -111,6 +112,7 @@ async def sync_markets(
     await db.execute(
         update(Cryptocurrency)
         .where(
+            crypto_only(),
             Cryptocurrency.source == provider.name,
             Cryptocurrency.source_id.not_in(list(ids)),
         )
@@ -243,7 +245,9 @@ async def _latest_fx(db: AsyncSession) -> FxRate | None:
 async def _status(db: AsyncSession, currency: QuoteCurrency) -> tuple[DataStatus, Decimal]:
     settings = get_settings()
     fetched_at = await db.scalar(
-        select(func.max(MarketTicker.fetched_at)).where(MarketTicker.quote_currency == BASE_QUOTE)
+        select(func.max(MarketTicker.fetched_at))
+        .join(Cryptocurrency, Cryptocurrency.id == MarketTicker.cryptocurrency_id)
+        .where(MarketTicker.quote_currency == BASE_QUOTE, crypto_only())
     )
     fx_rate: Decimal | None = None
     fx_observed_at: datetime | None = None
@@ -290,7 +294,11 @@ def _base_query() -> Select[Cryptocurrency, MarketTicker]:
     return (
         select(Cryptocurrency, MarketTicker)
         .join(MarketTicker, MarketTicker.cryptocurrency_id == Cryptocurrency.id)
-        .where(MarketTicker.quote_currency == BASE_QUOTE, Cryptocurrency.is_active.is_(True))
+        .where(
+            MarketTicker.quote_currency == BASE_QUOTE,
+            Cryptocurrency.is_active.is_(True),
+            crypto_only(),
+        )
     )
 
 
@@ -331,6 +339,7 @@ async def list_assets(
             .where(
                 MarketTicker.quote_currency == BASE_QUOTE,
                 Cryptocurrency.id.in_(list(only_ids)),
+                crypto_only(),
             )
         )
     if q:
@@ -362,7 +371,11 @@ async def get_asset(db: AsyncSession, slug: str, currency: QuoteCurrency) -> Ass
         await db.execute(
             select(Cryptocurrency, MarketTicker)
             .join(MarketTicker, MarketTicker.cryptocurrency_id == Cryptocurrency.id)
-            .where(Cryptocurrency.source_id == slug, MarketTicker.quote_currency == BASE_QUOTE)
+            .where(
+                Cryptocurrency.source_id == slug,
+                MarketTicker.quote_currency == BASE_QUOTE,
+                crypto_only(),
+            )
         )
     ).one_or_none()
     if row is None:
@@ -588,23 +601,33 @@ async def cryptos_by_id(
     db: AsyncSession, crypto_ids: Sequence[uuid.UUID]
 ) -> dict[uuid.UUID, Cryptocurrency]:
     rows = (
-        await db.execute(select(Cryptocurrency).where(Cryptocurrency.id.in_(list(crypto_ids))))
+        await db.execute(
+            select(Cryptocurrency).where(Cryptocurrency.id.in_(list(crypto_ids)), crypto_only())
+        )
     ).scalars()
     return {c.id: c for c in rows}
+
+
+async def get_crypto(db: AsyncSession, crypto_id: uuid.UUID) -> Cryptocurrency | None:
+    """Crypto instrument by id; other markets are not accepted where crypto is expected."""
+    crypto = await db.get(Cryptocurrency, crypto_id)
+    return crypto if crypto is not None and crypto.market == "CRYPTO" else None
 
 
 async def resolve_asset(db: AsyncSession, ref: str) -> Cryptocurrency | None:
     """Resolve a slug ("bitcoin") or a symbol ("BTC"); a symbol picks the best-ranked match."""
     ref = ref.strip()
     by_slug = (
-        await db.execute(select(Cryptocurrency).where(Cryptocurrency.source_id == ref.lower()))
+        await db.execute(
+            select(Cryptocurrency).where(Cryptocurrency.source_id == ref.lower(), crypto_only())
+        )
     ).scalar_one_or_none()
     if by_slug is not None:
         return by_slug
     return (
         await db.execute(
             select(Cryptocurrency)
-            .where(func.upper(Cryptocurrency.symbol) == ref.upper())
+            .where(func.upper(Cryptocurrency.symbol) == ref.upper(), crypto_only())
             .order_by(Cryptocurrency.market_cap_rank.asc().nulls_last())
             .limit(1)
         )
@@ -619,7 +642,8 @@ async def search_assets(db: AsyncSession, q: str, limit: int = 10) -> list[Crypt
                 select(Cryptocurrency)
                 .where(
                     Cryptocurrency.symbol.ilike(pattern, escape="\\")
-                    | Cryptocurrency.name.ilike(pattern, escape="\\")
+                    | Cryptocurrency.name.ilike(pattern, escape="\\"),
+                    crypto_only(),
                 )
                 .order_by(Cryptocurrency.market_cap_rank.asc().nulls_last(), Cryptocurrency.name)
                 .limit(limit)
