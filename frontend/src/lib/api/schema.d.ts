@@ -2639,6 +2639,8 @@ export interface components {
             locale?: ("pt-BR" | "en-US") | null;
             /** Timezone */
             timezone?: string | null;
+            /** Theme */
+            theme?: ("system" | "light" | "dark") | null;
         };
         /** SignalHistoryPoint */
         SignalHistoryPoint: {
@@ -3084,6 +3086,11 @@ export interface components {
             locale: "pt-BR" | "en-US";
             /** Timezone */
             timezone: string;
+            /**
+             * Theme
+             * @enum {string}
+             */
+            theme: "system" | "light" | "dark";
         };
         /** ValidationError */
         ValidationError: {

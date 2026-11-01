@@ -44,6 +44,7 @@ class UserSettings(Base):
     __tablename__ = "user_settings"
     __table_args__ = (
         CheckConstraint("base_currency IN ('BRL', 'USD')", name="base_currency_supported"),
+        CheckConstraint("theme IN ('system', 'light', 'dark')", name="theme_supported"),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -54,6 +55,8 @@ class UserSettings(Base):
     timezone: Mapped[str] = mapped_column(
         String(64), nullable=False, server_default="America/Sao_Paulo"
     )
+    #: interface theme; "system" follows the device's prefers-color-scheme
+    theme: Mapped[str] = mapped_column(String(8), nullable=False, server_default="system")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
