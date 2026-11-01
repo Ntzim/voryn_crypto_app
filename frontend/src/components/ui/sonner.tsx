@@ -1,13 +1,15 @@
 "use client"
 
 import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { useTheme } from "@/lib/theme"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-// Voryn ships a single dark theme, so the theme is fixed instead of read from next-themes.
+// Follows the app theme (lib/theme.ts); colors come from the same tokens as popovers.
 const Toaster = ({ ...props }: ToasterProps) => {
+  const theme = useTheme()
   return (
     <Sonner
-      theme="dark"
+      theme={theme?.resolved ?? "dark"}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4 text-success" />,

@@ -20,21 +20,14 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Locale, Performance, SeriesPoint } from "@/lib/api/types";
+import { useChartPalette } from "@/lib/chart-theme";
 import { formatMoney } from "@/lib/format";
 
 type Mode = "value" | "return";
 type Range = "30" | "90" | "365" | "all";
 
-const COLORS = {
-  value: "#6366F1",
-  invested: "#94A3B8",
-  btc: "#F59E0B",
-  eth: "#8B5CF6",
-  grid: "rgba(148, 163, 184, 0.08)",
-  text: "#94A3B8",
-  inflow: "#22C55E",
-  outflow: "#EF4444",
-};
+/** Legend swatches (HTML): same tokens the chart reads through useChartPalette(). */
+const LEGEND = { value: "var(--chart-1)", invested: "var(--chart-neutral)", btc: "var(--chart-4)", eth: "var(--chart-2)" };
 
 function toTime(day: string): UTCTimestamp {
   return (Date.parse(`${day}T00:00:00Z`) / 1000) as UTCTimestamp;
@@ -46,6 +39,7 @@ export function EquityChart({ performance, locale }: { performance: Performance 
   const [range, setRange] = useState<Range>("90");
   const container = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const palette = useChartPalette();
 
   const points = useMemo(() => {
     const series = performance?.series ?? [];
@@ -55,16 +49,18 @@ export function EquityChart({ performance, locale }: { performance: Performance 
 
   useEffect(() => {
     const el = container.current;
-    if (!el || points.length < 2 || !performance) return;
+    if (!el || points.length < 2 || !performance || !palette) return;
+    const p = palette;
+    const COLORS = { value: p.primary, invested: p.neutral, btc: p.amber, eth: p.violet, inflow: p.up, outflow: p.down };
     const currency = performance.currency;
     const chart = createChart(el, {
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: COLORS.text, fontFamily: "var(--font-inter)", attributionLogo: false },
-      grid: { vertLines: { visible: false }, horzLines: { color: COLORS.grid } },
+      layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: p.text, fontFamily: "var(--font-inter)", attributionLogo: false },
+      grid: { vertLines: { visible: false }, horzLines: { color: p.grid } },
       // Headroom keeps the top axis label inside the canvas.
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.08 } },
       timeScale: { borderVisible: false, fixLeftEdge: true, fixRightEdge: true },
-      crosshair: { horzLine: { labelBackgroundColor: "#151D28" }, vertLine: { labelBackgroundColor: "#151D28" } },
+      crosshair: { horzLine: { labelBackgroundColor: p.label }, vertLine: { labelBackgroundColor: p.label } },
       localization: {
         locale,
         priceFormatter:
@@ -80,8 +76,8 @@ export function EquityChart({ performance, locale }: { performance: Performance 
     if (mode === "value") {
       const area = chart.addSeries(AreaSeries, {
         lineColor: COLORS.value,
-        topColor: "rgba(99, 102, 241, 0.28)",
-        bottomColor: "rgba(99, 102, 241, 0.02)",
+        topColor: p.alpha(p.primary, 0.28),
+        bottomColor: p.alpha(p.primary, 0.02),
         lineWidth: 2,
         priceLineVisible: false,
       });
@@ -132,7 +128,7 @@ export function EquityChart({ performance, locale }: { performance: Performance 
       chart.remove();
       chartRef.current = null;
     };
-  }, [points, mode, locale, performance]);
+  }, [points, mode, locale, performance, palette]);
 
   const estimated = points.some((p) => p.estimated);
 
@@ -178,14 +174,14 @@ export function EquityChart({ performance, locale }: { performance: Performance 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {mode === "value" ? (
             <>
-              <Legend color={COLORS.value} label="Patrimônio" />
-              <Legend color={COLORS.invested} label="Capital investido líquido" dashed />
+              <Legend color={LEGEND.value} label="Patrimônio" />
+              <Legend color={LEGEND.invested} label="Capital investido líquido" dashed />
             </>
           ) : (
             <>
-              <Legend color={COLORS.value} label="Carteira (TWR)" />
-              <Legend color={COLORS.btc} label="Bitcoin" />
-              <Legend color={COLORS.eth} label="Ethereum" />
+              <Legend color={LEGEND.value} label="Carteira (TWR)" />
+              <Legend color={LEGEND.btc} label="Bitcoin" />
+              <Legend color={LEGEND.eth} label="Ethereum" />
             </>
           )}
           <span className="ml-auto">Fechamentos diários (UTC)</span>

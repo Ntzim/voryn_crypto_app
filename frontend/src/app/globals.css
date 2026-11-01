@@ -5,15 +5,81 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Voryn design tokens. Dark is the product's only theme for now; the token layer
- * (shadcn variable names) keeps a light theme possible without touching components.
+ * Voryn design tokens: one set of variable names, two themes. `:root` is the light theme,
+ * `.dark` (on <html>) the dark one. Components only use these tokens (through Tailwind
+ * colors such as bg-surface or text-muted-foreground), so switching themes swaps
+ * variables and never touches component code. The theme class is set before first paint
+ * by the inline script in app/layout.tsx (lib/theme.ts).
  *
- * Neutral graphite instead of the former blue-tinted slate: data and the brand color carry
- * the hue, surfaces stay quiet. Three surface steps (background → surface → elevated) give
- * depth without borders on every element. Every text color is checked against all three
- * (WCAG 2.2 AA, 4.5:1 for body text); the minimum ratio is noted next to each.
+ * Three surface steps (background → surface → elevated) give depth without borders on every
+ * element. Every text color is checked against background, surface and the hover/accent
+ * fill (WCAG 2.2 AA, 4.5:1 for body text); the minimum ratio is noted next to each.
  */
 :root {
+  /* Light: Apple-style off-white page with white surfaces lifted by soft shadows. */
+  --background: #f5f5f7;
+  --foreground: #1d1d1f; /* 13.9:1 */
+  --surface: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #1d1d1f;
+  --card-hover: #fafafb;
+  --elevated: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --primary: #585bef; /* fill; white text on it 5.1:1 */
+  --primary-ink: #4b4ee0; /* brand color as text or icon, 5.0:1 */
+  --primary-foreground: #ffffff;
+  --violet: #7c3aed;
+  --secondary: #ececf0;
+  --secondary-foreground: #1d1d1f;
+  --muted: #ececf0;
+  --muted-foreground: #5f6068; /* 5.2:1 */
+  --subtle-foreground: #64656d; /* 4.8:1 */
+  --accent: #e9e9ee;
+  --accent-foreground: #1d1d1f;
+  --destructive: #c42238; /* 4.5:1 on its own 10% tint */
+  --success: #08734e; /* 4.7:1 on its own 10% tint */
+  --warning: #8c5300; /* 5.0:1 on its own 10% tint */
+  --border: rgb(0 0 0 / 0.08);
+  --border-strong: rgb(0 0 0 / 0.14);
+  --input: rgb(0 0 0 / 0.12);
+  --ring: #585bef;
+  --chart-1: #585bef;
+  --chart-2: #7c3aed;
+  --chart-3: #0f9f6e;
+  --chart-4: #d48806;
+  --chart-5: #0284c7;
+  --chart-up: #0f9f6e;
+  --chart-down: #e0364c;
+  --chart-neutral: #8a8b93;
+  --chart-grid: rgb(0 0 0 / 0.06);
+  --chart-axis: #6b6c74;
+  --chart-emphasis: #1d1d1f; /* long trend lines (EMA 200) */
+  --chart-label: #1d1d1f; /* crosshair label background */
+  --sidebar: #f5f5f7;
+  --sidebar-foreground: #56575e;
+  --sidebar-primary: #585bef;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #1d1d1f;
+  --sidebar-border: rgb(0 0 0 / 0.06);
+  --sidebar-ring: #585bef;
+  /* Depth: soft, natural shadows in light; dark relies on surface steps instead. */
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.02);
+  --raised-shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.04);
+  --glass-bg: rgb(255 255 255 / 0.86);
+  --glass-border: rgb(0 0 0 / 0.06);
+  --glass-highlight: rgb(255 255 255 / 0.6);
+  --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.12);
+  --selection: rgb(88 91 239 / 0.2);
+  --radius: 0.75rem;
+  /* Motion: short and natural (150–300 ms), never on the critical path. */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark: neutral graphite (never pure black); data and the brand color carry the hue. */
   --background: #0b0d12;
   --foreground: #f5f5f7; /* 15.0:1 */
   --surface: #151820;
@@ -23,21 +89,19 @@
   --elevated: #1c2029;
   --popover: #1c2029;
   --popover-foreground: #f5f5f7;
-  /* Fills (buttons, active states): white text on it is 4.6:1. */
-  --primary: #585bef;
-  /* Brand color as text or icon: 5.9:1. */
-  --primary-ink: #8b93f8;
+  --primary: #585bef; /* white text on it 4.6:1 */
+  --primary-ink: #8b93f8; /* 5.9:1 */
   --primary-foreground: #f5f5f7;
   --violet: #8b5cf6;
   --secondary: #1c2029;
   --secondary-foreground: #f5f5f7;
   --muted: #1c2029;
-  --muted-foreground: #8e919a; /* secondary text, 5.2:1 */
-  --subtle-foreground: #858893; /* captions, 4.6:1 */
+  --muted-foreground: #8e919a; /* 5.2:1 */
+  --subtle-foreground: #858893; /* 4.6:1 */
   --accent: #232733;
   --accent-foreground: #f5f5f7;
-  --destructive: #ff6678; /* losses, 5.8:1 */
-  --success: #30d19a; /* gains, 8.3:1 */
+  --destructive: #ff6678; /* 5.8:1 */
+  --success: #30d19a; /* 8.3:1 */
   --warning: #f5b041; /* 8.7:1 */
   --border: rgb(255 255 255 / 0.08);
   --border-strong: rgb(255 255 255 / 0.14);
@@ -48,7 +112,13 @@
   --chart-3: #30d19a;
   --chart-4: #f5b041;
   --chart-5: #38bdf8;
-  --radius: 0.75rem;
+  --chart-up: #30d19a;
+  --chart-down: #ff6678;
+  --chart-neutral: #8e919a;
+  --chart-grid: rgb(255 255 255 / 0.06);
+  --chart-axis: #8e919a;
+  --chart-emphasis: #f5f5f7;
+  --chart-label: #1c2029;
   /* The sidebar recedes (same tone as the page) so the content leads. */
   --sidebar: #0b0d12;
   --sidebar-foreground: #a4a7b0;
@@ -58,8 +128,14 @@
   --sidebar-accent-foreground: #f5f5f7;
   --sidebar-border: rgb(255 255 255 / 0.06);
   --sidebar-ring: #8b93f8;
-  /* Motion: short and natural (150–300 ms), never on the critical path. */
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --card-shadow: 0 0 #0000; /* not "none": it is composed with ring shadows */
+  --raised-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --glass-bg: rgb(28 32 41 / 0.8);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-highlight: rgb(255 255 255 / 0.06);
+  --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
+  --selection: rgb(99 102 241 / 0.35);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -84,6 +160,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-chart-up: var(--chart-up);
+  --color-chart-down: var(--chart-down);
+  --shadow-card: var(--card-shadow);
+  --shadow-raised: var(--raised-shadow);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -123,7 +203,6 @@
   }
   html {
     @apply font-sans antialiased;
-    color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
   }
   body {
@@ -140,7 +219,7 @@
     cursor: pointer;
   }
   ::selection {
-    background: rgb(99 102 241 / 0.35);
+    background: var(--selection);
   }
 }
 
@@ -157,19 +236,19 @@
 /*
  * Glass: a web take on Apple's Liquid Glass "regular" variant, for the functional layer only
  * (tab bar, header, menus, popovers) — never for content cards, per the HIG ("Don't use
- * Liquid Glass in the content layer"). Blur plus a dark tint keeps text legible over any
+ * Liquid Glass in the content layer"). Blur plus a theme tint keeps text legible over any
  * content; without backdrop-filter, or when people ask for less transparency or more
  * contrast, it falls back to an opaque elevated surface.
  */
 @layer components {
   .glass {
-    background-color: rgb(28 32 41 / 0.8);
+    background-color: var(--glass-bg);
     -webkit-backdrop-filter: blur(24px) saturate(1.6);
     backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid rgb(255 255 255 / 0.08);
+    border: 1px solid var(--glass-border);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.06),
-      0 8px 32px rgb(0 0 0 / 0.45);
+      inset 0 1px 0 var(--glass-highlight),
+      var(--glass-shadow);
   }
 
   /* Press feedback for tappable surfaces (rows, cards that are links). */
@@ -193,7 +272,7 @@
   .glass {
     background-color: var(--elevated);
     backdrop-filter: none;
-    border-color: rgb(255 255 255 / 0.18);
+    border-color: var(--border-strong);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -221,6 +300,24 @@
     flex-shrink: 0;
     scroll-snap-align: start;
   }
+}
+
+/*
+ * Theme switch: the View Transitions API cross-fades the old and new renders (one GPU
+ * composite instead of hundreds of per-element color transitions). Element transitions are
+ * suspended while the classes swap so nothing animates out of sync.
+ */
+/* The switch itself keeps its motion: its thumb slide is the feedback for the click. */
+.theme-switching,
+.theme-switching *:not([data-theme-toggle], [data-theme-toggle] *),
+.theme-switching *:not([data-theme-toggle], [data-theme-toggle] *)::before,
+.theme-switching *:not([data-theme-toggle], [data-theme-toggle] *)::after {
+  transition: none !important;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease-out-soft);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -40,7 +40,7 @@ export function AttentionPanel({
   const empty = !loading && flagged.length === 0 && unread === 0 && (insights?.length ?? 0) === 0;
 
   return (
-    <section aria-labelledby="attention-title" className="rounded-2xl bg-card ring-1 ring-white/6">
+    <section aria-labelledby="attention-title" className="rounded-2xl bg-card shadow-card ring-1 ring-foreground/6">
       <header className="flex items-center justify-between gap-2 px-5 pt-4 pb-2">
         <h2 id="attention-title" className="font-heading text-sm font-medium">
           Precisa da sua atenção

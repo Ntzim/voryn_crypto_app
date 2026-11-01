@@ -8,14 +8,11 @@ import { AssetIcon } from "@/components/common/asset-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Backtest, BacktestMetrics, BacktestResult, BacktestStrategy, Locale } from "@/lib/api/types";
 import { formatDateTime, formatNumber, formatPercent, formatPrice } from "@/lib/format";
+import { useChartPalette } from "@/lib/chart-theme";
 import { usePreferences } from "@/lib/queries";
 
-const COLORS = {
-  strategy: "#6366F1",
-  benchmark: "#94A3B8",
-  grid: "rgba(148, 163, 184, 0.08)",
-  text: "#94A3B8",
-};
+/** Legend swatches (HTML); the chart reads the same tokens through useChartPalette(). */
+const LEGEND = { strategy: "var(--chart-1)", benchmark: "var(--chart-neutral)" };
 
 const PARAM_LABEL: Record<string, string> = {
   fast: "rápida",
@@ -102,14 +99,16 @@ export function BacktestResultView({ run, strategies }: { run: Backtest; strateg
 
 function EquityCard({ result, locale }: { result: BacktestResult; locale: Locale }) {
   const container = useRef<HTMLDivElement>(null);
+  const palette = useChartPalette();
 
   useEffect(() => {
     const el = container.current;
-    if (!el || result.equity.length < 2) return;
+    if (!el || result.equity.length < 2 || !palette) return;
+    const COLORS = { strategy: palette.primary, benchmark: palette.neutral };
     const chart = createChart(el, {
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: COLORS.text, fontFamily: "var(--font-inter)", attributionLogo: false },
-      grid: { vertLines: { visible: false }, horzLines: { color: COLORS.grid } },
+      layout: { background: { type: ColorType.Solid, color: "transparent" }, textColor: palette.text, fontFamily: "var(--font-inter)", attributionLogo: false },
+      grid: { vertLines: { visible: false }, horzLines: { color: palette.grid } },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false, fixLeftEdge: true, fixRightEdge: true },
       localization: { locale, priceFormatter: (v: number) => v.toLocaleString(locale, { maximumFractionDigits: 0 }) },
@@ -128,7 +127,7 @@ function EquityCard({ result, locale }: { result: BacktestResult; locale: Locale
     }
     chart.timeScale().fitContent();
     return () => chart.remove();
-  }, [result, locale]);
+  }, [result, locale, palette]);
 
   return (
     <Card>
@@ -138,8 +137,8 @@ function EquityCard({ result, locale }: { result: BacktestResult; locale: Locale
       <CardContent>
         <div ref={container} className="h-64 w-full md:h-72" />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <Legend color={COLORS.strategy} label="Estratégia" />
-          <Legend color={COLORS.benchmark} label="Comprar e manter" />
+          <Legend color={LEGEND.strategy} label="Estratégia" />
+          <Legend color={LEGEND.benchmark} label="Comprar e manter" />
           <span>Tracejado: treino · contínuo: validação (recomeça do capital inicial)</span>
         </div>
       </CardContent>

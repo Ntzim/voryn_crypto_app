@@ -132,8 +132,8 @@ function TabIcon({ active, children }: { active: boolean; children: React.ReactN
   return (
     <span
       className={cn(
-        "flex h-7 w-12 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-(--ease-out-soft) group-active:scale-90 group-active:bg-white/10",
-        active && "bg-white/12",
+        "flex h-7 w-12 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-(--ease-out-soft) group-active:scale-90 group-active:bg-foreground/10",
+        active && "bg-foreground/12",
       )}
     >
       {children}
