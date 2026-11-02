@@ -443,6 +443,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/exchanges/{market}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exchange Overview */
+        get: operations["exchange_overview_api_v1_market_exchanges__market__overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/exchanges/{market}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exchange Assets */
+        get: operations["exchange_assets_api_v1_market_exchanges__market__assets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/exchanges/{market}/assets/{symbol}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exchange Asset */
+        get: operations["exchange_asset_api_v1_market_exchanges__market__assets__symbol__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/exchanges/{market}/assets/{symbol}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exchange Asset History */
+        get: operations["exchange_asset_history_api_v1_market_exchanges__market__assets__symbol__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/assets/{slug}/analysis": {
         parameters: {
             query?: never;
@@ -1856,6 +1924,24 @@ export interface components {
             /** Executed At */
             executed_at?: string | null;
         };
+        /** DailyBarOut */
+        DailyBarOut: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Open */
+            open: string;
+            /** High */
+            high: string;
+            /** Low */
+            low: string;
+            /** Close */
+            close: string;
+            /** Volume */
+            volume: string;
+        };
         /**
          * DataStatus
          * @description Freshness metadata attached to every market response.
@@ -1923,6 +2009,82 @@ export interface components {
             /** Benchmark */
             benchmark: string;
         };
+        /** ExchangeAssetListOut */
+        ExchangeAssetListOut: {
+            /** Items */
+            items: components["schemas"]["ExchangeAssetOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            status: components["schemas"]["ExchangeStatusOut"];
+        };
+        /** ExchangeAssetOut */
+        ExchangeAssetOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Symbol */
+            symbol: string;
+            /** Name */
+            name: string;
+            /** Asset Type */
+            asset_type: string;
+            /** Exchange */
+            exchange: string | null;
+            /** Sector */
+            sector: string | null;
+            /** Image Url */
+            image_url: string | null;
+            /** Currency */
+            currency: string;
+            /** Price */
+            price: string;
+            /** Change Pct */
+            change_pct: string | null;
+            /** Volume */
+            volume: string | null;
+            /** Traded Value */
+            traded_value: string | null;
+            /** Market Cap */
+            market_cap: string | null;
+        };
+        /** ExchangeDetailOut */
+        ExchangeDetailOut: {
+            asset: components["schemas"]["ExchangeAssetOut"];
+            /** Open */
+            open: string | null;
+            /** Day High */
+            day_high: string | null;
+            /** Day Low */
+            day_low: string | null;
+            /** Previous Close */
+            previous_close: string | null;
+            /** Week52 Low */
+            week52_low: string | null;
+            /** Week52 High */
+            week52_high: string | null;
+            /** Detail Unavailable */
+            detail_unavailable: ("token_required" | "quota_reached" | "provider_unavailable") | null;
+            status: components["schemas"]["ExchangeStatusOut"];
+        };
+        /** ExchangeHistoryOut */
+        ExchangeHistoryOut: {
+            /** Symbol */
+            symbol: string;
+            /** Range */
+            range: string;
+            /** Allowed Ranges */
+            allowed_ranges: string[];
+            /** Bars */
+            bars: components["schemas"]["DailyBarOut"][];
+            /** Unavailable */
+            unavailable: ("token_required" | "quota_reached" | "provider_unavailable") | null;
+        };
         /** ExchangeOut */
         ExchangeOut: {
             /** Id */
@@ -1931,6 +2093,57 @@ export interface components {
             name: string;
             /** Kind */
             kind: string;
+        };
+        /** ExchangeOverviewOut */
+        ExchangeOverviewOut: {
+            status: components["schemas"]["ExchangeStatusOut"];
+            reference: components["schemas"]["ExchangeAssetOut"] | null;
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /** Advancers */
+            advancers: number;
+            /** Decliners */
+            decliners: number;
+            /** Top Gainers */
+            top_gainers: components["schemas"]["ExchangeAssetOut"][];
+            /** Top Losers */
+            top_losers: components["schemas"]["ExchangeAssetOut"][];
+            /** Most Traded */
+            most_traded: components["schemas"]["ExchangeAssetOut"][];
+        };
+        /**
+         * ExchangeStatusOut
+         * @description Session state and data terms attached to every exchange-market response.
+         */
+        ExchangeStatusOut: {
+            /**
+             * Market
+             * @enum {string}
+             */
+            market: "CRYPTO" | "B3" | "US";
+            /** Currency */
+            currency: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "open" | "closed" | "always_open";
+            /** Last Close */
+            last_close: string | null;
+            /** Next Open */
+            next_open: string | null;
+            /** Delay Seconds */
+            delay_seconds: number;
+            /** As Of */
+            as_of: string | null;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Is Stale */
+            is_stale: boolean;
+            /** Attribution */
+            attribution: string;
         };
         /** GridRowOut */
         GridRowOut: {
@@ -3919,6 +4132,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstrumentHitOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_overview_api_v1_market_exchanges__market__overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                market: "B3";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExchangeOverviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_assets_api_v1_market_exchanges__market__assets_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                asset_type?: ("STOCK" | "FII" | "ETF" | "BDR") | null;
+                sort?: "market_cap" | "traded_value" | "change" | "price" | "name";
+                order?: "asc" | "desc";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                market: "B3";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExchangeAssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_asset_api_v1_market_exchanges__market__assets__symbol__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                market: "B3";
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExchangeDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_asset_history_api_v1_market_exchanges__market__assets__symbol__history_get: {
+        parameters: {
+            query?: {
+                range?: "1mo" | "3mo" | "1y" | "5y";
+            };
+            header?: never;
+            path: {
+                market: "B3";
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExchangeHistoryOut"];
                 };
             };
             /** @description Validation Error */

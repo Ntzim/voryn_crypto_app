@@ -12,7 +12,7 @@ const csp = [
   // Next.js injects inline bootstrap scripts; dev mode additionally needs eval for HMR.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://coin-images.coingecko.com https://assets.coingecko.com",
+  "img-src 'self' data: blob: https://coin-images.coingecko.com https://assets.coingecko.com https://icons.brapi.dev",
   "font-src 'self'",
   `connect-src 'self'${isDev ? " ws:" : ""}`,
   "frame-ancestors 'none'",
@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "coin-images.coingecko.com" },
       { protocol: "https", hostname: "assets.coingecko.com" },
+      { protocol: "https", hostname: "icons.brapi.dev" },
     ],
   },
   turbopack: {

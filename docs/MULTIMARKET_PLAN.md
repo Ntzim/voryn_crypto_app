@@ -143,6 +143,14 @@ Custos de infraestrutura no Railway: mais armazenamento de histórico e tarefas 
   - Endpoints `GET /market/markets` e `GET /market/instruments/search`.
   - Não modelado ainda: meio pregão (vésperas de feriado nos EUA, Quarta-feira de Cinzas na B3).
 
+- **Fase 2 — implementada no plano gratuito** (branch `feat/b3-exploration`, B3 desligada em produção):
+  - Telas `/b3` (referência do Ibovespa pelo BOVA11, altas e baixas, mais negociados, lista com busca e filtro por tipo) e `/b3/[código]` (gráfico diário e dados do pregão). A entrada no menu só aparece com o mercado habilitado.
+  - Estado do pregão, atraso e hora dos dados em toda tela com cotação; aviso de que não é recomendação.
+  - Limites do plano gratuito: sem `BRAPI_TOKEN`, detalhe e histórico só funcionam para PETR4, VALE3, ITUB4 e MGLU3; os demais mostram a indisponibilidade, sem valores inventados. O histórico vai até 3 meses.
+  - Consultas sob demanda passam por cache no Redis, inclusive falhas, e param na cota mensal.
+  - Altas, baixas e amplitude só contam ativos com ao menos R$ 1 milhão negociado; o mercado fracionário saiu do catálogo.
+  - Ainda não incluído: fundamentos, ativos da B3 em watchlists e alertas, e recomendações (Fase 3).
+
 Cada fase termina com diagnóstico, implementação, validação e próximos passos, em commits separados.
 
 ## 6. Riscos

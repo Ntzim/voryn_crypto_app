@@ -342,7 +342,7 @@ async def list_assets(
     *,
     q: str | None = None,
     asset_type: str | None = None,
-    sort: ExchangeSort = "market_cap",
+    sort: ExchangeSort = "traded_value",
     order: Literal["asc", "desc"] = "desc",
     page: int = 1,
     page_size: int = 50,

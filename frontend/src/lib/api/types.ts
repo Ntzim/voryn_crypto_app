@@ -16,6 +16,15 @@ export type AssetList = Schemas["AssetListOut"];
 export type AssetDetail = Schemas["AssetDetailOut"];
 export type MarketOverview = Schemas["MarketOverviewOut"];
 export type DataStatus = Schemas["DataStatus"];
+export type MarketInfo = Schemas["MarketOut"];
+export type ExchangeStatus = Schemas["ExchangeStatusOut"];
+export type ExchangeAsset = Schemas["ExchangeAssetOut"];
+export type ExchangeAssetList = Schemas["ExchangeAssetListOut"];
+export type ExchangeOverview = Schemas["ExchangeOverviewOut"];
+export type ExchangeDetail = Schemas["ExchangeDetailOut"];
+export type ExchangeHistory = Schemas["ExchangeHistoryOut"];
+export type ExchangeSort = "market_cap" | "traded_value" | "change" | "price" | "name";
+export type ExchangeAssetType = "STOCK" | "FII" | "ETF" | "BDR";
 
 export type Currency = UserSettings["base_currency"];
 export type Locale = UserSettings["locale"];

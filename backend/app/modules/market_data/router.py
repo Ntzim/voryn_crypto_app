@@ -189,7 +189,7 @@ async def exchange_assets(
     market: ExchangeMarket,
     q: Annotated[str | None, Query(max_length=64)] = None,
     asset_type: Literal["STOCK", "FII", "ETF", "BDR"] | None = None,
-    sort: exchanges.ExchangeSort = "market_cap",
+    sort: exchanges.ExchangeSort = "traded_value",
     order: Literal["asc", "desc"] = "desc",
     page: Annotated[int, Query(ge=1, le=1000)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 50,
