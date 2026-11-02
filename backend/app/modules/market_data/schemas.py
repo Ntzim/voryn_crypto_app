@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -117,3 +117,92 @@ class InstrumentHitOut(BaseModel):
     delay_seconds: int | None
     #: when the quote data was current (not when it was fetched)
     as_of: datetime | None
+
+
+class ExchangeStatusOut(BaseModel):
+    """Session state and data terms attached to every exchange-market response."""
+
+    market: Market
+    currency: str
+    state: Literal["open", "closed", "always_open"]
+    last_close: datetime | None
+    next_open: datetime | None
+    #: provider delay in seconds; never 0 on the supported plans, so never "real time"
+    delay_seconds: int
+    #: when the newest quote's data was current (not when it was fetched)
+    as_of: datetime | None
+    fetched_at: datetime | None
+    is_stale: bool
+    attribution: str
+
+
+class ExchangeAssetOut(BaseModel):
+    id: uuid.UUID
+    symbol: str
+    name: str
+    asset_type: str
+    exchange: str | None
+    sector: str | None
+    image_url: str | None
+    currency: str
+    price: Decimal
+    #: change against the previous session close
+    change_pct: Decimal | None
+    volume: Decimal | None
+    #: price x volume, in the instrument's currency
+    traded_value: Decimal | None
+    market_cap: Decimal | None
+
+
+class ExchangeAssetListOut(BaseModel):
+    items: list[ExchangeAssetOut]
+    total: int
+    page: int
+    page_size: int
+    status: ExchangeStatusOut
+
+
+class ExchangeOverviewOut(BaseModel):
+    status: ExchangeStatusOut
+    #: ETF that tracks the main index, shown as a labeled proxy: index values are licensed
+    reference: ExchangeAssetOut | None
+    counts: dict[str, int]
+    advancers: int
+    decliners: int
+    top_gainers: list[ExchangeAssetOut]
+    top_losers: list[ExchangeAssetOut]
+    most_traded: list[ExchangeAssetOut]
+
+
+UnavailableReason = Literal["token_required", "quota_reached", "provider_unavailable"]
+
+
+class ExchangeDetailOut(BaseModel):
+    asset: ExchangeAssetOut
+    open: Decimal | None
+    day_high: Decimal | None
+    day_low: Decimal | None
+    previous_close: Decimal | None
+    week52_low: Decimal | None
+    week52_high: Decimal | None
+    #: why the session figures above are missing, if they are
+    detail_unavailable: UnavailableReason | None
+    status: ExchangeStatusOut
+
+
+class DailyBarOut(BaseModel):
+    day: date
+    open: Decimal
+    high: Decimal
+    low: Decimal
+    close: Decimal
+    volume: Decimal
+
+
+class ExchangeHistoryOut(BaseModel):
+    symbol: str
+    range: str
+    #: depth the current data plan allows
+    allowed_ranges: list[str]
+    bars: list[DailyBarOut]
+    unavailable: UnavailableReason | None

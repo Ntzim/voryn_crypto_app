@@ -30,16 +30,30 @@ logger = get_logger(__name__)
 SOURCE = "brapi"
 ATTRIBUTION = "Dados de mercado B3 fornecidos por brapi.dev"
 DELAY_SECONDS = {"free": 1800, "startup": 900, "pro": 300}
+#: history depth each plan may request (free: 3 months)
+HISTORY_RANGES = {
+    "free": ("1mo", "3mo"),
+    "startup": ("1mo", "3mo", "1y"),
+    "pro": ("1mo", "3mo", "1y", "5y"),
+}
 #: brapi subType -> Voryn asset_type. Other fund kinds (FIP, FIDC, FI-Infra, FI-Agro) are
 #: not supported yet and are skipped.
 ASSET_TYPES = {"stock": "STOCK", "unit": "STOCK", "fii": "FII", "etf": "ETF", "bdr": "BDR"}
 
 _RETRYABLE = {429, 500, 502, 503, 504}
+_ACCESS_DENIED = {401, 402, 403}
 _MAX_ATTEMPTS = 3
 _MAX_BACKOFF_SECONDS = 30.0
 _PAGE_SIZE = 1000
 _MAX_PAGES = 10
 _SYMBOL = re.compile(r"^[A-Z0-9]{4,12}$")
+# Fractional-lot tickers (PETR4F): same company as the round lot, with tiny volumes and
+# erratic changes (+260% on 3 shares). Listing them would duplicate assets and distort movers.
+_FRACTIONAL = re.compile(r"^[A-Z0-9]{4}\d{1,2}F$")
+
+
+class ProviderAccessError(ProviderError):
+    """The token or plan does not allow this request; retrying will not help."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +68,18 @@ class ExchangeQuote:
     change_pct: Decimal | None
     volume: Decimal | None
     market_cap: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class SessionDetail:
+    """Figures of the current session and year; any of them may be missing upstream."""
+
+    open: Decimal | None
+    day_high: Decimal | None
+    day_low: Decimal | None
+    previous_close: Decimal | None
+    week52_low: Decimal | None
+    week52_high: Decimal | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +116,17 @@ class _Ticker(BaseModel):
     quote: _Quote
 
 
+class _Detail(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    regularMarketOpen: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    regularMarketDayHigh: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    regularMarketDayLow: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    regularMarketPreviousClose: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    fiftyTwoWeekLow: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    fiftyTwoWeekHigh: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+
+
 class _Bar(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -122,7 +159,9 @@ def _display_name(row: _Ticker) -> str:
 class BrapiProvider:
     name = SOURCE
 
-    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self, client: httpx.AsyncClient | None = None, *, max_attempts: int = _MAX_ATTEMPTS
+    ) -> None:
         settings = get_settings()
         headers = {"Accept": "application/json", "User-Agent": "Voryn/0.1"}
         if settings.brapi_token:
@@ -133,6 +172,7 @@ class BrapiProvider:
             timeout=httpx.Timeout(20.0, connect=5.0),
         )
         self._owns_client = client is None
+        self._max_attempts = max_attempts
         self.delay_seconds = DELAY_SECONDS[settings.brapi_plan]
         #: upstream requests made by this instance (the free plan is metered monthly)
         self.requests = 0
@@ -147,7 +187,7 @@ class BrapiProvider:
 
     async def _get(self, path: str, params: dict[str, Any]) -> Any:
         last_error: Exception | None = None
-        for attempt in range(1, _MAX_ATTEMPTS + 1):
+        for attempt in range(1, self._max_attempts + 1):
             self.requests += 1
             try:
                 response = await self._client.get(path, params=params)
@@ -160,14 +200,16 @@ class BrapiProvider:
                         return json.loads(response.text, parse_float=Decimal)
                     except json.JSONDecodeError as exc:
                         raise ProviderError(f"brapi returned invalid JSON for {path}") from exc
+                if response.status_code in _ACCESS_DENIED:
+                    raise ProviderAccessError(f"brapi {path} responded {response.status_code}")
                 if response.status_code not in _RETRYABLE:
                     raise ProviderError(f"brapi {path} responded {response.status_code}")
                 last_error = ProviderError(f"brapi {path} responded {response.status_code}")
                 delay = _retry_after(response) or min(2.0**attempt, _MAX_BACKOFF_SECONDS)
-            if attempt < _MAX_ATTEMPTS:
+            if attempt < self._max_attempts:
                 logger.warning("brapi_retry", path=path, attempt=attempt, delay=delay)
                 await asyncio.sleep(delay)
-        raise ProviderError(f"brapi {path} failed after {_MAX_ATTEMPTS} attempts") from last_error
+        raise ProviderError(f"brapi {path} failed after retries") from last_error
 
     async def fetch_catalogue(self) -> list[ExchangeQuote]:
         """Every active, supported B3 instrument with its latest (delayed) quote."""
@@ -196,10 +238,27 @@ class BrapiProvider:
             logger.info("brapi_rows_skipped", count=dropped)
         return list(quotes.values())
 
+    async def fetch_session_detail(self, symbol: str) -> SessionDetail:
+        """Day range, open, previous close and 52-week range. `regularMarketTime` is ignored:
+        it is when brapi refreshed its data, not when the instrument last traded."""
+        _check_symbol(symbol)
+        payload = await self._get("/v2/stocks/quote", {"symbols": symbol})
+        try:
+            detail = _Detail.model_validate(payload["results"][0]["data"])
+        except (KeyError, IndexError, TypeError, ValidationError) as exc:
+            raise ProviderError("brapi quote returned an unexpected payload") from exc
+        return SessionDetail(
+            open=detail.regularMarketOpen,
+            day_high=detail.regularMarketDayHigh,
+            day_low=detail.regularMarketDayLow,
+            previous_close=detail.regularMarketPreviousClose,
+            week52_low=detail.fiftyTwoWeekLow,
+            week52_high=detail.fiftyTwoWeekHigh,
+        )
+
     async def fetch_daily_history(self, symbol: str, range_: str = "3mo") -> list[DailyBar]:
         """Daily bars, oldest first. History depth depends on the plan (free: 3 months)."""
-        if not _SYMBOL.match(symbol):
-            raise ValueError(f"invalid B3 symbol: {symbol!r}")
+        _check_symbol(symbol)
         payload = await self._get(
             "/v2/stocks/historical", {"symbols": symbol, "range": range_, "interval": "1d"}
         )
@@ -222,6 +281,11 @@ class BrapiProvider:
         return [bars[d] for d in sorted(bars)]
 
 
+def _check_symbol(symbol: str) -> None:
+    if not _SYMBOL.match(symbol):
+        raise ValueError(f"invalid B3 symbol: {symbol!r}")
+
+
 def _to_quote(raw: Any) -> ExchangeQuote | None:
     try:
         row = _Ticker.model_validate(raw)
@@ -230,6 +294,8 @@ def _to_quote(raw: Any) -> ExchangeQuote | None:
     symbol = row.symbol.strip().upper()
     asset_type = ASSET_TYPES.get(row.subType or "")
     if not row.isActive or asset_type is None or not _SYMBOL.match(symbol):
+        return None
+    if _FRACTIONAL.match(symbol):
         return None
     if row.currency != "BRL":
         return None
