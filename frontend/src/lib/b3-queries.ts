@@ -2,6 +2,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "@/lib/api/client";
 import type {
+  B3Signal,
+  B3SignalList,
   ExchangeAssetList,
   ExchangeAssetType,
   ExchangeDetail,
@@ -85,6 +87,31 @@ export function useB3History(symbol: string, range: string) {
       queryFn: ({ signal }) =>
         api<ExchangeHistory>(`${BASE}/assets/${symbol}/history`, { query: { range }, signal }),
       staleTime: 30 * 60_000,
+    }),
+  );
+}
+
+export type B3SignalType = "STOCK" | "FII";
+
+export function useB3Signals(assetType: B3SignalType) {
+  return useHydrationSafe(
+    useQuery({
+      queryKey: ["b3", "signals", assetType],
+      queryFn: ({ signal }) =>
+        api<B3SignalList>(`${BASE}/signals`, { query: { asset_type: assetType }, signal }),
+      refetchInterval: REFETCH_MS,
+    }),
+  );
+}
+
+/** The asset's signal; a 404 only means it is outside the analysed universe. */
+export function useB3AssetSignal(symbol: string, enabled: boolean) {
+  return useHydrationSafe(
+    useQuery({
+      queryKey: ["b3", "signal", symbol],
+      queryFn: ({ signal }) => api<B3Signal>(`${BASE}/assets/${symbol}/signal`, { signal }),
+      enabled,
+      refetchInterval: REFETCH_MS,
     }),
   );
 }

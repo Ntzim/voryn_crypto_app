@@ -11,12 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useB3Asset, useB3History } from "@/lib/b3-queries";
+import { useB3Asset, useB3AssetSignal, useB3History } from "@/lib/b3-queries";
 import { isApiError } from "@/lib/api/client";
 import type { Currency, ExchangeDetail, Locale } from "@/lib/api/types";
 import { formatMoney, formatNumber, formatPrice } from "@/lib/format";
 import { usePreferences } from "@/lib/queries";
 
+import { B3SignalBody } from "./b3-opportunities-view";
 import { B3PriceChart } from "./b3-price-chart";
 import { ASSET_TYPE_LABEL, B3DataNote, B3SessionBadge, sectorLabel, unavailableMessage } from "./b3-status";
 
@@ -85,6 +86,8 @@ function Detail({ data, locale, timeZone, symbol }: { data: ExchangeDetail; loca
 
       <PriceHistory symbol={symbol} locale={locale} />
 
+      <AssetSignal symbol={symbol} assetType={asset.asset_type} locale={locale} />
+
       <Card>
         <CardHeader>
           <CardTitle className="font-heading text-sm font-medium">Dados do pregão</CardTitle>
@@ -111,6 +114,30 @@ function Detail({ data, locale, timeZone, symbol }: { data: ExchangeDetail; loca
 
       <B3DataNote status={status} locale={locale} timeZone={timeZone} />
     </div>
+  );
+}
+
+function AssetSignal({ symbol, assetType, locale }: { symbol: string; assetType: string; locale: Locale }) {
+  const supported = assetType === "STOCK" || assetType === "FII";
+  const query = useB3AssetSignal(symbol, supported);
+  if (!supported) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-heading text-sm font-medium">Sinal da Voryn</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        {isApiError(query.error, "signal_unavailable") ? (
+          <p className="text-sm text-muted-foreground">Sinais são calculados para as ações e os FIIs mais negociados. Este ativo está fora dessa lista agora.</p>
+        ) : query.isError ? (
+          <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        ) : !query.data ? (
+          <Skeleton className="h-40 w-full rounded-lg" />
+        ) : (
+          <B3SignalBody signal={query.data} locale={locale} />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -144,7 +171,10 @@ function PriceHistory({ symbol, locale }: { symbol: string; locale: Locale }) {
         ) : data.bars.length === 0 ? (
           <EmptyState icon={CandlestickChart} title="Sem histórico" description="A fonte de dados não tem pregões recentes para este ativo." />
         ) : (
-          <B3PriceChart bars={data.bars} locale={locale} />
+          <>
+            <B3PriceChart bars={data.bars} locale={locale} />
+            <p className="mt-2 text-xs text-muted-foreground">Preços podem estar ajustados por proventos, desdobramentos e grupamentos.</p>
+          </>
         )}
         {ranges.length > 1 && !data?.unavailable && (
           <Segmented

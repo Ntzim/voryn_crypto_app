@@ -9,6 +9,7 @@ import {
   Settings,
   ShieldHalf,
   Sparkles,
+  Target,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -42,6 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/mercado", label: "Mercado", icon: ChartLine, available: true, mobilePrimary: true },
       { href: "/b3", label: "Bolsa B3", icon: Building2, available: true, market: "B3" },
+      { href: "/oportunidades-b3", label: "Oportunidades B3", icon: Target, available: true, market: "B3" },
       { href: "/analise", label: "Análise de Ativos", icon: ChartCandlestick, available: true },
       { href: "/oportunidades", label: "Oportunidades", icon: Radar, available: true, mobilePrimary: true, short: "Sinais" },
     ],

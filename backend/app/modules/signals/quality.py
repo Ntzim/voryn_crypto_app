@@ -71,6 +71,7 @@ def assess(
     quote_fetched_at: datetime | None,
     now: datetime,
     quote_max_age: timedelta,
+    reference_source: str = "CoinGecko",
 ) -> QualityReport:
     report = QualityReport()
     if is_stale:
@@ -100,6 +101,7 @@ def assess(
         if deviation > MAX_CROSS_SOURCE_DEVIATION[timeframe]:
             report.flag(
                 "anomalous",
-                f"Preço diverge {deviation * 100:.0f}% da cotação de referência (CoinGecko).",
+                f"Preço diverge {deviation * 100:.0f}% da cotação de referência "
+                f"({reference_source}).",
             )
     return report

@@ -511,6 +511,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/market/exchanges/{market}/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exchange Signals
+         * @description Latest signals of the most traded instruments. Stored once per session: no brapi call.
+         */
+        get: operations["exchange_signals_api_v1_market_exchanges__market__signals_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/market/exchanges/{market}/assets/{symbol}/signal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exchange Asset Signal */
+        get: operations["exchange_asset_signal_api_v1_market_exchanges__market__assets__symbol__signal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/market/assets/{slug}/analysis": {
         parameters: {
             query?: never;
@@ -1552,6 +1589,98 @@ export interface components {
              */
             liquidity: "high" | "medium" | "low" | "unknown";
         };
+        /** B3SignalListOut */
+        B3SignalListOut: {
+            /** Items */
+            items: components["schemas"]["B3SignalOut"][];
+            /** Asset Type */
+            asset_type: string;
+            strategy: components["schemas"]["StrategyOut"];
+            /** Disclaimer */
+            disclaimer: string;
+            /** Scope */
+            scope: string;
+            status: components["schemas"]["ExchangeStatusOut"];
+        };
+        /** B3SignalOut */
+        B3SignalOut: {
+            /** Id */
+            id: number;
+            asset: components["schemas"]["AssetRef"];
+            /**
+             * Timeframe
+             * @enum {string}
+             */
+            timeframe: "15m" | "1h" | "4h" | "1d" | "1w";
+            /**
+             * Candle Time
+             * Format: date-time
+             */
+            candle_time: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Reference Price */
+            reference_price: string;
+            /** Current Price */
+            current_price: string | null;
+            /** Score */
+            score: string;
+            /**
+             * Classification
+             * @enum {string}
+             */
+            classification: "buy_potential" | "neutral" | "attention" | "sell_potential";
+            /** Trend */
+            trend: string;
+            /** Components */
+            components: components["schemas"]["ComponentOut"][];
+            /** Justification */
+            justification: string;
+            /** Risks */
+            risks: string[];
+            /** Invalidation */
+            invalidation: string[];
+            /** Indicators */
+            indicators: {
+                [key: string]: unknown;
+            };
+            /** Data Source */
+            data_source: string;
+            /**
+             * Data Fetched At
+             * Format: date-time
+             */
+            data_fetched_at: string;
+            /** Data Is Stale */
+            data_is_stale: boolean;
+            /**
+             * Data Quality
+             * @enum {string}
+             */
+            data_quality: "valid" | "stale" | "incomplete" | "anomalous" | "unavailable";
+            /** Quality Reasons */
+            quality_reasons: string[];
+            /** Is Current */
+            is_current: boolean;
+            /** Strategy Key */
+            strategy_key: string;
+            /** Strategy Version */
+            strategy_version: number;
+            /** Methodology Version */
+            methodology_version: string;
+            /** Asset Type */
+            asset_type: string;
+            /** Sector */
+            sector: string | null;
+            /** Currency */
+            currency: string;
+            fundamentals: components["schemas"]["FiiFundamentalsOut"] | null;
+            /** Scope */
+            scope: string;
+        };
         /** BacktestIn */
         BacktestIn: {
             /**
@@ -1940,7 +2069,7 @@ export interface components {
             /** Close */
             close: string;
             /** Volume */
-            volume: string;
+            volume: string | null;
         };
         /**
          * DataStatus
@@ -2069,7 +2198,7 @@ export interface components {
             /** Week52 High */
             week52_high: string | null;
             /** Detail Unavailable */
-            detail_unavailable: ("token_required" | "quota_reached" | "provider_unavailable") | null;
+            detail_unavailable: ("token_required" | "plan_required" | "no_data" | "rate_limited" | "quota_reached" | "provider_unavailable") | null;
             status: components["schemas"]["ExchangeStatusOut"];
         };
         /** ExchangeHistoryOut */
@@ -2083,7 +2212,7 @@ export interface components {
             /** Bars */
             bars: components["schemas"]["DailyBarOut"][];
             /** Unavailable */
-            unavailable: ("token_required" | "quota_reached" | "provider_unavailable") | null;
+            unavailable: ("token_required" | "plan_required" | "no_data" | "rate_limited" | "quota_reached" | "provider_unavailable") | null;
         };
         /** ExchangeOut */
         ExchangeOut: {
@@ -2144,6 +2273,25 @@ export interface components {
             is_stale: boolean;
             /** Attribution */
             attribution: string;
+        };
+        /** FiiFundamentalsOut */
+        FiiFundamentalsOut: {
+            /** Price To Nav */
+            price_to_nav: string | null;
+            /** Nav Per Share */
+            nav_per_share: string | null;
+            /** Nav As Of */
+            nav_as_of: string | null;
+            /** Dividend Yield 12M */
+            dividend_yield_12m: string | null;
+            /** Months Paid 12M */
+            months_paid_12m: number | null;
+            /** Last Payment Rate */
+            last_payment_rate: string | null;
+            /** Last Payment Date */
+            last_payment_date: string | null;
+            /** Segment */
+            segment: string | null;
         };
         /** GridRowOut */
         GridRowOut: {
@@ -4267,6 +4415,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExchangeHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_signals_api_v1_market_exchanges__market__signals_get: {
+        parameters: {
+            query?: {
+                asset_type?: "STOCK" | "FII";
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                market: "B3";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["B3SignalListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_asset_signal_api_v1_market_exchanges__market__assets__symbol__signal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                market: "B3";
+                symbol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["B3SignalOut"];
                 };
             };
             /** @description Validation Error */

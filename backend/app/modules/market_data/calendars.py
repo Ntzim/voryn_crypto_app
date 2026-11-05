@@ -57,7 +57,7 @@ def is_trading_day(market: str, day: date) -> bool:
     return day.weekday() < 5 and day not in _holidays(session.calendar, day.year)
 
 
-def _previous_trading_day(market: str, day: date) -> date:
+def previous_trading_day(market: str, day: date) -> date:
     day -= timedelta(days=1)
     while not is_trading_day(market, day):
         day -= timedelta(days=1)
@@ -87,12 +87,12 @@ def status(market: str, now: datetime) -> MarketStatus:
             return MarketStatus(
                 market,
                 "closed",
-                at(_previous_trading_day(market, today), session.closes),
+                at(previous_trading_day(market, today), session.closes),
                 at(today, session.opens),
             )
         if local < at(today, session.closes):
             return MarketStatus(
-                market, "open", at(_previous_trading_day(market, today), session.closes), None
+                market, "open", at(previous_trading_day(market, today), session.closes), None
             )
         return MarketStatus(
             market,
@@ -103,7 +103,7 @@ def status(market: str, now: datetime) -> MarketStatus:
     return MarketStatus(
         market,
         "closed",
-        at(_previous_trading_day(market, today), session.closes),
+        at(previous_trading_day(market, today), session.closes),
         at(_next_trading_day(market, today), session.opens),
     )
 

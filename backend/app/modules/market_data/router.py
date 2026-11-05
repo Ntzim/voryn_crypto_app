@@ -24,6 +24,8 @@ from app.modules.market_data.schemas import (
     QuoteCurrency,
     SortKey,
 )
+from app.modules.signals import b3 as b3_signals
+from app.modules.signals.schemas import B3SignalListOut, B3SignalOut
 from app.modules.watchlists import service as watchlists
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -232,3 +234,24 @@ async def exchange_asset_history(
 ) -> ExchangeHistoryOut:
     exchanges.ensure_enabled(market)
     return await exchanges.history(db, market, symbol, range, provider)
+
+
+@router.get("/exchanges/{market}/signals")
+async def exchange_signals(
+    _: CurrentAuth,
+    db: DbSession,
+    market: ExchangeMarket,
+    asset_type: Literal["STOCK", "FII"] = "STOCK",
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> B3SignalListOut:
+    """Latest signals of the most traded instruments. Stored once per session: no brapi call."""
+    exchanges.ensure_enabled(market)
+    return await b3_signals.list_signals(db, asset_type, limit)
+
+
+@router.get("/exchanges/{market}/assets/{symbol}/signal")
+async def exchange_asset_signal(
+    _: CurrentAuth, db: DbSession, market: ExchangeMarket, symbol: Symbol
+) -> B3SignalOut:
+    exchanges.ensure_enabled(market)
+    return await b3_signals.for_asset(db, symbol)

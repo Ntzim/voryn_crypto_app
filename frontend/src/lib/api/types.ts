@@ -56,6 +56,8 @@ export type Timeframe = Analysis["timeframe"];
 export type Watchlist = Schemas["WatchlistOut"];
 
 export type Signal = Schemas["SignalOut"];
+export type B3Signal = Schemas["B3SignalOut"];
+export type B3SignalList = Schemas["B3SignalListOut"];
 export type SignalList = Schemas["SignalListOut"];
 export type SignalClass = Signal["classification"];
 export type SignalHistoryPoint = Schemas["SignalHistoryPoint"];

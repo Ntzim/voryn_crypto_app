@@ -70,3 +70,28 @@ test("explore the B3: delay labeled, filters, asset page", async ({ page }) => {
   await expect(page.getByText("Ativo não encontrado")).toBeVisible();
   expect(problems).toEqual([]);
 });
+
+test("B3 opportunities: scope stated, stocks and FIIs, no real-time claim", async ({ page }) => {
+  test.setTimeout(120_000);
+  await signIn(page, "b3-signals");
+  test.skip(!(await b3Enabled(page)), "needs MARKETS_ENABLED=CRYPTO,B3");
+  const problems: string[] = [];
+  page.on("console", (m) => {
+    if (m.type() === "error" && /hydrat|did not match|Content Security Policy/i.test(m.text())) problems.push(m.text().slice(0, 300));
+  });
+
+  await page.goto("/oportunidades-b3");
+  await expect(page.getByRole("heading", { name: "Oportunidades B3" })).toBeVisible();
+  await expect(page.getByText(/Análise somente técnica/).first()).toBeVisible();
+  await expect(page.getByText(/Cotações com \d+ min de atraso/)).toBeVisible();
+  await expect(page.getByText(/Não constituem recomendação de investimento/)).toBeVisible();
+  await expect(page.getByText(/validados por backtest/)).toBeVisible();
+  await noHorizontalOverflow(page);
+
+  await page.getByRole("radio", { name: "FIIs" }).click();
+  await expect(page).toHaveURL(/tipo=FII/);
+  await expect(page.getByText(/Considera P\/VP/).first()).toBeVisible();
+  await noHorizontalOverflow(page);
+  expect(problems).toEqual([]);
+});
+
