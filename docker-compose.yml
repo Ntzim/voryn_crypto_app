@@ -20,6 +20,7 @@ x-backend-env: &backend-env
   COINGECKO_API_KEY: ${COINGECKO_API_KEY:-}
   COINGECKO_API_PLAN: ${COINGECKO_API_PLAN:-public}
   MARKETS_ENABLED: ${MARKETS_ENABLED:-CRYPTO}
+  REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
   BRAPI_TOKEN: ${BRAPI_TOKEN:-}
   BRAPI_PLAN: ${BRAPI_PLAN:-free}
   # Voryn AI (optional). Without a key the assistant is shown as unavailable.
