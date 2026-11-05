@@ -68,6 +68,10 @@ celery_app.conf.update(
         "prune-notifications": {"task": "alerts.prune", "schedule": 24 * 3600.0},
         # Read-only exchange accounts: incremental, so frequent runs stay cheap.
         "sync-exchanges": {"task": "exchanges.sync_all", "schedule": 6 * 3600.0},
+        "check-binance-proxy": {
+            "task": "exchanges.check_proxy",
+            "schedule": float(WINDOW_SECONDS),
+        },
         # Security monitoring: abnormal event rates in the last 5-minute window.
         "security-check": {"task": "security.check", "schedule": float(WINDOW_SECONDS)},
         "prune-audit": {"task": "audit.prune", "schedule": 24 * 3600.0},
@@ -214,6 +218,14 @@ def sync_all_exchanges_task() -> int:
                 logger.exception("exchange_sync_failed", connection_id=str(connection_id))
                 await db.rollback()
         return len(ids)
+
+    return _run(job)
+
+
+@celery_app.task(name="exchanges.check_proxy")
+def check_binance_proxy_task() -> bool:
+    async def job(_: AsyncSession) -> bool:
+        return await exchanges.check_proxy()
 
     return _run(job)
 

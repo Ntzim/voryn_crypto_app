@@ -3046,6 +3046,27 @@
         }
       }
     },
+    "/api/v1/exchange-connections/setup": {
+      "get": {
+        "tags": [
+          "exchange-connections"
+        ],
+        "summary": "Connection Setup",
+        "operationId": "connection_setup_api_v1_exchange_connections_setup_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionSetupOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/exchange-connections": {
       "get": {
         "tags": [
@@ -5075,6 +5096,26 @@
           "reconciliation"
         ],
         "title": "ConnectionOut"
+      },
+      "ConnectionSetupOut": {
+        "properties": {
+          "binance_egress_ip": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Binance Egress Ip"
+          }
+        },
+        "type": "object",
+        "required": [
+          "binance_egress_ip"
+        ],
+        "title": "ConnectionSetupOut"
       },
       "CorrelationOut": {
         "properties": {

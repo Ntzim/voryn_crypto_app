@@ -37,6 +37,11 @@ class ReconciliationOut(BaseModel):
     assets: list[ReconciliationRowOut]
 
 
+class ConnectionSetupOut(BaseModel):
+    #: fixed address Binance sees; lets users restrict their API key to it
+    binance_egress_ip: str | None
+
+
 class ConnectionOut(BaseModel):
     id: uuid.UUID
     exchange_id: str
