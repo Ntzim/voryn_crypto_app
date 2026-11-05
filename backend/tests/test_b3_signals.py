@@ -313,7 +313,10 @@ def _fundamentals(nav: str = "100") -> FiiFundamentals:
 
 def test_valuation_rewards_discount_without_chasing_extremes() -> None:
     today = NOW.date()
-    score = lambda price: b3.score_valuation(Decimal(price), _fundamentals(), today)  # noqa: E731
+
+    def score(price: str) -> tuple[Any, list[str], str | None, Decimal | None]:
+        return b3.score_valuation(Decimal(price), _fundamentals(), today)
+
     assert score("100")[0].score == Decimal(50)
     assert score("110")[0].score == Decimal(30)
     assert score("85")[0].score == Decimal(80)
