@@ -1,0 +1,33 @@
+# Voryn egress proxy: tunnels TLS to api.binance.com and nothing else.
+# It opens a CONNECT tunnel and relays encrypted bytes, so it never sees API keys, signatures or
+# account data. Rendered by setup.sh, which replaces __TLS_DIR__.
+
+https_port 8443 tls-cert=__TLS_DIR__/fullchain.pem tls-key=__TLS_DIR__/privkey.pem options=NO_SSLv3,NO_TLSv1,NO_TLSv1_1
+
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords
+auth_param basic children 3
+auth_param basic realm voryn
+auth_param basic credentialsttl 1 hour
+
+acl authenticated proxy_auth REQUIRED
+acl binance dstdomain api.binance.com
+acl tls_port port 443
+acl CONNECT method CONNECT
+
+# Password first, so nothing about the policy leaks to strangers. Then one destination only.
+http_access deny !authenticated
+http_access allow CONNECT binance tls_port
+http_access deny all
+
+# A tunnel, not a cache, and it does not announce itself.
+cache deny all
+via off
+forwarded_for delete
+httpd_suppress_version_string on
+
+# Status and destination host only: no client address, nothing from the tunnel.
+logformat voryn %ts %>Hs %rm %ru %un
+access_log stdio:/var/log/squid/access.log voryn
+cache_log /var/log/squid/cache.log
+pid_filename /run/squid.pid
+shutdown_lifetime 3 seconds

@@ -16,6 +16,7 @@ export type AssetList = Schemas["AssetListOut"];
 export type AssetDetail = Schemas["AssetDetailOut"];
 export type MarketOverview = Schemas["MarketOverviewOut"];
 export type DataStatus = Schemas["DataStatus"];
+export type ExchangeConnectionSetup = Schemas["ConnectionSetupOut"];
 
 export type Currency = UserSettings["base_currency"];
 export type Locale = UserSettings["locale"];

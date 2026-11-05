@@ -10,14 +10,18 @@ from urllib.parse import parse_qsl, urlsplit
 
 import httpx
 import pytest
+from pydantic import SecretStr
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import security_events
+from app.core.config import Settings, get_settings
 from app.modules.exchange_connections import router as connections_router
 from app.modules.exchange_connections import service as exchanges
 from app.modules.exchange_connections.connectors import binance as binance_module
 from app.modules.exchange_connections.connectors.base import (
     ConnectorAuthError,
+    ConnectorError,
     ExternalRecord,
     Permissions,
     SyncBatch,
@@ -26,6 +30,7 @@ from app.modules.exchange_connections.connectors.binance import BinanceConnector
 from app.modules.exchange_connections.models import ExchangeConnection, ExchangeRecord
 from app.modules.market_data import service as market
 from app.modules.market_data.providers.base import Candle
+from app.modules.market_data.providers.binance import BinanceCandleProvider
 from app.modules.portfolio.models import Transaction
 from tests.conftest import API, ClientFactory, Outbox, login, register_verified
 from tests.fakes import FakeCandles, FakeFxHistory, FakeProvider, quote
@@ -460,3 +465,148 @@ async def test_key_that_gains_write_permission_is_blocked(
     assert (
         await client.post(f"{API}/exchange-connections/{conn['id']}/sync")
     ).status_code == 429  # just created
+
+
+# --------------------------------------------------------------------------- proxy
+
+
+def _responding(status: int, **kwargs: Any) -> BinanceConnector:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, **kwargs)
+
+    return BinanceConnector(
+        KEY,
+        SECRET,
+        base_url="https://binance.test",
+        transport=httpx.MockTransport(handler),
+        backoff_seconds=0,
+    )
+
+
+def _raising(error: Exception, *, proxied: bool = False) -> BinanceConnector:
+    def handler(_: httpx.Request) -> httpx.Response:
+        raise error
+
+    connector = BinanceConnector(
+        KEY,
+        SECRET,
+        base_url="https://binance.test",
+        transport=httpx.MockTransport(handler),
+        backoff_seconds=0,
+    )
+    connector._proxied = proxied
+    return connector
+
+
+async def test_proxy_is_used_only_when_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    direct = BinanceConnector(KEY, SECRET)
+    assert direct._proxied is False
+    assert not direct._client._mounts
+    await direct.aclose()
+
+    monkeypatch.setattr(
+        get_settings(), "binance_proxy_url", SecretStr("https://voryn:s3nha@proxy.test:8443")
+    )
+    proxied = BinanceConnector(KEY, SECRET)
+    assert proxied._proxied is True
+    mounted = list(proxied._client._mounts.values())
+    assert mounted and all(isinstance(t, httpx.AsyncHTTPTransport) for t in mounted)
+    await proxied.aclose()
+
+
+async def test_only_the_signed_connector_goes_through_the_proxy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        get_settings(), "binance_proxy_url", SecretStr("https://voryn:s3nha@proxy.test:8443")
+    )
+    candles = BinanceCandleProvider()
+    assert not candles._client._mounts
+    await candles.aclose()
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        (451, {"code": 0, "msg": "Service unavailable from a restricted location"}),
+        (403, {"code": 0, "msg": "Service unavailable from a restricted location according to b."}),
+    ],
+)
+async def test_blocked_region_gets_a_clear_message(status: int, body: dict[str, Any]) -> None:
+    connector = _responding(status, json=body)
+    with pytest.raises(ConnectorError, match="proxy no Brasil") as caught:
+        await connector.permissions()
+    assert not isinstance(caught.value, ConnectorAuthError)
+    await connector.aclose()
+
+
+async def test_proxy_refusal_is_final_and_says_nothing_about_the_url() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        raise httpx.ProxyError("407 Proxy Authentication Required")
+
+    connector = BinanceConnector(
+        KEY,
+        SECRET,
+        base_url="https://binance.test",
+        transport=httpx.MockTransport(handler),
+        backoff_seconds=0,
+    )
+    with pytest.raises(ConnectorError, match="recusou") as caught:
+        await connector.check_connectivity()
+    assert calls == 1
+    assert caught.value.__cause__ is None
+    assert caught.value.__suppress_context__ is True
+    await connector.aclose()
+
+
+async def test_unreachable_proxy_is_named_in_the_error() -> None:
+    connector = _raising(httpx.ConnectError("no route"), proxied=True)
+    with pytest.raises(ConnectorError, match="pelo proxy") as caught:
+        await connector.check_connectivity()
+    assert caught.value.__cause__ is None
+    await connector.aclose()
+    direct = _raising(httpx.ConnectError("no route"))
+    with pytest.raises(ConnectorError, match=r"conectar à Binance\.$"):
+        await direct.check_connectivity()
+    await direct.aclose()
+
+
+async def test_proxy_check_alerts_on_the_first_failure() -> None:
+    assert await exchanges.check_proxy() is True  # no proxy: nothing to check
+
+    healthy = _responding(200, json={"serverTime": 1})
+    assert await exchanges.check_proxy(healthy) is True
+    assert (await security_events.counts(security_events._bucket()))["exchange_proxy_down"] == 0
+
+    broken = _raising(httpx.ConnectError("down"), proxied=True)
+    assert await exchanges.check_proxy(broken) is False
+    window = security_events._bucket()
+    assert (await security_events.counts(window))["exchange_proxy_down"] == 1
+    alerts = await security_events.check(at=(window + 1) * security_events.WINDOW_SECONDS)
+    assert [a.kind for a in alerts] == ["exchange_proxy_down"]
+
+
+async def test_setup_exposes_the_egress_ip_but_never_the_proxy_url(
+    client: httpx.AsyncClient, outbox: Outbox, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert (await client.get(f"{API}/exchange-connections/setup")).status_code == 401
+    await register_verified(client, outbox)
+    await login(client)
+    monkeypatch.setattr(
+        get_settings(), "binance_proxy_url", SecretStr("https://voryn:s3nha@proxy.test:8443")
+    )
+    monkeypatch.setattr(get_settings(), "binance_egress_ip", "203.0.113.7")
+    response = await client.get(f"{API}/exchange-connections/setup")
+    assert response.json() == {"binance_egress_ip": "203.0.113.7"}
+    assert "s3nha" not in response.text
+
+
+def test_production_refuses_a_proxy_without_tls() -> None:
+    assert "s3nha" not in repr(Settings(binance_proxy_url=SecretStr("https://voryn:s3nha@p:8443")))
+    settings = Settings(environment="production", binance_proxy_url=SecretStr("http://p:3128"))
+    with pytest.raises(RuntimeError, match="BINANCE_PROXY_URL must use https"):
+        settings.validate_for_runtime()

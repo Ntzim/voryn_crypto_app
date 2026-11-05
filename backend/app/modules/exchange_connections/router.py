@@ -2,9 +2,15 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from app.core.config import get_settings
 from app.modules.auth.deps import CurrentAuth, DbSession, Meta
 from app.modules.exchange_connections import service
-from app.modules.exchange_connections.schemas import ConnectionIn, ConnectionOut, RecordOut
+from app.modules.exchange_connections.schemas import (
+    ConnectionIn,
+    ConnectionOut,
+    ConnectionSetupOut,
+    RecordOut,
+)
 from app.modules.portfolio import service as portfolio
 
 router = APIRouter(prefix="/exchange-connections", tags=["exchange-connections"])
@@ -12,6 +18,11 @@ router = APIRouter(prefix="/exchange-connections", tags=["exchange-connections"]
 
 def connector_factory() -> service.ConnectorFactory:
     return service.connector_for
+
+
+@router.get("/setup")
+async def connection_setup(_: CurrentAuth) -> ConnectionSetupOut:
+    return ConnectionSetupOut(binance_egress_ip=get_settings().binance_egress_ip)
 
 
 @router.get("")
