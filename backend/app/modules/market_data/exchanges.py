@@ -35,6 +35,9 @@ from app.modules.market_data.providers.brapi import (
     DailyBar,
     ExchangeQuote,
     ProviderAccessError,
+    ProviderNotFoundError,
+    ProviderPlanError,
+    ProviderRateLimitError,
     SessionDetail,
 )
 from app.modules.market_data.schemas import (
@@ -86,7 +89,14 @@ def reference_time(market: str, fetched_at: datetime, delay_seconds: int) -> dat
 
 async def sync_b3(db: AsyncSession, provider: BrapiProvider) -> int:
     ensure_enabled("B3")
-    quotes = await provider.fetch_catalogue()
+    wait = await blocked_for()
+    if wait:
+        raise ProviderRateLimitError(wait, "/v2/tickers", "BLOCKED_BY_RETRY_AFTER")
+    try:
+        quotes = await provider.fetch_catalogue()
+    except ProviderRateLimitError as exc:
+        await block(exc.retry_after)
+        raise
     fetched_at = utcnow()
     stamp = reference_time("B3", fetched_at, provider.delay_seconds)
     ids = await _store(db, provider.name, quotes, fetched_at, stamp, provider.delay_seconds)
@@ -100,7 +110,7 @@ async def sync_b3(db: AsyncSession, provider: BrapiProvider) -> int:
         .values(is_active=False)
     )
     await db.commit()
-    await _record_usage(provider.requests, fetched_at)
+    await record_usage(provider.requests, fetched_at)
     await get_redis().set(
         _SYNC_STATUS_KEY.format(market="B3"),
         json.dumps({"at": fetched_at.isoformat(), "count": len(quotes), "ok": True}),
@@ -191,7 +201,7 @@ async def _store(
     return ids
 
 
-async def _record_usage(requests: int, now: datetime) -> None:
+async def record_usage(requests: int, now: datetime) -> None:
     key = f"brapi:usage:{now:%Y-%m}"
     redis = get_redis()
     used = await redis.incrby(key, requests)
@@ -264,6 +274,7 @@ _DETAIL_TTL_SECONDS = 15 * 60
 _HISTORY_TTL_SECONDS = 6 * 3600
 _ACCESS_DENIED_TTL_SECONDS = 3600
 _FAILURE_TTL_SECONDS = 60
+_BLOCK_KEY = "brapi:blocked"
 
 ExchangeSort = Literal["market_cap", "traded_value", "change", "price", "name"]
 
@@ -373,6 +384,35 @@ async def list_assets(
     )
 
 
+async def most_traded(
+    db: AsyncSession, market: str, asset_type: str, limit: int
+) -> list[tuple[Cryptocurrency, MarketTicker]]:
+    rows = await db.execute(
+        _rows(market)
+        .where(Cryptocurrency.asset_type == asset_type, _traded_value >= MIN_TRADED_VALUE)
+        .order_by(_traded_value.desc())
+        .limit(limit)
+    )
+    return [(row[0], row[1]) for row in rows.all()]
+
+
+async def breadth_pct(db: AsyncSession, market: str) -> Decimal | None:
+    """Share of liquid instruments that rose in the last session, 0-100."""
+    change = MarketTicker.change_pct_24h
+    up, down = (
+        await db.execute(
+            _rows(market)
+            .where(_traded_value >= MIN_TRADED_VALUE)
+            .with_only_columns(
+                func.coalesce(func.sum(case((change > 0, 1), else_=0)), 0),
+                func.coalesce(func.sum(case((change < 0, 1), else_=0)), 0),
+            )
+        )
+    ).one()
+    total = int(up) + int(down)
+    return Decimal(int(up)) / total * 100 if total else None
+
+
 async def overview(db: AsyncSession, market: str, movers: int = 5) -> ExchangeOverviewOut:
     count_rows = await db.execute(
         select(Cryptocurrency.asset_type, func.count())
@@ -415,7 +455,7 @@ async def overview(db: AsyncSession, market: str, movers: int = 5) -> ExchangeOv
     )
 
 
-async def _instrument(
+async def instrument(
     db: AsyncSession, market: str, symbol: str
 ) -> tuple[Cryptocurrency, MarketTicker]:
     row = (await db.execute(_rows(market).where(Cryptocurrency.symbol == symbol))).first()
@@ -424,12 +464,22 @@ async def _instrument(
     return row[0], row[1]
 
 
-async def _quota_reached(now: datetime) -> bool:
+async def quota_reached(now: datetime) -> bool:
     # Only the free plan's quota is known; paid plans are metered by brapi itself.
     if get_settings().brapi_plan != "free":
         return False
     used = await get_redis().get(f"brapi:usage:{now:%Y-%m}")
     return used is not None and int(used) >= BRAPI_MONTHLY_QUOTA
+
+
+async def blocked_for() -> int:
+    """Seconds left of a Retry-After. It applies to the whole account, so every caller waits."""
+    ttl = int(await get_redis().ttl(_BLOCK_KEY))
+    return max(ttl, 0)
+
+
+async def block(seconds: int) -> None:
+    await get_redis().set(_BLOCK_KEY, "1", ex=max(seconds, 1))
 
 
 async def _cached_upstream[T](
@@ -453,22 +503,34 @@ async def _cached_upstream[T](
         return decode(data["value"]), None
 
     now = utcnow()
-    if await _quota_reached(now):
+    if await blocked_for():
+        return None, "rate_limited"
+    if await quota_reached(now):
         return None, "quota_reached"
     reason: UnavailableReason
     try:
         value = await fetch()
+    except ProviderRateLimitError as exc:
+        logger.warning("brapi_rate_limited", key=key, retry_after=exc.retry_after)
+        await record_usage(provider.requests, now)
+        await block(exc.retry_after)
+        return None, "rate_limited"
     except ProviderAccessError as exc:
-        logger.info("brapi_access_denied", key=key, error=str(exc))
+        logger.warning("brapi_access_denied", key=key, error=str(exc))
         reason, failure_ttl = "token_required", _ACCESS_DENIED_TTL_SECONDS
+    except ProviderPlanError as exc:
+        logger.info("brapi_plan_limit", key=key, error=str(exc))
+        reason, failure_ttl = "plan_required", _ACCESS_DENIED_TTL_SECONDS
+    except ProviderNotFoundError:
+        reason, failure_ttl = "no_data", _ACCESS_DENIED_TTL_SECONDS
     except ProviderError as exc:
         logger.warning("brapi_request_failed", key=key, error=str(exc))
         reason, failure_ttl = "provider_unavailable", _FAILURE_TTL_SECONDS
     else:
-        await _record_usage(provider.requests, now)
+        await record_usage(provider.requests, now)
         await redis.set(full_key, json.dumps({"value": encode(value)}), ex=ttl)
         return value, None
-    await _record_usage(provider.requests, now)
+    await record_usage(provider.requests, now)
     await redis.set(full_key, json.dumps({"unavailable": reason}), ex=failure_ttl)
     return None, reason
 
@@ -480,7 +542,7 @@ def _decimal(value: str | None) -> Decimal | None:
 async def detail(
     db: AsyncSession, market: str, symbol: str, provider: BrapiProvider
 ) -> ExchangeDetailOut:
-    instrument, ticker = await _instrument(db, market, symbol)
+    row, ticker = await instrument(db, market, symbol)
     fields = ("open", "day_high", "day_low", "previous_close", "week52_low", "week52_high")
 
     def encode(value: SessionDetail) -> dict[str, str | None]:
@@ -499,7 +561,7 @@ async def detail(
         decode,
     )
     return ExchangeDetailOut(
-        asset=_asset(instrument, ticker),
+        asset=_asset(row, ticker),
         open=session.open if session else None,
         day_high=session.day_high if session else None,
         day_low=session.day_low if session else None,
@@ -514,12 +576,12 @@ async def detail(
 async def history(
     db: AsyncSession, market: str, symbol: str, range_: str, provider: BrapiProvider
 ) -> ExchangeHistoryOut:
-    await _instrument(db, market, symbol)
+    await instrument(db, market, symbol)
     allowed = brapi.HISTORY_RANGES[get_settings().brapi_plan]
     if range_ not in allowed:
         raise AppError("Período indisponível no plano de dados atual.", code="range_not_allowed")
 
-    def encode(bars: list[DailyBar]) -> list[dict[str, str]]:
+    def encode(bars: list[DailyBar]) -> list[dict[str, str | None]]:
         return [
             {
                 "day": bar.day.isoformat(),
@@ -527,12 +589,12 @@ async def history(
                 "high": str(bar.high),
                 "low": str(bar.low),
                 "close": str(bar.close),
-                "volume": str(bar.volume),
+                "volume": str(bar.volume) if bar.volume is not None else None,
             }
             for bar in bars
         ]
 
-    def decode(rows: list[dict[str, str]]) -> list[DailyBar]:
+    def decode(rows: list[dict[str, Any]]) -> list[DailyBar]:
         return [
             DailyBar(
                 date.fromisoformat(row["day"]),
@@ -541,7 +603,7 @@ async def history(
                 Decimal(row["low"]),
                 Decimal(row["close"]),
                 None,
-                Decimal(row["volume"]),
+                _decimal(row["volume"]),
             )
             for row in rows
         ]

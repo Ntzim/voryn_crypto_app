@@ -57,7 +57,7 @@ export function B3PriceChart({ bars, locale }: { bars: ExchangeHistory["bars"]; 
     });
     chart.priceScale("volume").applyOptions({ scaleMargins: { top: 0.84, bottom: 0 } });
     volume.setData(
-      bars.map((b) => ({
+      bars.filter((b) => b.volume !== null).map((b) => ({
         time: b.day,
         value: Number(b.volume),
         color: p.alpha(Number(b.close) >= Number(b.open) ? p.up : p.down, 0.3),

@@ -174,7 +174,14 @@ class ExchangeOverviewOut(BaseModel):
     most_traded: list[ExchangeAssetOut]
 
 
-UnavailableReason = Literal["token_required", "quota_reached", "provider_unavailable"]
+UnavailableReason = Literal[
+    "token_required",
+    "plan_required",
+    "no_data",
+    "rate_limited",
+    "quota_reached",
+    "provider_unavailable",
+]
 
 
 class ExchangeDetailOut(BaseModel):
@@ -196,7 +203,7 @@ class DailyBarOut(BaseModel):
     high: Decimal
     low: Decimal
     close: Decimal
-    volume: Decimal
+    volume: Decimal | None
 
 
 class ExchangeHistoryOut(BaseModel):

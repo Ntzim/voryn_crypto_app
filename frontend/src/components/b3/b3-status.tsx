@@ -103,7 +103,8 @@ export function B3DataNote({
 }
 
 export function unavailableMessage(reason: string): string {
-  if (reason === "quota_reached") return "O limite mensal de consultas à fonte de dados foi atingido.";
+  if (reason === "quota_reached" || reason === "rate_limited") return "O limite de consultas à fonte de dados foi atingido. Tente novamente mais tarde.";
+  if (reason === "no_data") return "A fonte de dados não tem esta informação para o ativo.";
   if (reason === "provider_unavailable") return "A fonte de dados não respondeu agora. Tente novamente em instantes.";
   return "O plano de dados atual não libera este ativo.";
 }

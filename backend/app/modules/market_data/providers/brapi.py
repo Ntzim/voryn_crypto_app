@@ -7,12 +7,14 @@
 - brapi is not a licensed B3 market data distributor: production display of B3 quotes
   stays behind `MARKETS_ENABLED` until licensing is settled (docs/MULTIMARKET_PLAN.md).
 - JSON numbers are parsed as Decimal; malformed rows are dropped, never stored.
-- 429/5xx/timeouts are retried with exponential backoff, honouring Retry-After.
+- 5xx/timeouts are retried with exponential backoff; a 429 waits for Retry-After; 400, 401,
+  403 and 404 are final (https://brapi.dev/docs/troubleshooting).
 """
 
 import asyncio
 import json
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from decimal import Decimal
@@ -30,6 +32,8 @@ logger = get_logger(__name__)
 SOURCE = "brapi"
 ATTRIBUTION = "Dados de mercado B3 fornecidos por brapi.dev"
 DELAY_SECONDS = {"free": 1800, "startup": 900, "pro": 300}
+#: tickers each plan accepts in one call to `symbols`
+ASSETS_PER_REQUEST = {"free": 1, "startup": 10, "pro": 20}
 #: history depth each plan may request (free: 3 months)
 HISTORY_RANGES = {
     "free": ("1mo", "3mo"),
@@ -40,8 +44,10 @@ HISTORY_RANGES = {
 #: not supported yet and are skipped.
 ASSET_TYPES = {"stock": "STOCK", "unit": "STOCK", "fii": "FII", "etf": "ETF", "bdr": "BDR"}
 
-_RETRYABLE = {429, 500, 502, 503, 504}
-_ACCESS_DENIED = {401, 402, 403}
+_RETRYABLE = {500, 502, 503, 504}
+_PLAN_LIMIT_CODES = {"INVALID_RANGE", "INVALID_INTERVAL", "QUOTES_PER_REQUEST_EXCEEDED"}
+# brapi's own documented fallback when a 429 has no Retry-After.
+_DEFAULT_RETRY_AFTER_SECONDS = 60
 _MAX_ATTEMPTS = 3
 _MAX_BACKOFF_SECONDS = 30.0
 _PAGE_SIZE = 1000
@@ -53,7 +59,23 @@ _FRACTIONAL = re.compile(r"^[A-Z0-9]{4}\d{1,2}F$")
 
 
 class ProviderAccessError(ProviderError):
-    """The token or plan does not allow this request; retrying will not help."""
+    """401: the token is missing or invalid."""
+
+
+class ProviderPlanError(ProviderError):
+    """403, or a 400 over a plan limit: this plan does not include the request."""
+
+
+class ProviderNotFoundError(ProviderError):
+    """404: brapi has no data for the request."""
+
+
+class ProviderRateLimitError(ProviderError):
+    """429: monthly quota or concurrency used up; nothing may be sent for `retry_after` s."""
+
+    def __init__(self, retry_after: int, path: str, code: str | None) -> None:
+        super().__init__(f"brapi {path} responded 429 ({code}), retry after {retry_after}s")
+        self.retry_after = retry_after
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +112,23 @@ class DailyBar:
     low: Decimal
     close: Decimal
     adjusted_close: Decimal | None
-    volume: Decimal
+    volume: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class FiiFundamentals:
+    nav_per_share: Decimal | None
+    #: fraction (0.09 = 9%), computed by brapi on the price of the reference month
+    dividend_yield_12m: Decimal | None
+    #: month the NAV refers to; published with a lag
+    as_of: date | None
+    segment: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class FiiPayment:
+    payment_date: date
+    rate: Decimal
 
 
 class _Quote(BaseModel):
@@ -127,6 +165,23 @@ class _Detail(BaseModel):
     fiftyTwoWeekHigh: Decimal | None = Field(default=None, gt=0)  # noqa: N815
 
 
+class _FiiIndicators(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    navPerShare: Decimal | None = Field(default=None, gt=0)  # noqa: N815
+    dividendYield12m: Decimal | None = Field(default=None, ge=0)  # noqa: N815
+    asOfDate: str | None = None  # noqa: N815
+    segmentType: str | None = Field(default=None, max_length=32)  # noqa: N815
+
+
+class _FiiDividend(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    paymentDate: str | None = None  # noqa: N815
+    rate: Decimal | None = None
+    label: str | None = None
+
+
 class _Bar(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -135,7 +190,7 @@ class _Bar(BaseModel):
     high: Decimal = Field(gt=0)
     low: Decimal = Field(gt=0)
     close: Decimal = Field(gt=0)
-    volume: Decimal = Field(ge=0)
+    volume: Decimal | None = Field(default=None, ge=0)
     adjustedClose: Decimal | None = Field(default=None, gt=0)  # noqa: N815
 
 
@@ -174,6 +229,7 @@ class BrapiProvider:
         self._owns_client = client is None
         self._max_attempts = max_attempts
         self.delay_seconds = DELAY_SECONDS[settings.brapi_plan]
+        self._assets_per_request = ASSETS_PER_REQUEST[settings.brapi_plan]
         #: upstream requests made by this instance (the free plan is metered monthly)
         self.requests = 0
 
@@ -186,6 +242,9 @@ class BrapiProvider:
             await self._client.aclose()
 
     async def _get(self, path: str, params: dict[str, Any]) -> Any:
+        """GET following brapi's error contract: 400/401/403/404 are final, 429 waits for
+        Retry-After, 5xx and network errors back off. Logs carry the route and brapi's error
+        code, never the token."""
         last_error: Exception | None = None
         for attempt in range(1, self._max_attempts + 1):
             self.requests += 1
@@ -195,20 +254,36 @@ class BrapiProvider:
                 last_error = exc
                 delay = min(2.0**attempt, _MAX_BACKOFF_SECONDS)
             else:
-                if response.status_code == 200:
+                status = response.status_code
+                if status == 200:
                     try:
                         return json.loads(response.text, parse_float=Decimal)
                     except json.JSONDecodeError as exc:
                         raise ProviderError(f"brapi returned invalid JSON for {path}") from exc
-                if response.status_code in _ACCESS_DENIED:
-                    raise ProviderAccessError(f"brapi {path} responded {response.status_code}")
-                if response.status_code not in _RETRYABLE:
-                    raise ProviderError(f"brapi {path} responded {response.status_code}")
-                last_error = ProviderError(f"brapi {path} responded {response.status_code}")
-                delay = _retry_after(response) or min(2.0**attempt, _MAX_BACKOFF_SECONDS)
+                code = _error_code(response)
+                if status == 429:
+                    wait = _retry_after(response)
+                    last_error = ProviderRateLimitError(wait, path, code)
+                    # Monthly quota: the wait can be days, so it is the caller's to honour.
+                    if wait > _MAX_BACKOFF_SECONDS or attempt == self._max_attempts:
+                        raise last_error
+                    delay = float(wait)
+                elif status in _RETRYABLE:
+                    last_error = ProviderError(f"brapi {path} responded {status} ({code})")
+                    delay = min(2.0**attempt, _MAX_BACKOFF_SECONDS)
+                elif status == 401:
+                    raise ProviderAccessError(f"brapi {path} responded 401 ({code})")
+                elif status == 403 or code in _PLAN_LIMIT_CODES:
+                    raise ProviderPlanError(f"brapi {path} responded {status} ({code})")
+                elif status == 404:
+                    raise ProviderNotFoundError(f"brapi {path} responded 404 ({code})")
+                else:
+                    raise ProviderError(f"brapi {path} responded {status} ({code})")
             if attempt < self._max_attempts:
                 logger.warning("brapi_retry", path=path, attempt=attempt, delay=delay)
                 await asyncio.sleep(delay)
+        if isinstance(last_error, ProviderRateLimitError):
+            raise last_error
         raise ProviderError(f"brapi {path} failed after retries") from last_error
 
     async def fetch_catalogue(self) -> list[ExchangeQuote]:
@@ -238,23 +313,80 @@ class BrapiProvider:
             logger.info("brapi_rows_skipped", count=dropped)
         return list(quotes.values())
 
+    async def fetch_session_details(self, symbols: Sequence[str]) -> dict[str, SessionDetail]:
+        """Day range, open, previous close and 52-week range by requested ticker, as few calls
+        as the plan allows (free: 1 asset per call). A ticker brapi does not know is left out.
+        `regularMarketTime` is ignored: it is when brapi refreshed its data, not a trade time.
+        """
+        for symbol in symbols:
+            _check_symbol(symbol)
+        details: dict[str, SessionDetail] = {}
+        size = self._assets_per_request
+        for start in range(0, len(symbols), size):
+            chunk = symbols[start : start + size]
+            try:
+                payload = await self._get("/v2/stocks/quote", {"symbols": ",".join(chunk)})
+            except ProviderNotFoundError:
+                continue  # "if no ticker has a quote, the response is 404"
+            try:
+                rows = payload["results"]
+                for row in rows:
+                    data = _Detail.model_validate(row["data"])
+                    details[row.get("requestedSymbol") or row["symbol"]] = SessionDetail(
+                        open=data.regularMarketOpen,
+                        day_high=data.regularMarketDayHigh,
+                        day_low=data.regularMarketDayLow,
+                        previous_close=data.regularMarketPreviousClose,
+                        week52_low=data.fiftyTwoWeekLow,
+                        week52_high=data.fiftyTwoWeekHigh,
+                    )
+            except (KeyError, TypeError, ValidationError) as exc:
+                raise ProviderError("brapi quote returned an unexpected payload") from exc
+        return details
+
     async def fetch_session_detail(self, symbol: str) -> SessionDetail:
-        """Day range, open, previous close and 52-week range. `regularMarketTime` is ignored:
-        it is when brapi refreshed its data, not when the instrument last traded."""
+        details = await self.fetch_session_details([symbol])
+        if symbol not in details:
+            raise ProviderNotFoundError(f"brapi has no quote for {symbol}")
+        return details[symbol]
+
+    async def fetch_fii_fundamentals(self, symbol: str) -> FiiFundamentals:
         _check_symbol(symbol)
-        payload = await self._get("/v2/stocks/quote", {"symbols": symbol})
+        payload = await self._get("/v2/fii/indicators", {"symbols": symbol})
         try:
-            detail = _Detail.model_validate(payload["results"][0]["data"])
-        except (KeyError, IndexError, TypeError, ValidationError) as exc:
-            raise ProviderError("brapi quote returned an unexpected payload") from exc
-        return SessionDetail(
-            open=detail.regularMarketOpen,
-            day_high=detail.regularMarketDayHigh,
-            day_low=detail.regularMarketDayLow,
-            previous_close=detail.regularMarketPreviousClose,
-            week52_low=detail.fiftyTwoWeekLow,
-            week52_high=detail.fiftyTwoWeekHigh,
+            rows = payload["fiis"]
+            if not rows:
+                raise ProviderNotFoundError(f"brapi has no indicators for {symbol}")
+            row = _FiiIndicators.model_validate(rows[0])
+        except (KeyError, TypeError, ValidationError) as exc:
+            raise ProviderError("brapi fii/indicators returned an unexpected payload") from exc
+        return FiiFundamentals(
+            nav_per_share=row.navPerShare,
+            dividend_yield_12m=row.dividendYield12m,
+            as_of=_parse_day(row.asOfDate),
+            segment=row.segmentType,
         )
+
+    async def fetch_fii_payments(self, symbol: str) -> list[FiiPayment]:
+        """Income paid per share. Rows without a date or a positive rate are dropped, and so is
+        anything but income: an amortization returns capital and would inflate the yield."""
+        _check_symbol(symbol)
+        payload = await self._get("/v2/fii/dividends", {"symbols": symbol})
+        try:
+            rows = payload["dividends"]
+        except (KeyError, TypeError) as exc:
+            raise ProviderError("brapi fii/dividends returned an unexpected payload") from exc
+        payments: list[FiiPayment] = []
+        for raw in rows:
+            try:
+                row = _FiiDividend.model_validate(raw)
+            except ValidationError:
+                continue
+            day = _parse_day(row.paymentDate)
+            label = (row.label or "").upper()
+            if day and row.rate is not None and row.rate > 0 and "RENDIMENTO" in label:
+                payments.append(FiiPayment(day, row.rate))
+        return payments
 
     async def fetch_daily_history(self, symbol: str, range_: str = "3mo") -> list[DailyBar]:
         """Daily bars, oldest first. History depth depends on the plan (free: 3 months)."""
@@ -263,7 +395,8 @@ class BrapiProvider:
             "/v2/stocks/historical", {"symbols": symbol, "range": range_, "interval": "1d"}
         )
         try:
-            rows = payload["results"][0]["data"]["historicalDataPrice"]
+            results = payload["results"]
+            rows = results[0]["data"]["historicalDataPrice"] if results else []
         except (KeyError, IndexError, TypeError) as exc:
             raise ProviderError("brapi historical returned an unexpected payload") from exc
         bars: dict[date, DailyBar] = {}
@@ -279,6 +412,14 @@ class BrapiProvider:
                 day, bar.open, bar.high, bar.low, bar.close, bar.adjustedClose, bar.volume
             )
         return [bars[d] for d in sorted(bars)]
+
+
+def _parse_day(value: str | None) -> date | None:
+    """First 10 chars of "2026-09-01 00:00:00+00" or "2026-11-16T03:00:00.000Z"."""
+    try:
+        return date.fromisoformat(value[:10]) if value else None
+    except ValueError:
+        return None
 
 
 def _check_symbol(symbol: str) -> None:
@@ -314,8 +455,15 @@ def _to_quote(raw: Any) -> ExchangeQuote | None:
     )
 
 
-def _retry_after(response: httpx.Response) -> float | None:
-    value = response.headers.get("retry-after")
-    if value and value.isdigit():
-        return min(float(value), _MAX_BACKOFF_SECONDS)
-    return None
+def _retry_after(response: httpx.Response) -> int:
+    value = response.headers.get("retry-after", "")
+    return int(value) if value.isdigit() else _DEFAULT_RETRY_AFTER_SECONDS
+
+
+def _error_code(response: httpx.Response) -> str | None:
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    code = body.get("code") if isinstance(body, dict) else None
+    return str(code) if code else None

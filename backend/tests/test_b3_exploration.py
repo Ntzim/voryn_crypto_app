@@ -83,6 +83,8 @@ class Upstream:
     def __init__(self) -> None:
         self.calls: list[str] = []
         self.status = 200
+        self.headers: dict[str, str] = {}
+        self.code = "MISSING_TOKEN"
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         path = request.url.path
@@ -92,9 +94,13 @@ class Upstream:
             )
         self.calls.append(path)
         if self.status != 200:
-            return httpx.Response(self.status, json={"error": True, "code": "MISSING_TOKEN"})
+            return httpx.Response(
+                self.status, headers=self.headers, json={"error": True, "code": self.code}
+            )
         if path.endswith("/v2/stocks/quote"):
-            return httpx.Response(200, json={"results": [{"data": DETAIL}]})
+            symbol = request.url.params["symbols"]
+            row = {"requestedSymbol": symbol, "symbol": symbol, "data": DETAIL}
+            return httpx.Response(200, json={"results": [row]})
         bars = [_bar(1761919200, 51), _bar(1761832800, 50)]
         return httpx.Response(200, json={"results": [{"data": {"historicalDataPrice": bars}}]})
 
@@ -119,6 +125,8 @@ async def b3(
     db: AsyncSession, upstream: Upstream, monkeypatch: pytest.MonkeyPatch
 ) -> Callable[[datetime], None]:
     monkeypatch.setattr(get_settings(), "markets_enabled", ["CRYPTO", "B3"])
+    # Independent of a real token in a developer's .env.
+    monkeypatch.setattr(get_settings(), "brapi_token", None)
     monkeypatch.setattr(exchanges, "utcnow", lambda: WEDNESDAY)
     await service.sync_markets(db, FakeProvider([quote("bitcoin", "BTC", 1, "65000")]))
     provider = BrapiProvider(
@@ -282,6 +290,135 @@ async def test_free_quota_is_never_exceeded_by_page_views(
     detail = (await signed_in.get(f"{BASE}/assets/PETR4")).json()
     assert detail["detail_unavailable"] == "quota_reached"
     assert upstream.calls == []
+
+
+@pytest.mark.parametrize(
+    ("status", "code", "reason"),
+    [
+        (401, "INVALID_TOKEN", "token_required"),
+        (403, "FORBIDDEN", "plan_required"),
+        (400, "INVALID_RANGE", "plan_required"),
+        (404, "NOT_FOUND", "no_data"),
+        (400, "BAD_REQUEST", "provider_unavailable"),
+    ],
+)
+async def test_brapi_errors_become_an_honest_reason(
+    b3: Any, signed_in: httpx.AsyncClient, upstream: Upstream, status: int, code: str, reason: str
+) -> None:
+    upstream.status, upstream.code = status, code
+    history = (await signed_in.get(f"{BASE}/assets/PETR4/history")).json()
+    assert history["unavailable"] == reason
+    assert history["bars"] == []
+    detail = (await signed_in.get(f"{BASE}/assets/PETR4")).json()
+    assert detail["detail_unavailable"] == reason
+    assert detail["open"] is None
+    assert len(upstream.calls) == 2  # none of these is ever retried
+
+
+async def test_retry_after_stops_every_call_until_it_passes(
+    b3: Any, signed_in: httpx.AsyncClient, upstream: Upstream, db: AsyncSession
+) -> None:
+    upstream.status, upstream.code = 429, "RATE_LIMITED"
+    upstream.headers = {"Retry-After": "3600"}
+    assert (await signed_in.get(f"{BASE}/assets/PETR4")).json()["detail_unavailable"] == (
+        "rate_limited"
+    )
+    assert 3500 < await get_redis().ttl("brapi:blocked") <= 3600
+    # Other tickers, other endpoints and the sync all wait: the limit is per account.
+    calls = len(upstream.calls)
+    history = (await signed_in.get(f"{BASE}/assets/VALE3/history")).json()
+    assert history["unavailable"] == "rate_limited"
+    assert len(upstream.calls) == calls
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(upstream), base_url="https://brapi.test/api"
+    )
+    with pytest.raises(brapi.ProviderRateLimitError):
+        await exchanges.sync_b3(db, BrapiProvider(client=client))
+
+    await get_redis().delete("brapi:blocked")
+    upstream.status = 200
+    assert (await signed_in.get(f"{BASE}/assets/VALE3")).json()["detail_unavailable"] is None
+
+
+def _provider(handler: Any) -> BrapiProvider:
+    client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="https://brapi.test/api"
+    )
+    return BrapiProvider(client=client)
+
+
+async def test_session_details_use_symbols_within_the_plan_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested = request.url.params["symbols"].split(",")
+        seen.append(request.url.params["symbols"])
+        known = [s for s in requested if s != "NOPE3"]
+        if not known:
+            return httpx.Response(404, json={"error": True, "code": "NOT_FOUND"})
+        rows = [
+            {"requestedSymbol": s, "symbol": s, "data": {**DETAIL, "regularMarketOpen": None}}
+            for s in known
+        ]
+        return httpx.Response(200, json={"results": rows})
+
+    monkeypatch.setattr(get_settings(), "brapi_plan", "free")
+    details = await _provider(handler).fetch_session_details(["PETR4", "NOPE3", "VALE3"])
+    assert seen == ["PETR4", "NOPE3", "VALE3"]  # free plan: one asset per call
+    assert set(details) == {"PETR4", "VALE3"}
+    assert details["PETR4"].open is None  # null field stays null
+    assert details["PETR4"].week52_high == Decimal("59.79")
+
+    seen.clear()
+    monkeypatch.setattr(get_settings(), "brapi_plan", "startup")
+    details = await _provider(handler).fetch_session_details(["PETR4", "NOPE3", "VALE3"])
+    assert seen == ["PETR4,NOPE3,VALE3"]
+    assert set(details) == {"PETR4", "VALE3"}
+    with pytest.raises(ValueError):
+        await _provider(handler).fetch_session_details(["PETR4,../x"])
+
+
+async def test_short_retry_after_is_waited_and_long_one_is_not(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleeps: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleeps.append(delay)
+
+    monkeypatch.setattr(brapi.asyncio, "sleep", fake_sleep)  # type: ignore[attr-defined]
+    answers = iter([httpx.Response(429, headers={"Retry-After": "7"})])
+
+    def short(request: httpx.Request) -> httpx.Response:
+        rows = [{"requestedSymbol": "PETR4", "data": DETAIL}]
+        return next(answers, httpx.Response(200, json={"results": rows}))
+
+    assert "PETR4" in await _provider(short).fetch_session_details(["PETR4"])
+    assert sleeps == [7.0]
+
+    sleeps.clear()
+
+    def long(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, headers={"Retry-After": "86400"})
+
+    with pytest.raises(brapi.ProviderRateLimitError) as caught:
+        await _provider(long).fetch_session_details(["PETR4"])
+    assert caught.value.retry_after == 86400
+    assert sleeps == []
+
+
+async def test_history_keeps_a_bar_with_null_volume_and_drops_null_prices() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        rows = [
+            {**_bar(1761919200, 51), "volume": None},
+            {**_bar(1761832800, 50), "close": None},
+        ]
+        return httpx.Response(200, json={"results": [{"data": {"historicalDataPrice": rows}}]})
+
+    bars = await _provider(handler).fetch_daily_history("PETR4")
+    assert [(b.close, b.volume) for b in bars] == [(Decimal(51), None)]
 
 
 def test_utc_quote_time_is_timezone_aware() -> None:
