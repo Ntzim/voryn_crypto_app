@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.errors import NotFoundError
 from app.core.redis import get_redis
 from app.modules.market_data import calendars, exchanges, service
 from app.modules.market_data.models import Cryptocurrency, MarketTicker
@@ -105,7 +106,7 @@ async def test_exchange_instruments_stay_out_of_crypto_features(db: AsyncSession
     assert await service.resolve_asset(db, "QBTC11") is None
     assert await service.cryptos_by_id(db, [etf.id]) == {}
     assert await service.get_crypto(db, etf.id) is None
-    with pytest.raises(service.NotFoundError):
+    with pytest.raises(NotFoundError):
         await service.get_asset(db, "QBTC11", "USD")
 
     assert etf.id not in await signals.universe(db)
