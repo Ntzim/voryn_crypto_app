@@ -10,7 +10,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useHydrated } from "@/lib/use-hydrated";
 
-import { NAV_SECTIONS, isActive, type NavItem } from "./nav-config";
+import { isActive, type NavItem } from "./nav-config";
+import { useNavSections } from "./use-nav-sections";
 
 /**
  * md–xl: icon rail. ≥xl: full sidebar unless the user collapsed it.
@@ -23,6 +24,7 @@ export function Sidebar() {
   const collapsed = hydrated && storedCollapsed;
   const toggle = useUiStore((s) => s.toggleSidebar);
   const pathname = usePathname();
+  const sections = useNavSections();
   // `expanded` drives the xl breakpoint only; the rail is always compact below xl.
   const expanded = !collapsed;
 
@@ -43,7 +45,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.label} className="mt-5 first:mt-2">
             <p
               className={cn(

@@ -3,7 +3,7 @@
 import { cn } from "cn";
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search, Star } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { FavoriteStar } from "@/components/analysis/watchlist-button";
@@ -68,19 +68,20 @@ function useMarketParams() {
 }
 
 export function MarketView() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { q, sort, order, page, currency, locale, timeZone } = useMarketParams();
   const [search, setSearch] = useState(q);
 
   const update = (changes: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams);
+    // Read the URL now, not from the render: the debounced search runs 300 ms later and would
+    // otherwise undo a filter changed in between.
+    const next = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(changes)) {
       if (value === null || value === "") next.delete(key);
       else next.set(key, value);
     }
-    router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
+    window.history.replaceState(null, "", `${pathname}${next.size ? `?${next}` : ""}`);
   };
 
   // Debounce typing into the URL (source of truth for shareable, back-button friendly state).

@@ -24,6 +24,7 @@ The score measures how many favourable conditions are aligned. It is NOT a proba
 of profit, and the classification is an analytical signal, not personalised advice.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Literal
@@ -51,6 +52,9 @@ class MarketContext:
     #: share of tracked assets up in 24h, 0–100
     breadth_pct: Decimal | None
     btc_trend: str | None
+    #: what `btc_trend` is the trend of, and the period breadth refers to
+    benchmark: str = "Bitcoin"
+    breadth_period: str = "em 24h"
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,10 +88,10 @@ def _fmt(value: Decimal, digits: int = 1) -> str:
     return f"{value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def _money(value: Decimal) -> str:
+def _money(value: Decimal, currency: str = "US$") -> str:
     # Significant digits for sub-unit prices (micro-caps like 0,00000512).
     digits = 2 if value >= 1 else min(12, max(4, -value.adjusted() + 3))
-    return "US$ " + _fmt(value, digits)
+    return f"{currency} " + _fmt(value, digits)
 
 
 def _trend(trend: TrendResult) -> Component:
@@ -166,7 +170,7 @@ def _volume(s: Snapshot, last_up: bool) -> Component:
     return Component("volume", score, Decimal(0), detail)
 
 
-def _volatility(bandwidth_percentile: Decimal | None, s: Snapshot) -> Component:
+def _volatility(bandwidth_percentile: Decimal | None, s: Snapshot, window: int = 100) -> Component:
     if bandwidth_percentile is None:
         return Component(
             "volatility", Decimal(50), Decimal(0), "Volatilidade relativa indisponível."
@@ -185,12 +189,17 @@ def _volatility(bandwidth_percentile: Decimal | None, s: Snapshot) -> Component:
         "volatility",
         score,
         Decimal(0),
-        f"Volatilidade {level} em relação aos últimos 100 candles (percentil {percentile}).{atr}",
+        f"Volatilidade {level} em relação aos últimos {window} candles (percentil {percentile})."
+        f"{atr}",
     )
 
 
 def _levels(
-    price: Decimal, supports: list[Level], resistances: list[Level], atr: Decimal | None
+    price: Decimal,
+    supports: list[Level],
+    resistances: list[Level],
+    atr: Decimal | None,
+    currency: str = "US$",
 ) -> Component:
     if not supports or not resistances:
         side = "suporte" if not supports else "resistência"
@@ -202,8 +211,8 @@ def _levels(
     total = room_up + room_down
     score = 30 + Decimal(50) * room_up / total if total > 0 else Decimal(50)
     detail = (
-        f"Suporte em {_money(support)} ({_fmt(room_down / price * 100)}% abaixo) e resistência em "
-        f"{_money(resistance)} ({_fmt(room_up / price * 100)}% acima)."
+        f"Suporte em {_money(support, currency)} ({_fmt(room_down / price * 100)}% abaixo) e "
+        f"resistência em {_money(resistance, currency)} ({_fmt(room_up / price * 100)}% acima)."
     )
     return Component("levels", _clamp(score), Decimal(0), detail)
 
@@ -213,7 +222,9 @@ def _market(ctx: MarketContext) -> Component:
     notes: list[str] = []
     if ctx.breadth_pct is not None:
         parts.append(ctx.breadth_pct)
-        notes.append(f"{_fmt(ctx.breadth_pct, 0)}% dos principais ativos em alta em 24h")
+        notes.append(
+            f"{_fmt(ctx.breadth_pct, 0)}% dos principais ativos em alta {ctx.breadth_period}"
+        )
     if ctx.btc_trend:
         parts.append(
             {"uptrend": Decimal(70), "downtrend": Decimal(30)}.get(ctx.btc_trend, Decimal(50))
@@ -222,7 +233,9 @@ def _market(ctx: MarketContext) -> Component:
             ctx.btc_trend, "indefinida"
         )
         notes.append(
-            f"Bitcoin em tendência {btc}" if btc != "consolidação" else "Bitcoin em consolidação"
+            f"{ctx.benchmark} em tendência {btc}"
+            if btc != "consolidação"
+            else f"{ctx.benchmark} em consolidação"
         )
     score = sum(parts, Decimal(0)) / len(parts) if parts else Decimal(50)
     return Component(
@@ -246,21 +259,30 @@ def evaluate(
     weights: dict[str, Decimal] | None = None,
     thresholds: dict[str, Decimal] | None = None,
     quality_issue: str | None = None,
+    currency: str = "US$",
+    extra: Sequence[Component] = (),
+    extra_risks: Sequence[str] = (),
+    volatility_window: int = 100,
 ) -> SignalResult:
-    """`quality_issue` (from signals.quality) suspends buy/sell like stale data does."""
+    """`quality_issue` (from signals.quality) suspends buy/sell like stale data does.
+
+    `extra` adds components beyond the technical six (FII valuation and income); `weights` must
+    then cover them too.
+    """
     weights = weights or DEFAULT_WEIGHTS
     thresholds = thresholds or DEFAULT_THRESHOLDS
-    total_weight = sum((weights[k] for k in COMPONENTS), Decimal(0))
     price = snapshot.close
 
     raw = [
         _trend(trend),
         _momentum(snapshot),
         _volume(snapshot, last_candle_up),
-        _volatility(bandwidth_percentile, snapshot),
-        _levels(price, supports, resistances, snapshot.atr),
+        _volatility(bandwidth_percentile, snapshot, volatility_window),
+        _levels(price, supports, resistances, snapshot.atr, currency),
         _market(market),
+        *extra,
     ]
+    total_weight = sum((weights[c.key] for c in raw), Decimal(0))
     components = [
         Component(c.key, c.score.quantize(Decimal("0.1")), weights[c.key] / total_weight, c.detail)
         for c in raw
@@ -268,9 +290,11 @@ def evaluate(
     score = sum((c.score * c.weight for c in components), Decimal(0)).quantize(Decimal("0.1"))
     by_key = {c.key: c for c in components}
 
-    risks: list[str] = []
+    risks: list[str] = list(extra_risks)
     if resistances and (resistances[0].price - price) / price * 100 < 3:
-        risks.append(f"Proximidade de resistência relevante em {_money(resistances[0].price)}.")
+        risks.append(
+            f"Proximidade de resistência relevante em {_money(resistances[0].price, currency)}."
+        )
     if snapshot.rsi is not None and snapshot.rsi >= 70:
         risks.append("RSI em sobrecompra: movimentos de correção são frequentes nessa condição.")
     if snapshot.rsi is not None and snapshot.rsi <= 30:
@@ -308,16 +332,22 @@ def evaluate(
     invalidation: list[str] = []
     if classification == "buy_potential":
         if supports:
-            invalidation.append(f"Fechamento abaixo do suporte em {_money(supports[0].price)}.")
+            invalidation.append(
+                f"Fechamento abaixo do suporte em {_money(supports[0].price, currency)}."
+            )
         if snapshot.ema50 is not None:
-            invalidation.append(f"Perda da EMA 50 ({_money(snapshot.ema50)}) em fechamento.")
+            invalidation.append(
+                f"Perda da EMA 50 ({_money(snapshot.ema50, currency)}) em fechamento."
+            )
     elif classification == "sell_potential":
         if resistances:
             invalidation.append(
-                f"Fechamento acima da resistência em {_money(resistances[0].price)}."
+                f"Fechamento acima da resistência em {_money(resistances[0].price, currency)}."
             )
         if snapshot.ema50 is not None:
-            invalidation.append(f"Recuperação da EMA 50 ({_money(snapshot.ema50)}) em fechamento.")
+            invalidation.append(
+                f"Recuperação da EMA 50 ({_money(snapshot.ema50, currency)}) em fechamento."
+            )
     else:
         invalidation.append("Sem cenário direcional: reavaliar a cada novo candle fechado.")
 

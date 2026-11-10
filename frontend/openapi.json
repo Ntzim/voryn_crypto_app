@@ -1121,6 +1121,431 @@
         }
       }
     },
+    "/api/v1/market/exchanges/{market}/overview": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Overview",
+        "operationId": "exchange_overview_api_v1_market_exchanges__market__overview_get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeOverviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/exchanges/{market}/assets": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Assets",
+        "operationId": "exchange_assets_api_v1_market_exchanges__market__assets_get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "asset_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "STOCK",
+                    "FII",
+                    "ETF",
+                    "BDR"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Type"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "market_cap",
+                "traded_value",
+                "change",
+                "price",
+                "name"
+              ],
+              "type": "string",
+              "default": "traded_value",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeAssetListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/exchanges/{market}/assets/{symbol}": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Asset",
+        "operationId": "exchange_asset_api_v1_market_exchanges__market__assets__symbol__get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{4,12}$",
+              "title": "Symbol"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeDetailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/exchanges/{market}/assets/{symbol}/history": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Asset History",
+        "operationId": "exchange_asset_history_api_v1_market_exchanges__market__assets__symbol__history_get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{4,12}$",
+              "title": "Symbol"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "1mo",
+                "3mo",
+                "1y",
+                "5y"
+              ],
+              "type": "string",
+              "default": "3mo",
+              "title": "Range"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeHistoryOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/exchanges/{market}/signals": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Signals",
+        "description": "Latest signals of the most traded instruments. Stored once per session: no brapi call.",
+        "operationId": "exchange_signals_api_v1_market_exchanges__market__signals_get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          },
+          {
+            "name": "asset_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "STOCK",
+                "FII"
+              ],
+              "type": "string",
+              "default": "STOCK",
+              "title": "Asset Type"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3SignalListOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/exchanges/{market}/assets/{symbol}/signal": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "summary": "Exchange Asset Signal",
+        "operationId": "exchange_asset_signal_api_v1_market_exchanges__market__assets__symbol__signal_get",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "const": "B3",
+              "type": "string",
+              "title": "Market"
+            }
+          },
+          {
+            "name": "symbol",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{4,12}$",
+              "title": "Symbol"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/B3SignalOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/market/assets/{slug}/analysis": {
       "get": {
         "tags": [
@@ -4346,6 +4771,253 @@
         ],
         "title": "AssetRiskOut"
       },
+      "B3SignalListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/B3SignalOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "asset_type": {
+            "type": "string",
+            "title": "Asset Type"
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/StrategyOut"
+          },
+          "disclaimer": {
+            "type": "string",
+            "title": "Disclaimer"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExchangeStatusOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "asset_type",
+          "strategy",
+          "disclaimer",
+          "scope",
+          "status"
+        ],
+        "title": "B3SignalListOut"
+      },
+      "B3SignalOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/AssetRef"
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "15m",
+              "1h",
+              "4h",
+              "1d",
+              "1w"
+            ],
+            "title": "Timeframe"
+          },
+          "candle_time": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Candle Time"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "reference_price": {
+            "type": "string",
+            "title": "Reference Price"
+          },
+          "current_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Price"
+          },
+          "score": {
+            "type": "string",
+            "title": "Score"
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "buy_potential",
+              "neutral",
+              "attention",
+              "sell_potential"
+            ],
+            "title": "Classification"
+          },
+          "trend": {
+            "type": "string",
+            "title": "Trend"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentOut"
+            },
+            "type": "array",
+            "title": "Components"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          },
+          "risks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risks"
+          },
+          "invalidation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Invalidation"
+          },
+          "indicators": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Indicators"
+          },
+          "data_source": {
+            "type": "string",
+            "title": "Data Source"
+          },
+          "data_fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Data Fetched At"
+          },
+          "data_is_stale": {
+            "type": "boolean",
+            "title": "Data Is Stale"
+          },
+          "data_quality": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "stale",
+              "incomplete",
+              "anomalous",
+              "unavailable"
+            ],
+            "title": "Data Quality"
+          },
+          "quality_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Quality Reasons"
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current"
+          },
+          "strategy_key": {
+            "type": "string",
+            "title": "Strategy Key"
+          },
+          "strategy_version": {
+            "type": "integer",
+            "title": "Strategy Version"
+          },
+          "methodology_version": {
+            "type": "string",
+            "title": "Methodology Version"
+          },
+          "asset_type": {
+            "type": "string",
+            "title": "Asset Type"
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "fundamentals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FiiFundamentalsOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "asset",
+          "timeframe",
+          "candle_time",
+          "generated_at",
+          "reference_price",
+          "current_price",
+          "score",
+          "classification",
+          "trend",
+          "components",
+          "justification",
+          "risks",
+          "invalidation",
+          "indicators",
+          "data_source",
+          "data_fetched_at",
+          "data_is_stale",
+          "data_quality",
+          "quality_reasons",
+          "is_current",
+          "strategy_key",
+          "strategy_version",
+          "methodology_version",
+          "asset_type",
+          "sector",
+          "currency",
+          "fundamentals",
+          "scope"
+        ],
+        "title": "B3SignalOut"
+      },
       "BacktestIn": {
         "properties": {
           "asset_id": {
@@ -5318,6 +5990,52 @@
         ],
         "title": "CsvRowOut"
       },
+      "DailyBarOut": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "open": {
+            "type": "string",
+            "title": "Open"
+          },
+          "high": {
+            "type": "string",
+            "title": "High"
+          },
+          "low": {
+            "type": "string",
+            "title": "Low"
+          },
+          "close": {
+            "type": "string",
+            "title": "Close"
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume"
+        ],
+        "title": "DailyBarOut"
+      },
       "DataStatus": {
         "properties": {
           "source": {
@@ -5504,6 +6222,326 @@
         ],
         "title": "EquityPointOut"
       },
+      "ExchangeAssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeAssetOut"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExchangeStatusOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size",
+          "status"
+        ],
+        "title": "ExchangeAssetListOut"
+      },
+      "ExchangeAssetOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "asset_type": {
+            "type": "string",
+            "title": "Asset Type"
+          },
+          "exchange": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exchange"
+          },
+          "sector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "price": {
+            "type": "string",
+            "title": "Price"
+          },
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Pct"
+          },
+          "volume": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume"
+          },
+          "traded_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Traded Value"
+          },
+          "market_cap": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Cap"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "symbol",
+          "name",
+          "asset_type",
+          "exchange",
+          "sector",
+          "image_url",
+          "currency",
+          "price",
+          "change_pct",
+          "volume",
+          "traded_value",
+          "market_cap"
+        ],
+        "title": "ExchangeAssetOut"
+      },
+      "ExchangeDetailOut": {
+        "properties": {
+          "asset": {
+            "$ref": "#/components/schemas/ExchangeAssetOut"
+          },
+          "open": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open"
+          },
+          "day_high": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day High"
+          },
+          "day_low": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day Low"
+          },
+          "previous_close": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Close"
+          },
+          "week52_low": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week52 Low"
+          },
+          "week52_high": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week52 High"
+          },
+          "detail_unavailable": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "token_required",
+                  "plan_required",
+                  "no_data",
+                  "rate_limited",
+                  "quota_reached",
+                  "provider_unavailable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Unavailable"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ExchangeStatusOut"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset",
+          "open",
+          "day_high",
+          "day_low",
+          "previous_close",
+          "week52_low",
+          "week52_high",
+          "detail_unavailable",
+          "status"
+        ],
+        "title": "ExchangeDetailOut"
+      },
+      "ExchangeHistoryOut": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "range": {
+            "type": "string",
+            "title": "Range"
+          },
+          "allowed_ranges": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Ranges"
+          },
+          "bars": {
+            "items": {
+              "$ref": "#/components/schemas/DailyBarOut"
+            },
+            "type": "array",
+            "title": "Bars"
+          },
+          "unavailable": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "token_required",
+                  "plan_required",
+                  "no_data",
+                  "rate_limited",
+                  "quota_reached",
+                  "provider_unavailable"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "range",
+          "allowed_ranges",
+          "bars",
+          "unavailable"
+        ],
+        "title": "ExchangeHistoryOut"
+      },
       "ExchangeOut": {
         "properties": {
           "id": {
@@ -5526,6 +6564,276 @@
           "kind"
         ],
         "title": "ExchangeOut"
+      },
+      "ExchangeOverviewOut": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ExchangeStatusOut"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExchangeAssetOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "advancers": {
+            "type": "integer",
+            "title": "Advancers"
+          },
+          "decliners": {
+            "type": "integer",
+            "title": "Decliners"
+          },
+          "top_gainers": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeAssetOut"
+            },
+            "type": "array",
+            "title": "Top Gainers"
+          },
+          "top_losers": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeAssetOut"
+            },
+            "type": "array",
+            "title": "Top Losers"
+          },
+          "most_traded": {
+            "items": {
+              "$ref": "#/components/schemas/ExchangeAssetOut"
+            },
+            "type": "array",
+            "title": "Most Traded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "reference",
+          "counts",
+          "advancers",
+          "decliners",
+          "top_gainers",
+          "top_losers",
+          "most_traded"
+        ],
+        "title": "ExchangeOverviewOut"
+      },
+      "ExchangeStatusOut": {
+        "properties": {
+          "market": {
+            "type": "string",
+            "enum": [
+              "CRYPTO",
+              "B3",
+              "US"
+            ],
+            "title": "Market"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "closed",
+              "always_open"
+            ],
+            "title": "State"
+          },
+          "last_close": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Close"
+          },
+          "next_open": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Open"
+          },
+          "delay_seconds": {
+            "type": "integer",
+            "title": "Delay Seconds"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At"
+          },
+          "is_stale": {
+            "type": "boolean",
+            "title": "Is Stale"
+          },
+          "attribution": {
+            "type": "string",
+            "title": "Attribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "market",
+          "currency",
+          "state",
+          "last_close",
+          "next_open",
+          "delay_seconds",
+          "as_of",
+          "fetched_at",
+          "is_stale",
+          "attribution"
+        ],
+        "title": "ExchangeStatusOut",
+        "description": "Session state and data terms attached to every exchange-market response."
+      },
+      "FiiFundamentalsOut": {
+        "properties": {
+          "price_to_nav": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price To Nav"
+          },
+          "nav_per_share": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nav Per Share"
+          },
+          "nav_as_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nav As Of"
+          },
+          "dividend_yield_12m": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dividend Yield 12M"
+          },
+          "months_paid_12m": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months Paid 12M"
+          },
+          "last_payment_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Payment Rate"
+          },
+          "last_payment_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Payment Date"
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "price_to_nav",
+          "nav_per_share",
+          "nav_as_of",
+          "dividend_yield_12m",
+          "months_paid_12m",
+          "last_payment_rate",
+          "last_payment_date",
+          "segment"
+        ],
+        "title": "FiiFundamentalsOut"
       },
       "GridRowOut": {
         "properties": {

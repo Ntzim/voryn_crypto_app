@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     market_stale_after_seconds: int = Field(default=900, ge=60)
     market_history_retention_days: int = Field(default=7, ge=1)
 
+    #: False closes sign-ups (personal instance); existing accounts keep working
+    registration_open: bool = True
+
     # Multimarket. Exchange markets stay off until their data license is settled: the
     # catalogue, sync jobs and endpoints for a market only run when it is listed here.
     markets_enabled: Annotated[list[MarketCode], NoDecode] = Field(

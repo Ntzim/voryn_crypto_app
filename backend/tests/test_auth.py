@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.modules.audit.models import AuditLog
 from app.modules.users.models import User
 from tests.conftest import (
@@ -58,6 +59,26 @@ async def test_full_registration_flow(client: httpx.AsyncClient, outbox: Outbox)
 
     assert (await client.post(f"{API}/auth/logout")).status_code == 204
     assert (await client.get(f"{API}/me")).status_code == 401
+
+
+async def test_closed_registration_refuses_new_accounts_but_not_existing_ones(
+    client: httpx.AsyncClient, outbox: Outbox, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await register_verified(client, outbox)
+    monkeypatch.setattr(get_settings(), "registration_open", False)
+    sent = len(outbox)
+    response = await client.post(
+        f"{API}/auth/register",
+        json={
+            "full_name": "Bia",
+            "email": "bia@example.com",
+            "password": "uma-frase-longa-e-segura",
+        },
+    )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "registration_closed"
+    assert len(outbox) == sent
+    assert (await login(client)).status_code == 200
 
 
 async def test_duplicate_registration_does_not_reveal_account(
