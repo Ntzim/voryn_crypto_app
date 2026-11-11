@@ -13,6 +13,16 @@ test("opportunities list signals with explanation and detail", async ({ page, is
   await page.getByRole("button", { name: /Limites da análise/ }).click();
   await expect(page.getByText(/não é probabilidade de lucro/)).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("group", { name: "Filtrar por sinal" })).toBeVisible();
+  // The strongest readings each way, with an honest empty state.
+  await expect(page.getByRole("heading", { name: "Principais ativos com potencial" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potencial de compra", level: 3 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Potencial de venda", level: 3 })).toBeVisible();
+  if (!isMobile) {
+    // List view: one line per asset with the reading in words; the choice goes to the URL.
+    await page.getByRole("button", { name: "Lista", exact: true }).click();
+    await expect(page).toHaveURL(/vista=lista/);
+    await page.getByRole("button", { name: "Tabela", exact: true }).click();
+  }
   const first = isMobile ? page.locator("main ul button[aria-pressed]").first() : page.locator("[data-symbol]").first();
   await expect(first).toBeVisible({ timeout: 20_000 });
   await page.screenshot({ path: testInfo.outputPath("oportunidades.png"), fullPage: true });
@@ -21,8 +31,12 @@ test("opportunities list signals with explanation and detail", async ({ page, is
   await expect(page).toHaveURL(/ativo=/);
   const detail = page.getByRole("article", { name: /Detalhe de/ });
   await expect(detail.getByRole("heading", { name: "Riscos" })).toBeVisible();
+  // Evidence is split by direction, never a negative reading under a check mark.
+  await expect(detail.getByRole("heading", { name: "Evidências" })).toHaveCount(0);
   await expect(detail.getByRole("heading", { name: "Níveis de preço" })).toBeVisible();
   await expect(detail.getByText("Força da evidência")).toBeVisible();
+  // The reading in plain words comes first.
+  await expect(detail.getByRole("region", { name: "Leitura do sinal" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("sinal-detalhe.png") });
 });
 

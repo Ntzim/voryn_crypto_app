@@ -9,6 +9,7 @@ import {
   parseTrend,
   parseVolatility,
   sortOpportunities,
+  strongest,
   type Opportunity,
 } from "./opportunity";
 
@@ -64,12 +65,16 @@ function item(symbol: string, score: number, signal: Opportunity["signal"], extr
     signal,
     price: score,
     summary: "",
-    evidence: [],
+    evidenceFor: [],
+    evidenceAgainst: [],
     risks: [],
     invalidation: "",
     dataQuality: "valid",
     qualityReasons: [],
     hasScore: true,
+    favorable: 0,
+    against: 0,
+    criteria: 6,
     signalRaw: {} as Opportunity["signalRaw"],
     ...extra,
   };
@@ -100,3 +105,27 @@ describe("list operations", () => {
     expect(distribution(items)).toEqual({ total: 4, buy_potential: 1, attention: 2, neutral: 0, sell_potential: 1 });
   });
 });
+
+describe("highlights", () => {
+  const items = [
+    item("AAA3", 70, "buy_potential"),
+    item("BBB3", 82, "buy_potential"),
+    item("CCC3", 90, "buy_potential", { dataQuality: "incomplete" }),
+    item("DDD3", 30, "sell_potential"),
+    item("EEE3", 18, "sell_potential"),
+    item("FFF11", 10, "sell_potential", { hasScore: false }),
+    item("GGG3", 60, "attention"),
+  ];
+
+  it("ranks buy potential by the highest score and sell potential by the lowest", () => {
+    expect(strongest(items, "buy_potential").map((o) => o.symbol)).toEqual(["BBB3", "AAA3"]);
+    expect(strongest(items, "sell_potential").map((o) => o.symbol)).toEqual(["EEE3", "DDD3"]);
+  });
+
+  it("leaves out readings built on incomplete data or without a score", () => {
+    expect(strongest(items, "buy_potential").some((o) => o.symbol === "CCC3")).toBe(false);
+    expect(strongest(items, "sell_potential").some((o) => o.symbol === "FFF11")).toBe(false);
+    expect(strongest([], "buy_potential")).toEqual([]);
+  });
+});
+

@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Bell, CircleCheck, Star, TriangleAlert, X } from "lucide-react";
+import { ArrowDownRight, ArrowLeft, ArrowRight, Bell, CircleCheck, Star, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
 
 import { AssetIcon } from "@/components/common/asset-icon";
-import { ScoreBar, SignalBadge } from "@/components/signals/signal-primitives";
+import { ScoreBar, SignalBadge, VerdictBanner } from "@/components/signals/signal-primitives";
 import { buttonVariants } from "@/components/ui/button";
 import type { Locale } from "@/lib/api/types";
 import { formatNumber, formatPrice } from "@/lib/format";
@@ -44,6 +44,14 @@ export function OpportunityDetail({
         )}
       </header>
 
+      <VerdictBanner
+        value={item.signal}
+        favorable={item.favorable}
+        against={item.against}
+        criteria={item.criteria}
+        suspended={item.dataQuality !== "valid" ? (item.qualityReasons[0] ?? "dados insuficientes.") : null}
+      />
+
       <div
         className="grid grid-cols-2 gap-4 rounded-2xl border border-border p-4"
         style={variant === "page" ? { backgroundImage: "radial-gradient(260px 120px at 100% 0%, var(--brand-glow), transparent 70%)" } : undefined}
@@ -68,12 +76,6 @@ export function OpportunityDetail({
         </div>
       </div>
 
-      {item.dataQuality !== "valid" && (
-        <p role="status" className="rounded-[10px] bg-signal-watch-soft p-3 text-xs text-signal-watch">
-          {item.qualityReasons[0] ?? "Dados insuficientes."} Compra e venda suspensas.
-        </p>
-      )}
-
       <p className="rounded-[10px] bg-background p-3 text-sm text-foreground">{item.summary}</p>
 
       {variant === "page" && (
@@ -86,19 +88,8 @@ export function OpportunityDetail({
 
       <PriceLevels item={item} locale={locale} />
 
-      {item.evidence.length > 0 && (
-        <section aria-labelledby={`evidence-${item.id}`}>
-          <h3 id={`evidence-${item.id}`} className="eyebrow mb-2 text-subtle-foreground">Evidências</h3>
-          <ul className="space-y-2">
-            {item.evidence.map((text) => (
-              <li key={text} className="flex gap-2 text-sm text-foreground">
-                <CircleCheck className="mt-0.5 size-4 shrink-0 text-signal-buy" strokeWidth={1.5} aria-hidden />
-                {text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <EvidenceList id={`for-${item.id}`} title="A favor" items={item.evidenceFor} tone="for" />
+      <EvidenceList id={`against-${item.id}`} title="Contra" items={item.evidenceAgainst} tone="against" />
 
       <section aria-labelledby={`risks-${item.id}`}>
         <h3 id={`risks-${item.id}`} className="eyebrow mb-2 text-subtle-foreground">Riscos</h3>
@@ -146,6 +137,25 @@ export function OpportunityDetail({
         </Link>
       </div>
     </article>
+  );
+}
+
+/** Evidence in one direction, with the same thresholds as the "a favor · contra" count. */
+function EvidenceList({ id, title, items, tone }: { id: string; title: string; items: string[]; tone: "for" | "against" }) {
+  if (items.length === 0) return null;
+  const Icon = tone === "for" ? CircleCheck : ArrowDownRight;
+  return (
+    <section aria-labelledby={id}>
+      <h3 id={id} className={tone === "for" ? "eyebrow mb-2 text-signal-buy" : "eyebrow mb-2 text-signal-sell"}>{title}</h3>
+      <ul className="space-y-2">
+        {items.map((text) => (
+          <li key={text} className="flex gap-2 text-sm text-foreground">
+            <Icon className={tone === "for" ? "mt-0.5 size-4 shrink-0 text-signal-buy" : "mt-0.5 size-4 shrink-0 text-signal-sell"} strokeWidth={1.5} aria-hidden />
+            {text}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
