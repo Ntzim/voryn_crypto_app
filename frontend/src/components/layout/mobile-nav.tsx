@@ -1,20 +1,20 @@
 "use client";
 
 import { cn } from "cn";
-import { Ellipsis, LogOut } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useThemeSetting } from "@/components/theme/use-theme-setting";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-import { NAV_ITEMS, isActive } from "./nav-config";
-import { useNavSections } from "./use-nav-sections";
+import { MOBILE_ITEMS, isActive } from "./nav-config";
 import { useLogout } from "./use-logout";
+import { useNavSections } from "./use-nav-sections";
 
-const PRIMARY = NAV_ITEMS.filter((item) => item.mobilePrimary);
-
-/** Bottom tab bar for phones: thumb-reachable access to the most used areas. */
+/** Bottom navigation for phones: five thumb-reachable areas. */
 export function MobileNav() {
   return <MobileNavBar pathname={usePathname()} />;
 }
@@ -25,120 +25,92 @@ export function MobileNav() {
  * appearing only once the JavaScript has loaded.
  */
 export function MobileNavBar({ pathname }: { pathname: string | null }) {
-  const [open, setOpen] = useState(false);
-  const logout = useLogout();
-  const sections = useNavSections();
-  const moreActive = pathname !== null && !PRIMARY.some((item) => isActive(pathname, item.href));
-
   return (
-    // Floating glass tab bar (HIG: the tab bar floats above content on Liquid Glass and
-    // stays visible). Inset from the edges and lifted above the home indicator.
-    <nav
-      aria-label="Navegação principal"
-      className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 md:hidden"
-    >
-      <ul className="glass mx-auto grid h-16 max-w-md grid-cols-5 rounded-[1.75rem] px-1">
-        {PRIMARY.map((item) => {
-          const active = pathname !== null && isActive(pathname, item.href);
+    <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bar pb-safe md:hidden">
+      <ul className="mx-auto grid h-16 max-w-md grid-cols-5">
+        {MOBILE_ITEMS.map((item) => {
+          const active = pathname !== null && isActive(pathname, item);
           const Icon = item.icon;
           return (
             <li key={item.href}>
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                aria-label={item.label}
                 className={cn(
-                  "group flex h-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
-                  active ? "text-foreground" : "text-muted-foreground",
+                  "flex h-full flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors",
+                  active ? "text-primary-ink" : "text-muted-foreground",
                 )}
               >
-                <TabIcon active={active}>
-                  <Icon className={cn("size-[22px]", active ? "text-foreground" : "text-muted-foreground")} strokeWidth={active ? 2.25 : 1.75} aria-hidden />
-                </TabIcon>
+                <Icon className="size-5" strokeWidth={1.5} aria-hidden />
                 <span className="max-w-full truncate px-1">{item.short ?? item.label}</span>
               </Link>
             </li>
           );
         })}
-        <li>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger
-              className={cn(
-                "group flex h-full w-full flex-col items-center justify-center gap-0.5 text-[11px] font-medium",
-                moreActive ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              <TabIcon active={moreActive}>
-                <Ellipsis className={cn("size-[22px]", moreActive ? "text-foreground" : "text-muted-foreground")} strokeWidth={moreActive ? 2.25 : 1.75} aria-hidden />
-              </TabIcon>
-              Mais
-            </SheetTrigger>
-            <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl pb-safe">
-              <SheetHeader className="pb-0">
-                <SheetTitle>Menu</SheetTitle>
-                <SheetDescription className="sr-only">Todas as áreas da Voryn</SheetDescription>
-              </SheetHeader>
-              <div className="overflow-y-auto px-4 pb-4">
-                {sections.map((section) => (
-                  <div key={section.label} className="mt-4 first:mt-0">
-                    <p className="mb-1 px-2 text-[11px] font-medium tracking-wider text-subtle-foreground uppercase">
-                      {section.label}
-                    </p>
-                    <ul>
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const active = pathname !== null && isActive(pathname, item.href);
-                        return (
-                          <li key={item.href}>
-                            <Link
-                              href={item.href}
-                              onClick={() => setOpen(false)}
-                              className={cn(
-                                "flex h-11 items-center gap-3 rounded-lg px-2 text-sm",
-                                active ? "bg-accent text-foreground" : "text-sidebar-foreground",
-                              )}
-                            >
-                              <Icon className={cn("size-[18px]", active ? "text-primary-ink" : "text-muted-foreground")} />
-                              <span className="flex-1">{item.label}</span>
-                              {!item.available && (
-                                <span className="rounded-md border border-border px-1.5 py-px text-[10px] text-subtle-foreground">
-                                  Em breve
-                                </span>
-                              )}
-                            </Link>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => logout.mutate()}
-                  disabled={logout.isPending}
-                  className="mt-4 flex h-11 w-full items-center gap-3 rounded-lg px-2 text-sm text-muted-foreground"
-                >
-                  <LogOut className="size-[18px]" /> Sair
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </li>
       </ul>
     </nav>
   );
 }
 
-/** Pill behind the icon marks the current tab beyond color; it also gives tap feedback. */
-function TabIcon({ active, children }: { active: boolean; children: React.ReactNode }) {
+/** Every area, for phones (the bottom bar only has room for five): opened from the header. */
+export function MobileMenu() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const logout = useLogout();
+  const sections = useNavSections();
+  const { theme, setTheme } = useThemeSetting();
   return (
-    <span
-      className={cn(
-        "flex h-7 w-12 items-center justify-center rounded-full transition-[background-color,transform] duration-200 ease-(--ease-out-soft) group-active:scale-90 group-active:bg-foreground/10",
-        active && "bg-foreground/12",
-      )}
-    >
-      {children}
-    </span>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger className="inline-flex size-11 items-center justify-center rounded-[10px] text-muted-foreground hover:text-foreground md:hidden" aria-label="Abrir menu">
+        <Menu className="size-5" strokeWidth={1.5} />
+      </SheetTrigger>
+      <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl pb-safe">
+        <SheetHeader className="pb-0">
+          <SheetTitle>Menu</SheetTitle>
+          <SheetDescription className="sr-only">Todas as áreas da Voryn</SheetDescription>
+        </SheetHeader>
+        <div className="overflow-y-auto px-4 pb-4">
+          {sections.map((section) => (
+            <div key={section.label} className="mt-4 first:mt-0">
+              <p className="eyebrow mb-1 px-2 text-subtle-foreground">{section.label}</p>
+              <ul>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(pathname, item);
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex h-11 items-center gap-3 rounded-[10px] px-2 text-sm",
+                          active ? "bg-brand-soft font-semibold text-primary-ink" : "text-sidebar-foreground",
+                        )}
+                      >
+                        <Icon className="size-5" strokeWidth={1.5} />
+                        <span className="flex-1">{item.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+          <div className="mt-4 flex items-center justify-between px-2 min-[360px]:hidden">
+            <span className="text-sm text-sidebar-foreground">Tema</span>
+            <ThemeToggle resolved={theme?.resolved} onChange={setTheme} />
+          </div>
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            disabled={logout.isPending}
+            className="mt-4 flex h-11 w-full items-center gap-3 rounded-[10px] px-2 text-sm text-muted-foreground"
+          >
+            <LogOut className="size-5" strokeWidth={1.5} /> Sair
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

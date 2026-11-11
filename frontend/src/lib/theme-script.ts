@@ -9,7 +9,7 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "voryn-theme";
 export const MEDIA = "(prefers-color-scheme: dark)";
 /** Browser chrome (address bar, PWA title bar) per theme; matches --background. */
-export const THEME_COLORS: Record<ResolvedTheme, string> = { light: "#f5f5f7", dark: "#0b0d12" };
+export const THEME_COLORS: Record<ResolvedTheme, string> = { light: "#f5f5f7", dark: "#0b0f14" };
 
 /**
  * Runs inline in <head> before the body is parsed, so the page never flashes the wrong

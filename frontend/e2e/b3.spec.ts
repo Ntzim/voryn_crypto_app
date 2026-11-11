@@ -23,7 +23,8 @@ async function noHorizontalOverflow(page: Page) {
 test("with B3 disabled the market stays out of the app", async ({ page }) => {
   await signIn(page, "b3-off");
   test.skip(await b3Enabled(page), "B3 is enabled on this stack");
-  await expect(page.getByRole("link", { name: "Bolsa B3" })).toHaveCount(0);
+  await page.goto("/mercado");
+  await expect(page.getByRole("link", { name: "B3", exact: true })).toHaveCount(0);
   await page.goto("/b3");
   await expect(page.getByText("B3 ainda não disponível")).toBeVisible();
 });
@@ -38,10 +39,11 @@ test("explore the B3: delay labeled, filters, asset page", async ({ page }) => {
   });
 
   await page.goto("/b3");
-  await expect(page.getByRole("heading", { name: "Bolsa B3" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mercado B3" })).toBeVisible();
   // Delayed quotes are never presented as real time.
   await expect(page.getByText(/Cotações com \d+ min de atraso/)).toBeVisible();
-  await expect(page.getByText(/Pregão (aberto|fechado)/)).toBeVisible();
+  // Also in the header's session pill.
+  await expect(page.getByRole("main").getByText(/Pregão (aberto|fechado)/).first()).toBeVisible();
   // The index reference is the ETF, and says so.
   await expect(page.getByText("Referência do Ibovespa")).toBeVisible();
   await expect(page.getByText(/ETF que acompanha o índice/)).toBeVisible();
@@ -82,14 +84,18 @@ test("B3 opportunities: scope stated, stocks and FIIs, no real-time claim", asyn
 
   await page.goto("/oportunidades-b3");
   await expect(page.getByRole("heading", { name: "Oportunidades B3" })).toBeVisible();
+  await page.getByRole("button", { name: /Limites da análise/ }).click();
   await expect(page.getByText(/Análise somente técnica/).first()).toBeVisible();
   await expect(page.getByText(/Cotações com \d+ min de atraso/)).toBeVisible();
   await expect(page.getByText(/Não constituem recomendação de investimento/)).toBeVisible();
   await expect(page.getByText(/validados por backtest/)).toBeVisible();
   await noHorizontalOverflow(page);
 
-  await page.getByRole("radio", { name: "FIIs" }).click();
+  await page.getByRole("link", { name: "FIIs", exact: true }).click();
   await expect(page).toHaveURL(/tipo=FII/);
+  // Same page with another tab: the note keeps the state it had.
+  const limits = page.getByRole("button", { name: /Limites da análise/ });
+  if ((await limits.getAttribute("aria-expanded")) !== "true") await limits.click();
   await expect(page.getByText(/Considera P\/VP/).first()).toBeVisible();
   await noHorizontalOverflow(page);
   expect(problems).toEqual([]);

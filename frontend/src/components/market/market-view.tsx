@@ -11,6 +11,7 @@ import { AssetIcon } from "@/components/common/asset-icon";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { DataStatus } from "@/components/common/data-status";
 import { PageHeader } from "@/components/common/page-header";
+import { MarketTabs } from "@/components/opportunities/market-tabs";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { AssetList } from "@/components/market/asset-list";
 import { CurrencyToggle } from "@/components/market/currency-toggle";
@@ -109,7 +110,12 @@ export function MarketView() {
       <PageHeader
         title="Mercado"
         description="As 100 maiores criptomoedas por capitalização, atualizadas continuamente."
-        actions={<CurrencyToggle value={currency} onChange={(c) => update({ moeda: c })} />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <MarketTabs current="crypto" />
+            <CurrencyToggle value={currency} onChange={(c) => update({ moeda: c })} />
+          </div>
+        }
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">

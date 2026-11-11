@@ -2,23 +2,27 @@ import { expect, test } from "@playwright/test";
 
 import { login, registerAndVerify, uniqueEmail } from "./helpers";
 
-test("opportunities list signals with explanation and detail", async ({ page }, testInfo) => {
+test("opportunities list signals with explanation and detail", async ({ page, isMobile }, testInfo) => {
   const email = uniqueEmail("signals");
   await registerAndVerify(page, email);
   await login(page, email);
 
   await page.goto("/oportunidades");
-  await expect(page.getByRole("heading", { name: "Oportunidades" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Oportunidades", level: 1 })).toBeVisible();
+  // The analysis limits are one click away, not taking the top of the page.
+  await page.getByRole("button", { name: /Limites da análise/ }).click();
   await expect(page.getByText(/não é probabilidade de lucro/)).toBeVisible({ timeout: 20_000 });
-  const firstCard = page.locator("main button.rounded-xl").first();
-  await expect(firstCard).toBeVisible();
+  await expect(page.getByRole("group", { name: "Filtrar por sinal" })).toBeVisible();
+  const first = isMobile ? page.locator("main ul button[aria-pressed]").first() : page.locator("[data-symbol]").first();
+  await expect(first).toBeVisible({ timeout: 20_000 });
   await page.screenshot({ path: testInfo.outputPath("oportunidades.png"), fullPage: true });
 
-  await firstCard.click();
-  const sheet = page.getByRole("dialog");
-  await expect(sheet.getByText("Composição do score")).toBeVisible();
-  await expect(sheet.getByText("Condições de invalidação")).toBeVisible();
-  await expect(sheet.getByText(/estratégia voryn-core v1/)).toBeVisible();
+  await first.click();
+  await expect(page).toHaveURL(/ativo=/);
+  const detail = page.getByRole("article", { name: /Detalhe de/ });
+  await expect(detail.getByRole("heading", { name: "Riscos" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Níveis de preço" })).toBeVisible();
+  await expect(detail.getByText("Força da evidência")).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("sinal-detalhe.png") });
 });
 

@@ -9,38 +9,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Locale, Signal, SignalClass, SignalHistoryPoint } from "@/lib/api/types";
 import { formatDateTime, formatNumber, formatPercent, formatPrice } from "@/lib/format";
 import { useChartPalette } from "@/lib/chart-theme";
-import { SIGNAL_META } from "@/lib/signal-queries";
+import { ScoreBar, SignalBadge } from "./signal-primitives";
 
 export function ClassificationBadge({ value, className }: { value: SignalClass; className?: string }) {
-  return (
-    <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap", SIGNAL_META[value].tone, className)}>
-      {SIGNAL_META[value].label}
-    </span>
-  );
+  return <SignalBadge value={value} className={className} />;
 }
 
-/** Semicircular gauge; the arc is the score, not a probability. */
-export function ScoreGauge({ score, classification, size = 88 }: { score: string; classification: SignalClass; size?: number }) {
+/**
+ * Score as a number over a brand-gradient bar. It used to be a gauge colored by the signal, which
+ * made a strong "neutral" look worse than a weak "attention": score and signal are independent.
+ */
+export function ScoreGauge({ score }: { score: string; classification?: SignalClass; size?: number }) {
   const value = Math.max(0, Math.min(100, Number(score)));
-  const r = 40;
-  const circumference = Math.PI * r;
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size * 0.62 }} role="img" aria-label={`Score ${formatNumber(score, "pt-BR", { digits: 0 })} de 100`}>
-      <svg viewBox="0 0 100 60" className="h-full w-full">
-        <path d="M10 52 A40 40 0 0 1 90 52" fill="none" className="stroke-foreground/10" strokeWidth="8" strokeLinecap="round" />
-        <path
-          d="M10 52 A40 40 0 0 1 90 52"
-          fill="none"
-          style={{ stroke: SIGNAL_META[classification].color }}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${(value / 100) * circumference} ${circumference}`}
-        />
-      </svg>
-      <span className="num absolute inset-x-0 bottom-0 text-center font-heading text-xl font-semibold text-foreground">
+    <span className="inline-flex shrink-0 flex-col items-end gap-1.5" aria-label={`Score ${formatNumber(score, "pt-BR", { digits: 0 })} de 100`} role="img">
+      <span className="num text-[22px] leading-none font-bold text-foreground">
         {formatNumber(score, "pt-BR", { digits: 0 })}
+        <span className="text-xs font-medium text-subtle-foreground">/100</span>
       </span>
-    </div>
+      <ScoreBar score={value} />
+    </span>
   );
 }
 

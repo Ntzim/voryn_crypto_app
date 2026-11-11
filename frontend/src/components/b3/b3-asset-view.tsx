@@ -17,7 +17,7 @@ import type { Currency, ExchangeDetail, Locale } from "@/lib/api/types";
 import { formatMoney, formatNumber, formatPrice } from "@/lib/format";
 import { usePreferences } from "@/lib/queries";
 
-import { B3SignalBody } from "./b3-opportunities-view";
+import { B3SignalBody } from "./b3-signal-body";
 import { B3PriceChart } from "./b3-price-chart";
 import { ASSET_TYPE_LABEL, B3DataNote, B3SessionBadge, sectorLabel, unavailableMessage } from "./b3-status";
 

@@ -17,6 +17,7 @@ export type AssetDetail = Schemas["AssetDetailOut"];
 export type MarketOverview = Schemas["MarketOverviewOut"];
 export type DataStatus = Schemas["DataStatus"];
 export type MarketInfo = Schemas["MarketOut"];
+export type InstrumentHit = Schemas["InstrumentHitOut"];
 export type ExchangeStatus = Schemas["ExchangeStatusOut"];
 export type ExchangeAsset = Schemas["ExchangeAssetOut"];
 export type ExchangeAssetList = Schemas["ExchangeAssetListOut"];
