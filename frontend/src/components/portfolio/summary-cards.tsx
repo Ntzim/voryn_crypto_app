@@ -81,7 +81,7 @@ export function SummaryCards({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-card shadow-card ring-1 ring-foreground/6 lg:w-[460px] lg:shrink-0">
+      <div className="overflow-hidden rounded-2xl bg-card border border-border shadow-card lg:w-[460px] lg:shrink-0">
         <dl className="grid grid-cols-2 divide-x divide-foreground/6 px-1 py-4">
           <Metric
             label="Resultado"

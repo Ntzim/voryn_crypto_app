@@ -47,7 +47,7 @@ export function PortfolioView() {
   return (
     <>
       <PageHeader
-        title="Minha Carteira"
+        title="Minha carteira"
         description={s && !empty ? `Valores em ${currency} · atualizado ${formatDateTime(s.as_of, locale, timeZone, { timeStyle: "short" })}` : "Posições, transações e rentabilidade."}
         actions={
           pid && (
