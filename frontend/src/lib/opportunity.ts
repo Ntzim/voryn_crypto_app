@@ -29,13 +29,20 @@ export type Opportunity = {
   resistance?: { value: number; distPct: number };
   /** the engine's one-sentence reading */
   summary: string;
-  evidence: string[];
+  /** component readings pointing up (score ≥ 60), strongest first */
+  evidenceFor: string[];
+  /** component readings pointing down (score ≤ 40), strongest first */
+  evidenceAgainst: string[];
   risks: string[];
   invalidation: string;
   dataQuality: Signal["data_quality"];
   qualityReasons: string[];
   /** FIIs without P/VP and income have no meaningful score */
   hasScore: boolean;
+  /** score components pointing up (≥ 60) and down (≤ 40), out of `criteria` */
+  favorable: number;
+  against: number;
+  criteria: number;
   signalRaw: Signal | B3Signal;
 };
 
@@ -107,10 +114,12 @@ export function toOpportunity(signal: Signal | B3Signal): Opportunity {
   const byKey = new Map(signal.components.map((c) => [c.key, c]));
   const b3 = isB3(signal);
   const indicators = signal.indicators as Record<string, unknown>;
-  const strongest = [...signal.components]
-    .sort((a, b) => Math.abs(Number(b.score) - 50) * Number(b.weight_pct) - Math.abs(Number(a.score) - 50) * Number(a.weight_pct))
-    .slice(0, 3)
-    .map((c) => c.detail);
+  // Same thresholds as the evidence count, so the lists always match "x a favor · y contra".
+  const pointing = (up: boolean) =>
+    signal.components
+      .filter((c) => (up ? Number(c.score) >= 60 : Number(c.score) <= 40))
+      .sort((a, b) => (Math.abs(Number(b.score) - 50) * Number(b.weight_pct)) - (Math.abs(Number(a.score) - 50) * Number(a.weight_pct)))
+      .map((c) => c.detail);
   const fundamentals = b3 ? signal.fundamentals : null;
   const hasScore = !b3 || signal.asset_type !== "FII" || Boolean(fundamentals?.price_to_nav && fundamentals.dividend_yield_12m);
   return {
@@ -131,14 +140,28 @@ export function toOpportunity(signal: Signal | B3Signal): Opportunity {
     volatility: parseVolatility(byKey.get("volatility")?.detail),
     ...parseLevels(byKey.get("levels")?.detail),
     summary: firstSentence(signal.justification),
-    evidence: strongest,
+    evidenceFor: pointing(true),
+    evidenceAgainst: pointing(false),
     risks: signal.risks,
     invalidation: signal.invalidation.join(" "),
     dataQuality: signal.data_quality,
     qualityReasons: signal.quality_reasons,
     hasScore,
+    favorable: signal.components.filter((c) => Number(c.score) >= 60).length,
+    against: signal.components.filter((c) => Number(c.score) <= 40).length,
+    criteria: signal.components.length,
     signalRaw: signal,
   };
+}
+
+/**
+ * Strongest current readings in one direction, built on complete data only. Buy potential ranks
+ * the highest scores first; sell potential the lowest (the weakest evidence for a rise).
+ */
+export function strongest(items: Opportunity[], signal: "buy_potential" | "sell_potential", n = 3): Opportunity[] {
+  const pool = items.filter((o) => o.signal === signal && o.hasScore && o.dataQuality === "valid");
+  pool.sort((a, b) => (signal === "buy_potential" ? b.score - a.score : a.score - b.score) || a.symbol.localeCompare(b.symbol));
+  return pool.slice(0, n);
 }
 
 export type SortKey = "score" | "ticker" | "trend" | "price";

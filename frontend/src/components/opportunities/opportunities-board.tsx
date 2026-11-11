@@ -1,12 +1,12 @@
 "use client";
 
 import { cn } from "cn";
-import { ChevronDown, LayoutGrid, Radar, Rows3, Search } from "lucide-react";
+import { ChevronDown, LayoutGrid, List, Radar, Search, Table } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
 
 import { ErrorState } from "@/components/common/states";
-import { ScoreBar, SignalBadge, SignalDot, TrendDots, Chip, signalLabel } from "@/components/signals/signal-primitives";
+import { EvidenceCount, ScoreBar, SignalBadge, SignalDot, TrendDots, Chip, signalLabel } from "@/components/signals/signal-primitives";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -17,6 +17,7 @@ import {
   distribution,
   filterOpportunities,
   sortOpportunities,
+  strongest,
   type Opportunity,
   type SortKey,
 } from "@/lib/opportunity";
@@ -35,7 +36,9 @@ const BAR_COLOR: Record<SignalClass, string> = {
 const SORT_LABEL: Record<SortKey, string> = { score: "Score (maior)", ticker: "Ticker (A–Z)", trend: "Tendência", price: "Preço" };
 const VIEW_KEY = "voryn-opportunities-view";
 
-type View = "tabela" | "cards";
+type View = "tabela" | "lista" | "cards";
+const VIEWS: View[] = ["tabela", "lista", "cards"];
+const VIEW_ICON = { tabela: Table, lista: List, cards: LayoutGrid } as const;
 
 export type BoardProps = {
   title: string;
@@ -77,7 +80,7 @@ function useIsDesktop(): boolean {
 function readStoredView(): View | null {
   try {
     const saved = localStorage.getItem(VIEW_KEY);
-    return saved === "tabela" || saved === "cards" ? saved : null;
+    return VIEWS.includes(saved as View) ? (saved as View) : null;
   } catch {
     return null;
   }
@@ -95,7 +98,7 @@ function useBoardState() {
   const viewParam = params.get("vista");
   // Saved choice, read only in the browser (the server renders the default table).
   const storedView = useSyncExternalStore(subscribeNever, readStoredView, () => null);
-  const view: View = viewParam === "cards" || viewParam === "tabela" ? viewParam : (storedView ?? "tabela");
+  const view: View = VIEWS.includes(viewParam as View) ? (viewParam as View) : (storedView ?? "tabela");
 
   const update = useCallback(
     (changes: Record<string, string | null>) => {
@@ -134,7 +137,10 @@ export function OpportunitiesBoard(props: BoardProps) {
 
   const dist = useMemo(() => distribution(items ?? []), [items]);
   const visible = useMemo(() => sortOpportunities(filterOpportunities(items ?? [], signal, query), sort), [items, signal, query, sort]);
-  const top = useMemo(() => sortOpportunities((items ?? []).filter((o) => o.hasScore), "score").slice(0, 3), [items]);
+  const highlights = useMemo(
+    () => ({ buy: strongest(items ?? [], "buy_potential"), sell: strongest(items ?? [], "sell_potential") }),
+    [items],
+  );
   const current = items?.find((o) => o.symbol === selected) ?? null;
   const desktop = useIsDesktop();
   const select = (symbol: string | null) => update({ ativo: symbol });
@@ -172,7 +178,8 @@ export function OpportunitiesBoard(props: BoardProps) {
         </div>
       ) : (
         <>
-          <DistributionCard dist={dist} noun={props.noun} signal={signal} onSignal={(s) => update({ sinal: s ? SIGNAL_PARAM[s] : null })} top={top} onSelect={select} loading={!items} locale={locale} />
+          <DistributionCard dist={dist} noun={props.noun} signal={signal} onSignal={(s) => update({ sinal: s ? SIGNAL_PARAM[s] : null })} loading={!items} />
+          <HighlightsCard buy={highlights.buy} sell={highlights.sell} loading={!items} onSelect={select} locale={locale} />
 
           <div className="mt-5 mb-3 flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative md:w-72">
@@ -196,11 +203,13 @@ export function OpportunitiesBoard(props: BoardProps) {
               {props.toolbarExtra}
             </div>
             <div className="flex items-center gap-3 md:ml-auto">
-              <span className="num text-xs text-subtle-foreground" aria-live="polite">
+              <span className="num text-xs whitespace-nowrap text-subtle-foreground" aria-live="polite">
                 {items ? `${visible.length} ${visible.length === 1 ? "ativo" : "ativos"} na lista` : ""}
               </span>
               <div role="group" aria-label="Visualização" className="hidden rounded-[10px] bg-surface-sunken p-0.5 md:inline-flex">
-                {(["tabela", "cards"] as const).map((v) => (
+                {VIEWS.map((v) => {
+                  const Icon = VIEW_ICON[v];
+                  return (
                   <button
                     key={v}
                     type="button"
@@ -208,10 +217,11 @@ export function OpportunitiesBoard(props: BoardProps) {
                     onClick={() => setView(v)}
                     className={cn("inline-flex h-8 items-center gap-1.5 rounded-[8px] px-3 text-xs font-medium", view === v ? "bg-surface-raised text-foreground" : "text-muted-foreground hover:text-foreground")}
                   >
-                    {v === "tabela" ? <Rows3 className="size-4" strokeWidth={1.5} /> : <LayoutGrid className="size-4" strokeWidth={1.5} />}
+                    <Icon className="size-4" strokeWidth={1.5} />
                     {capitalize(v)}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -234,6 +244,8 @@ export function OpportunitiesBoard(props: BoardProps) {
                   <div className="hidden md:block">
                     {view === "tabela" ? (
                       <OpportunityTable items={visible} selected={selected} onSelect={select} locale={locale} footnote={props.footnote} />
+                    ) : view === "lista" ? (
+                      <OpportunityList items={visible} selected={selected} onSelect={select} locale={locale} />
                     ) : (
                       <OpportunityCards items={visible} selected={selected} onSelect={select} locale={locale} />
                     )}
@@ -268,63 +280,96 @@ function DistributionCard({
   noun,
   signal,
   onSignal,
-  top,
-  onSelect,
   loading,
-  locale,
 }: {
   dist: ReturnType<typeof distribution>;
   noun: string;
   signal: SignalClass | null;
   onSignal: (signal: SignalClass | null) => void;
-  top: Opportunity[];
-  onSelect: (symbol: string) => void;
   loading: boolean;
-  locale: Locale;
 }) {
   return (
-    <section aria-labelledby="distribution-title" className="grid gap-5 rounded-2xl border border-border bg-surface p-5 shadow-card lg:grid-cols-[1fr_280px]">
-      <div className="min-w-0">
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 id="distribution-title" className="text-[13px] font-semibold text-foreground">Distribuição dos sinais</h2>
-          <span className="num text-xs text-subtle-foreground">{loading ? "" : `${dist.total} ${noun} ${noun === "ações" ? "analisadas" : "analisados"}`}</span>
-        </div>
-        {loading ? (
-          <Skeleton className="h-2.5 w-full rounded-full" />
-        ) : (
-          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden>
-            {SIGNALS.filter((s) => dist[s] > 0).map((s) => (
-              <span key={s} className={cn("h-full transition-opacity", BAR_COLOR[s], signal && signal !== s && "opacity-25")} style={{ flexGrow: dist[s] }} />
-            ))}
-          </div>
-        )}
-        <div role="group" aria-label="Filtrar por sinal" className="scroll-row mt-4 -mx-1 gap-2 px-1 md:flex-wrap md:overflow-visible">
-          <Chip active={!signal} onClick={() => onSignal(null)}>
-            Todos <span className="num text-subtle-foreground">{dist.total}</span>
-          </Chip>
-          {SIGNALS.map((s) => (
-            <Chip key={s} active={signal === s} onClick={() => onSignal(signal === s ? null : s)}>
-              <SignalDot value={s} />
-              {signalLabel(s)} <span className="num text-subtle-foreground">{dist[s]}</span>
-            </Chip>
+    <section aria-labelledby="distribution-title" className="rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 id="distribution-title" className="text-[13px] font-semibold text-foreground">Distribuição dos sinais</h2>
+        <span className="num text-xs text-subtle-foreground">{loading ? "" : `${dist.total} ${noun} ${noun === "ações" ? "analisadas" : "analisados"}`}</span>
+      </div>
+      {loading ? (
+        <Skeleton className="h-2.5 w-full rounded-full" />
+      ) : (
+        <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden>
+          {SIGNALS.filter((s) => dist[s] > 0).map((s) => (
+            <span key={s} className={cn("h-full transition-opacity", BAR_COLOR[s], signal && signal !== s && "opacity-25")} style={{ flexGrow: dist[s] }} />
           ))}
         </div>
+      )}
+      <div role="group" aria-label="Filtrar por sinal" className="scroll-row mt-4 -mx-1 gap-2 px-1 md:flex-wrap md:overflow-visible">
+        <Chip active={!signal} onClick={() => onSignal(null)}>
+          Todos <span className="num text-subtle-foreground">{dist.total}</span>
+        </Chip>
+        {SIGNALS.map((s) => (
+          <Chip key={s} active={signal === s} onClick={() => onSignal(signal === s ? null : s)}>
+            <SignalDot value={s} />
+            {signalLabel(s)} <span className="num text-subtle-foreground">{dist[s]}</span>
+          </Chip>
+        ))}
       </div>
-      <div className="hidden border-border lg:block lg:border-l lg:pl-5">
-        <h2 className="eyebrow mb-2 text-subtle-foreground">Maiores scores</h2>
+    </section>
+  );
+}
+
+/** The strongest readings each way, side by side: where the evidence is clearest right now. */
+function HighlightsCard({
+  buy,
+  sell,
+  loading,
+  onSelect,
+  locale,
+}: {
+  buy: Opportunity[];
+  sell: Opportunity[];
+  loading: boolean;
+  onSelect: (symbol: string) => void;
+  locale: Locale;
+}) {
+  const column = (title: string, items: Opportunity[], empty: string, tone: string) => (
+    <div className="min-w-0">
+      <h3 className={cn("mb-2 text-[13px] font-semibold", tone)}>{title}</h3>
+      {loading ? (
+        <Skeleton className="h-28 w-full rounded-[10px]" />
+      ) : items.length === 0 ? (
+        <p className="rounded-[10px] bg-background p-3 text-xs text-muted-foreground">{empty}</p>
+      ) : (
         <ol className="space-y-1">
-          {top.map((o, i) => (
+          {items.map((o, i) => (
             <li key={o.id}>
-              <button type="button" onClick={() => onSelect(o.symbol)} className="flex w-full items-center gap-2 rounded-[10px] px-2 py-1.5 text-left hover:bg-card-hover">
+              <button type="button" onClick={() => onSelect(o.symbol)} className="flex w-full items-center gap-3 rounded-[10px] px-2 py-2 text-left hover:bg-card-hover">
                 <span className="num w-4 text-xs text-subtle-foreground">{i + 1}</span>
-                <span className="w-16 text-sm font-semibold text-foreground">{o.symbol}</span>
-                <SignalBadge value={o.signal} className="flex-1 justify-self-start" />
-                <span className="num text-sm font-bold text-foreground">{formatNumber(o.score, locale, { digits: 0 })}</span>
+                <AssetAvatar item={o} size={30} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-foreground">{o.symbol}</span>
+                  <EvidenceCount favorable={o.favorable} against={o.against} criteria={o.criteria} className="block truncate" />
+                </span>
+                <span className="text-right">
+                  <span className="num block text-sm font-bold text-foreground">{formatNumber(o.score, locale, { digits: 0 })}</span>
+                  <span className="num block text-[11px] text-muted-foreground">{o.price === null ? "—" : formatPrice(o.price, o.currency, locale)}</span>
+                </span>
               </button>
             </li>
           ))}
-          {!loading && top.length === 0 && <li className="text-xs text-muted-foreground">Sem scores para comparar.</li>}
         </ol>
+      )}
+    </div>
+  );
+  return (
+    <section aria-labelledby="highlights-title" className="mt-5 rounded-2xl border border-border bg-surface p-5 shadow-card">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="highlights-title" className="text-[13px] font-semibold text-foreground">Principais ativos com potencial</h2>
+        <span className="text-xs text-subtle-foreground">Leituras mais fortes do último candle, só com dados completos</span>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        {column("Potencial de compra", buy, "Nenhum ativo com potencial de compra agora. Quando os indicadores se alinharem para alta, eles aparecem aqui.", "text-signal-buy")}
+        {column("Potencial de venda", sell, "Nenhum ativo com potencial de venda agora.", "text-signal-sell")}
       </div>
     </section>
   );
@@ -419,7 +464,10 @@ function OpportunityTable({
                       </span>
                     </button>
                   </td>
-                  <td className="px-3"><SignalBadge value={o.signal} /></td>
+                  <td className="px-3">
+                    <SignalBadge value={o.signal} />
+                    {o.dataQuality === "valid" && <span className="num mt-1 block text-[11px] text-subtle-foreground">{o.favorable}/{o.criteria} a favor</span>}
+                  </td>
                   <td className="px-3">
                     {o.hasScore ? (
                       <span className="inline-flex items-center gap-2">
@@ -493,6 +541,59 @@ function OpportunityCards({ items, selected, onSelect, locale }: { items: Opport
           </button>
         </li>
       ))}
+    </ul>
+  );
+}
+
+function OpportunityList({ items, selected, onSelect, locale }: { items: Opportunity[]; selected: string | null; onSelect: (symbol: string) => void; locale: Locale }) {
+  return (
+    <ul className="divide-y divide-surface-sunken overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+      {items.map((o) => {
+        const active = o.symbol === selected;
+        return (
+          <li key={o.id}>
+            <button
+              type="button"
+              aria-pressed={active}
+              onClick={() => onSelect(o.symbol)}
+              className={cn(
+                "grid w-full grid-cols-[180px_1fr_auto] items-center gap-4 px-4 py-3 text-left transition-colors",
+                active ? "bg-brand-soft shadow-[inset_3px_0_0_var(--brand)]" : "hover:bg-card-hover",
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-3">
+                <AssetAvatar item={o} />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-foreground">{o.symbol}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{o.name}</span>
+                </span>
+              </span>
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2">
+                  <SignalBadge value={o.signal} />
+                  {o.dataQuality === "valid" ? (
+                    <EvidenceCount favorable={o.favorable} against={o.against} criteria={o.criteria} />
+                  ) : (
+                    <span className="text-xs text-signal-watch">Dados insuficientes: compra e venda suspensas</span>
+                  )}
+                </span>
+                <span className="mt-1 block text-[13px] leading-5 text-muted-foreground">{o.summary}</span>
+              </span>
+              <span className="flex flex-col items-end gap-1">
+                {o.hasScore ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="num text-sm font-bold text-foreground">{formatNumber(o.score, locale, { digits: 0 })}</span>
+                    <ScoreBar score={o.score} />
+                  </span>
+                ) : (
+                  <span className="text-xs text-subtle-foreground">Sem score</span>
+                )}
+                <span className="num text-xs text-muted-foreground">{o.price === null ? "—" : formatPrice(o.price, o.currency, locale)}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }
