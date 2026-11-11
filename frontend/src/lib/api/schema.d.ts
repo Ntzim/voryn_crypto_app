@@ -1115,6 +1115,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/exchange-connections/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Connection Setup */
+        get: operations["connection_setup_api_v1_exchange_connections_setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/exchange-connections": {
         parameters: {
             query?: never;
@@ -1976,6 +1993,11 @@ export interface components {
             /** Pending */
             pending: number;
             reconciliation: components["schemas"]["ReconciliationOut"] | null;
+        };
+        /** ConnectionSetupOut */
+        ConnectionSetupOut: {
+            /** Binance Egress Ip */
+            binance_egress_ip: string | null;
         };
         /** CorrelationOut */
         CorrelationOut: {
@@ -5720,6 +5742,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    connection_setup_api_v1_exchange_connections_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionSetupOut"];
                 };
             };
         };

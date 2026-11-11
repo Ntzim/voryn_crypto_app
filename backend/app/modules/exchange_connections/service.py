@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import rate_limit, security_events
 from app.core.authz import owned_or_404
+from app.core.config import get_settings
 from app.core.crypto import decrypt, encrypt
 from app.core.errors import AppError
 from app.core.logging import get_logger
@@ -67,6 +68,22 @@ def connector_for(exchange_id: str, api_key: str, api_secret: str) -> ExchangeCo
 
 def utcnow() -> datetime:
     return datetime.now(UTC)
+
+
+async def check_proxy(connector: BinanceConnector | None = None) -> bool:
+    """Whether Binance answers through the proxy; a failure raises a security alert. Does
+    nothing without a proxy. On a free server that may be reclaimed, this is how you find out."""
+    if connector is None and not get_settings().binance_proxy_url:
+        return True
+    client = connector or BinanceConnector("", "")
+    try:
+        await client.check_connectivity()
+    except ConnectorError as exc:
+        await security_events.emit("exchange_proxy_down", error=exc.message)
+        return False
+    finally:
+        await client.aclose()
+    return True
 
 
 # --------------------------------------------------------------------------- CRUD

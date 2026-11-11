@@ -9,6 +9,10 @@ Código: `backend/app/modules/exchange_connections/`. Exchange implementada: **B
 - Chave e segredo são cifrados em repouso (Fernet, `ENCRYPTION_KEYS`), nunca voltam ao navegador e aparecem só pelos 4 últimos caracteres. Chaves repetidas são detectadas por um HMAC da chave, sem guardá-la em claro.
 - Conectar e desconectar ficam registrados na auditoria. Desconectar apaga as credenciais e os registros sincronizados; as transações já importadas continuam na carteira.
 
+## Conexão em produção
+
+A Binance bloqueia endereços dos EUA, onde os servidores rodam. Com `BINANCE_PROXY_URL`, só o conector assinado sai por um servidor próprio no Brasil, com IP fixo: um túnel TLS que não vê chaves nem dados (`infra/binance-proxy/README.md`). A cada 5 minutos a tarefa `exchanges.check_proxy` testa esse caminho e gera o alerta `exchange_proxy_down` se falhar. Sem a variável, o conector sai direto, e a Binance recusa com uma mensagem clara de região bloqueada.
+
 ## O que é lido
 
 | Dado | Endpoint | Incremental |

@@ -19,6 +19,7 @@ from urllib.parse import urlencode
 import httpx
 
 from app.core.config import get_settings
+from app.core.logging import get_logger
 from app.modules.exchange_connections.connectors.base import (
     ConnectorAuthError,
     ConnectorError,
@@ -26,6 +27,8 @@ from app.modules.exchange_connections.connectors.base import (
     Permissions,
     SyncBatch,
 )
+
+logger = get_logger(__name__)
 
 QUOTES = ("BRL", "USDT", "USDC", "FDUSD")
 #: flags that grant no write capability; ipRestrict only narrows where the key works
@@ -83,10 +86,16 @@ class BinanceConnector:
         backoff_seconds: float = BACKOFF_SECONDS,
     ) -> None:
         self._key, self._secret = api_key, api_secret.encode()
+        settings = get_settings()
+        # Binance blocks the region the servers run in; see infra/binance-proxy. The proxy only
+        # tunnels TLS, so keys and signatures stay end-to-end encrypted with Binance.
+        proxy = settings.binance_proxy_url if transport is None else None
+        self._proxied = proxy is not None
         self._client = httpx.AsyncClient(
-            base_url=base_url or get_settings().binance_private_base_url,
+            base_url=base_url or settings.binance_private_base_url,
             timeout=20,
             transport=transport,
+            proxy=proxy.get_secret_value() if proxy else None,
             headers={"User-Agent": "Voryn/1.0"},
         )
         self._offset_ms = 0
@@ -107,14 +116,30 @@ class BinanceConnector:
             last = attempt == RETRIES
             try:
                 response = await self._client.get(url, params=params, headers=headers)
+            except httpx.ProxyError as exc:
+                # The proxy refused the tunnel (wrong password, destination): retrying won't help.
+                # `from None`: the chain must not carry anything about the proxy URL to the logs.
+                logger.error("binance_proxy_refused", status=str(exc).split(" ", 1)[0])
+                raise ConnectorError(
+                    "O proxy de conexão com a Binance recusou a chamada."
+                ) from None
             except httpx.HTTPError as exc:
                 if last:
+                    if self._proxied:
+                        logger.error("binance_proxy_unreachable", error=type(exc).__name__)
+                        raise ConnectorError(
+                            "Não foi possível conectar à Binance pelo proxy de conexão."
+                        ) from None
                     raise ConnectorError("Não foi possível conectar à Binance.") from exc
             else:
                 if response.status_code < 500 or last:
                     return response
             await asyncio.sleep(self._backoff * 2**attempt)
         raise AssertionError("unreachable")
+
+    async def check_connectivity(self) -> None:
+        """Public call on the same route as the signed ones. Raises ConnectorError on failure."""
+        await self._get("/api/v3/time")
 
     async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         return self._parse(await self._send(path, params))
@@ -144,6 +169,11 @@ class BinanceConnector:
     def _parse(response: httpx.Response) -> Any:
         if response.status_code in (418, 429):
             raise ConnectorError("Limite de requisições da Binance atingido. Tente mais tarde.")
+        if response.status_code == 451 or "restricted location" in response.text.lower():
+            logger.error("binance_region_blocked", status=response.status_code)
+            raise ConnectorError(
+                "A Binance bloqueia a região do servidor. A conexão precisa do proxy no Brasil."
+            )
         code = _code(response)
         if response.status_code == 401 or code in _AUTH_CODES:
             raise ConnectorAuthError("A Binance recusou a chave de API (inválida ou revogada).")

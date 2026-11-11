@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     binance_base_url: str = "https://data-api.binance.vision"
     #: signed (account) endpoints; used only with the user's read-only keys
     binance_private_base_url: str = "https://api.binance.com"
+    #: Brazilian egress for the signed connector only (Binance blocks US addresses); holds the
+    #: proxy's password. See infra/binance-proxy.
+    binance_proxy_url: SecretStr | None = None
+    #: the proxy's public IP, shown to users so they can restrict their API key to it
+    binance_egress_ip: str | None = None
     market_top_n: int = Field(default=100, ge=1, le=250)
     market_sync_interval_seconds: int = Field(default=300, ge=60)
     fx_sync_interval_seconds: int = Field(default=3600, ge=300)
@@ -115,6 +120,7 @@ class Settings(BaseSettings):
     @field_validator(
         "anthropic_api_key",
         "coingecko_api_key",
+        "binance_proxy_url",
         "brapi_token",
         "smtp_password",
         "resend_api_key",
@@ -124,6 +130,11 @@ class Settings(BaseSettings):
     @classmethod
     def _blank_secret_is_none(cls, value: object) -> object:
         # docker compose passes unset optional variables as empty strings.
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("binance_egress_ip", mode="before")
+    @classmethod
+    def _blank_ip_is_none(cls, value: object) -> object:
         return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("frontend_url")
@@ -189,6 +200,10 @@ class Settings(BaseSettings):
         ):
             if not getattr(self, name).startswith("https://"):
                 problems.append(f"{name.upper()} must use https")
+        proxy = self.binance_proxy_url
+        if proxy and not proxy.get_secret_value().startswith("https://"):
+            # Its password would travel in clear on the way from Railway to the proxy.
+            problems.append("BINANCE_PROXY_URL must use https")
         if problems:
             raise RuntimeError("Invalid production configuration: " + "; ".join(problems))
 

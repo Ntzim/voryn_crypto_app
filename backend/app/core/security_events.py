@@ -23,6 +23,7 @@ EventKind = Literal[
     "access_denied",
     "rate_limited",
     "exchange_sync_failed",
+    "exchange_proxy_down",
     "signal_blocked",
     "processing_failed",
     "server_error",
@@ -37,6 +38,8 @@ THRESHOLDS: dict[str, int] = {
     "access_denied": 10,
     "rate_limited": 100,
     "exchange_sync_failed": 20,
+    # One failed check is already an alert: nobody else would notice before the next sync fails.
+    "exchange_proxy_down": 0,
     "signal_blocked": 50,
     "processing_failed": 10,
     "server_error": 10,

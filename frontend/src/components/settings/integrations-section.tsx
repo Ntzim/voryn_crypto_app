@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "cn";
-import { Loader2, Lock, Plug, RefreshCw, Unplug } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Copy, Loader2, Lock, Plug, RefreshCw, Unplug } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { EmptyState } from "@/components/common/states";
@@ -17,8 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError } from "@/lib/api/client";
-import type { ExchangeConnection, Locale } from "@/lib/api/types";
+import { api, ApiError } from "@/lib/api/client";
+import type { ExchangeConnection, ExchangeConnectionSetup, Locale } from "@/lib/api/types";
 import { useExchangeConnections, useExchangeMutations, useExchangeRecords } from "@/lib/exchange-queries";
 import { formatDateTime, formatNumber, formatRelative } from "@/lib/format";
 import { usePreferences } from "@/lib/queries";
@@ -259,6 +260,12 @@ function ConnectDialog({
   onConnected: () => void;
 }) {
   const { connect } = useExchangeMutations();
+  const setup = useQuery({
+    queryKey: ["exchange-connections", "setup"],
+    queryFn: ({ signal }) => api<ExchangeConnectionSetup>("/exchange-connections/setup", { signal }),
+    enabled: open,
+    staleTime: 5 * 60_000,
+  });
   const [label, setLabel] = useState("Binance");
   const [key, setKey] = useState("");
   const [secret, setSecret] = useState("");
@@ -291,6 +298,7 @@ function ConnectDialog({
             Deixe marcada <strong className="text-foreground">somente</strong> a opção “Habilitar leitura”. Não habilite negociação, saque
             ou transferências.
           </li>
+          {setup.data?.binance_egress_ip && <EgressIpStep ip={setup.data.binance_egress_ip} />}
           <li>Copie a chave e o segredo abaixo. O segredo não é exibido de novo pela Binance nem pela Voryn.</li>
         </ol>
         <form onSubmit={submit} className="flex flex-col gap-3" autoComplete="off">
@@ -324,3 +332,26 @@ function ConnectDialog({
     </Dialog>
   );
 }
+
+/** A key restricted to this address is useless if it leaks anywhere else. */
+function EgressIpStep({ ip }: { ip: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    await navigator.clipboard.writeText(ip);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <li>
+      Em “Restringir acesso a IPs”, escolha IPs confiáveis e informe{" "}
+      <span className="inline-flex items-center gap-1 align-middle">
+        <code className="num rounded bg-muted px-1.5 py-0.5 text-foreground">{ip}</code>
+        <button type="button" onClick={copy} aria-label="Copiar IP" className="inline-flex size-7 items-center justify-center rounded-md hover:bg-accent">
+          {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
+        </button>
+      </span>
+      , o endereço fixo por onde a Voryn acessa a Binance.
+    </li>
+  );
+}
+
