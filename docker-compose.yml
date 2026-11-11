@@ -22,6 +22,7 @@ x-backend-env: &backend-env
   BINANCE_PROXY_URL: ${BINANCE_PROXY_URL:-}
   BINANCE_EGRESS_IP: ${BINANCE_EGRESS_IP:-}
   MARKETS_ENABLED: ${MARKETS_ENABLED:-CRYPTO}
+  REGISTRATION_OPEN: ${REGISTRATION_OPEN:-true}
   BRAPI_TOKEN: ${BRAPI_TOKEN:-}
   BRAPI_PLAN: ${BRAPI_PLAN:-free}
   # Voryn AI (optional). Without a key the assistant is shown as unavailable.

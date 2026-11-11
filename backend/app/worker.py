@@ -36,6 +36,7 @@ from app.modules.market_data.providers.binance import BinanceCandleProvider
 from app.modules.market_data.providers.brapi import BrapiProvider
 from app.modules.market_data.providers.coingecko import CoinGeckoProvider
 from app.modules.portfolio import service as portfolio
+from app.modules.signals import b3 as b3_signals
 from app.modules.signals import service as signals
 
 settings = get_settings()
@@ -81,6 +82,11 @@ if settings.market_enabled("B3"):
     celery_app.conf.beat_schedule["sync-b3"] = {
         "task": "market.sync_b3",
         "schedule": float(settings.b3_sync_interval_seconds),
+    }
+    # One signal per closed session; runs between sessions cost no brapi requests.
+    celery_app.conf.beat_schedule["generate-b3-signals"] = {
+        "task": "signals.generate_b3",
+        "schedule": 2 * 3600.0,
     }
 
 
@@ -261,6 +267,21 @@ async def _sync_b3(db: AsyncSession) -> int:
         await provider.aclose()
 
 
+async def _generate_b3_signals(db: AsyncSession) -> int:
+    if not settings.market_enabled("B3"):
+        return 0
+    provider = BrapiProvider()
+    try:
+        return await b3_signals.generate(db, provider)
+    finally:
+        await provider.aclose()
+
+
+@celery_app.task(name="signals.generate_b3")
+def generate_b3_signals_task() -> int:
+    return _run(_generate_b3_signals)
+
+
 @celery_app.task(name="market.sync_b3")
 def sync_b3_task() -> int:
     return _run(_sync_b3)
@@ -321,5 +342,7 @@ def _bootstrap(**_: Any) -> None:
     sync_markets_task.delay()
     if settings.market_enabled("B3"):
         sync_b3_task.delay()
+        # After the catalogue sync: market breadth is read from the fresh quotes.
+        generate_b3_signals_task.apply_async(countdown=120)
     refresh_history_task.delay()
     generate_signals_task.delay()

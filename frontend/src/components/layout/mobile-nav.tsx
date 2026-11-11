@@ -8,7 +8,8 @@ import { useState } from "react";
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-import { NAV_ITEMS, NAV_SECTIONS, isActive } from "./nav-config";
+import { NAV_ITEMS, isActive } from "./nav-config";
+import { useNavSections } from "./use-nav-sections";
 import { useLogout } from "./use-logout";
 
 const PRIMARY = NAV_ITEMS.filter((item) => item.mobilePrimary);
@@ -26,6 +27,7 @@ export function MobileNav() {
 export function MobileNavBar({ pathname }: { pathname: string | null }) {
   const [open, setOpen] = useState(false);
   const logout = useLogout();
+  const sections = useNavSections();
   const moreActive = pathname !== null && !PRIMARY.some((item) => isActive(pathname, item.href));
 
   return (
@@ -77,7 +79,7 @@ export function MobileNavBar({ pathname }: { pathname: string | null }) {
                 <SheetDescription className="sr-only">Todas as áreas da Voryn</SheetDescription>
               </SheetHeader>
               <div className="overflow-y-auto px-4 pb-4">
-                {NAV_SECTIONS.map((section) => (
+                {sections.map((section) => (
                   <div key={section.label} className="mt-4 first:mt-0">
                     <p className="mb-1 px-2 text-[11px] font-medium tracking-wider text-subtle-foreground uppercase">
                       {section.label}

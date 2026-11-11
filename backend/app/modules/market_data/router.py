@@ -1,17 +1,22 @@
 import uuid
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Depends, Path, Query
 
 from app.core.config import get_settings
-from app.modules.auth.deps import CurrentAuth, DbSession
+from app.modules.auth.deps import CurrentAuth, DbSession, user_rate_limit
 from app.modules.market_data import calendars, exchanges, service
 from app.modules.market_data.providers import brapi
 from app.modules.market_data.schemas import (
     AssetBriefOut,
     AssetDetailOut,
     AssetListOut,
+    ExchangeAssetListOut,
+    ExchangeDetailOut,
+    ExchangeHistoryOut,
+    ExchangeOverviewOut,
     InstrumentHitOut,
     Market,
     MarketOut,
@@ -19,6 +24,8 @@ from app.modules.market_data.schemas import (
     QuoteCurrency,
     SortKey,
 )
+from app.modules.signals import b3 as b3_signals
+from app.modules.signals.schemas import B3SignalListOut, B3SignalOut
 from app.modules.watchlists import service as watchlists
 
 router = APIRouter(prefix="/market", tags=["market"])
@@ -149,3 +156,102 @@ async def search_instruments(
         )
         for hit in await exchanges.search(db, q, markets, limit)
     ]
+
+
+# --------------------------------------------------------------------------- exchange markets
+
+ExchangeMarket = Literal["B3"]
+Symbol = Annotated[str, Path(pattern=r"^[A-Z0-9]{4,12}$")]
+
+
+async def get_brapi_provider() -> AsyncIterator[brapi.BrapiProvider]:
+    # A page view makes one attempt; backing off would hold the request open for seconds.
+    provider = brapi.BrapiProvider(max_attempts=1)
+    try:
+        yield provider
+    finally:
+        await provider.aclose()
+
+
+Brapi = Annotated[brapi.BrapiProvider, Depends(get_brapi_provider)]
+
+
+@router.get("/exchanges/{market}/overview")
+async def exchange_overview(
+    _: CurrentAuth, db: DbSession, market: ExchangeMarket
+) -> ExchangeOverviewOut:
+    exchanges.ensure_enabled(market)
+    return await exchanges.overview(db, market)
+
+
+@router.get("/exchanges/{market}/assets")
+async def exchange_assets(
+    _: CurrentAuth,
+    db: DbSession,
+    market: ExchangeMarket,
+    q: Annotated[str | None, Query(max_length=64)] = None,
+    asset_type: Literal["STOCK", "FII", "ETF", "BDR"] | None = None,
+    sort: exchanges.ExchangeSort = "traded_value",
+    order: Literal["asc", "desc"] = "desc",
+    page: Annotated[int, Query(ge=1, le=1000)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> ExchangeAssetListOut:
+    exchanges.ensure_enabled(market)
+    return await exchanges.list_assets(
+        db,
+        market,
+        q=q,
+        asset_type=asset_type,
+        sort=sort,
+        order=order,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get(
+    "/exchanges/{market}/assets/{symbol}",
+    dependencies=[user_rate_limit("exchange_detail", 60, 60)],
+)
+async def exchange_asset(
+    _: CurrentAuth, db: DbSession, market: ExchangeMarket, symbol: Symbol, provider: Brapi
+) -> ExchangeDetailOut:
+    exchanges.ensure_enabled(market)
+    return await exchanges.detail(db, market, symbol, provider)
+
+
+@router.get(
+    "/exchanges/{market}/assets/{symbol}/history",
+    dependencies=[user_rate_limit("exchange_history", 60, 60)],
+)
+async def exchange_asset_history(
+    _: CurrentAuth,
+    db: DbSession,
+    market: ExchangeMarket,
+    symbol: Symbol,
+    provider: Brapi,
+    range: Literal["1mo", "3mo", "1y", "5y"] = "3mo",
+) -> ExchangeHistoryOut:
+    exchanges.ensure_enabled(market)
+    return await exchanges.history(db, market, symbol, range, provider)
+
+
+@router.get("/exchanges/{market}/signals")
+async def exchange_signals(
+    _: CurrentAuth,
+    db: DbSession,
+    market: ExchangeMarket,
+    asset_type: Literal["STOCK", "FII"] = "STOCK",
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> B3SignalListOut:
+    """Latest signals of the most traded instruments. Stored once per session: no brapi call."""
+    exchanges.ensure_enabled(market)
+    return await b3_signals.list_signals(db, asset_type, limit)
+
+
+@router.get("/exchanges/{market}/assets/{symbol}/signal")
+async def exchange_asset_signal(
+    _: CurrentAuth, db: DbSession, market: ExchangeMarket, symbol: Symbol
+) -> B3SignalOut:
+    exchanges.ensure_enabled(market)
+    return await b3_signals.for_asset(db, symbol)

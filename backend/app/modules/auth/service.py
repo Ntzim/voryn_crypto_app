@@ -158,6 +158,12 @@ async def _consume_token(db: AsyncSession, token: str, purpose: TokenPurpose) ->
 
 
 async def register(db: AsyncSession, data: RegisterIn, meta: RequestMeta) -> None:
+    if not get_settings().registration_open:
+        raise AppError(
+            "Os cadastros estão fechados nesta instalação da Voryn.",
+            code="registration_closed",
+            status_code=403,
+        )
     await rate_limit.enforce(f"register:ip:{meta.ip}", 5, 3600)
     # Hash before the existence check so both paths cost the same time.
     password_hash = await asyncio.to_thread(hash_password, data.password)
