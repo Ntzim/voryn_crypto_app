@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { AssetIcon } from "@/components/common/asset-icon";
 import { ChangeBadge } from "@/components/common/change-badge";
 import { PageHeader } from "@/components/common/page-header";
+import { MarketTabs } from "@/components/opportunities/market-tabs";
 import { EmptyState, ErrorState } from "@/components/common/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -118,7 +119,7 @@ export function B3View() {
 
   return (
     <>
-      <PageHeader title="Bolsa B3" description="Ações, FIIs, ETFs e BDRs listados na bolsa brasileira." />
+      <PageHeader title="Mercado B3" description="Ações, FIIs, ETFs e BDRs listados na bolsa brasileira." actions={<MarketTabs current="b3" />} />
       {status ? <B3SessionBadge status={status} locale={locale} timeZone={timeZone} className="mb-5" /> : <Skeleton className="mb-5 h-7 w-72" />}
 
       <OverviewSection overview={overview.data} error={overview.error} onRetry={() => overview.refetch()} locale={locale} />

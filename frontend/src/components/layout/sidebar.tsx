@@ -33,7 +33,7 @@ export function Sidebar() {
       className={cn(
         "sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar md:flex",
         "w-[68px] transition-[width] duration-200 ease-out",
-        expanded && "xl:w-[264px]",
+        expanded && "xl:w-[248px]",
       )}
       aria-label="Navegação principal"
     >
@@ -44,21 +44,17 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="flex flex-1 flex-col overflow-y-auto px-3 pb-4" aria-label="Áreas">
         {sections.map((section) => (
-          <div key={section.label} className="mt-5 first:mt-2">
-            <p
-              className={cn(
-                "mb-1.5 hidden px-2.5 text-[11px] font-medium tracking-wider text-subtle-foreground uppercase",
-                expanded && "xl:block",
-              )}
-            >
-              {section.label}
-            </p>
+          // The account group (alerts, settings) sits at the bottom, apart from the work areas.
+          <div key={section.label} className={cn("mt-5 first:mt-2", section.footer && "mt-auto pt-5")}>
+            {!section.footer && (
+              <p className={cn("overline mb-1.5 hidden px-2.5 text-subtle-foreground", expanded && "xl:block")}>{section.label}</p>
+            )}
             <ul className="space-y-0.5">
               {section.items.map((item) => (
                 <li key={item.href}>
-                  <SidebarLink item={item} active={isActive(pathname, item.href)} expanded={expanded} />
+                  <SidebarLink item={item} active={isActive(pathname, item)} expanded={expanded} />
                 </li>
               ))}
             </ul>
@@ -90,16 +86,16 @@ function SidebarLink({ item, active, expanded }: { item: NavItem; active: boolea
       className={cn(
         // Quiet navigation (Linear): the current page is marked by a raised surface and full
         // contrast, not by color; the rest stays a step dimmer than the content.
-        "group relative flex h-9 items-center justify-center gap-3 rounded-lg px-2.5 text-[13px] font-medium transition-colors duration-150",
+        "group relative flex h-10 items-center justify-center gap-3 rounded-[10px] px-2.5 text-[13px] font-medium transition-colors duration-150",
         expanded && "xl:justify-start",
         active
-          ? "bg-sidebar-accent text-foreground shadow-raised"
-          : "text-sidebar-foreground hover:bg-foreground/4 hover:text-foreground",
+          ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
+          : "text-sidebar-foreground hover:bg-card-hover hover:text-foreground",
       )}
     >
       <Icon
-        className={cn("size-[17px] shrink-0", active ? "text-foreground" : "text-subtle-foreground group-hover:text-foreground")}
-        strokeWidth={active ? 2.1 : 1.8}
+        className={cn("size-4 shrink-0", active ? "text-sidebar-accent-foreground" : "text-subtle-foreground group-hover:text-foreground")}
+        strokeWidth={1.5}
       />
       <span className={cn("hidden flex-1 truncate", expanded && "xl:inline")}>{item.label}</span>
       {!item.available && (
