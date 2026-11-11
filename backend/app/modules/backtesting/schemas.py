@@ -76,6 +76,8 @@ class EquityPointOut(BaseModel):
     segment: Segment
     strategy: Decimal
     benchmark: Decimal
+    #: the asset's close at this candle, in the quote currency (absent in results saved before it)
+    price: Decimal | None = None
 
 
 class TradeOut(BaseModel):

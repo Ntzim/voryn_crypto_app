@@ -321,6 +321,7 @@ def backtest(
     hold_train = bt.simulate(candles, hold, start, split, costs)
     hold_validation = bt.simulate(candles, hold, split, n, costs)
 
+    close_at = {c.open_time: c.close for c in candles}
     equity: list[EquityPointOut] = []
     for segment, run, bench in (
         ("train", train, hold_train),
@@ -333,10 +334,20 @@ def backtest(
                     segment=segment,
                     strategy=value.quantize(Decimal("0.01")),
                     benchmark=b.quantize(Decimal("0.01")),
+                    price=close_at[t],
                 )
             )
     step = max(1, math.ceil(len(equity) / MAX_EQUITY_POINTS))
-    sampled = [p for i, p in enumerate(equity) if i % step == 0 or i == len(equity) - 1]
+    # Downsampled for the chart, keeping each segment's first and last point exact.
+    last = len(equity) - 1
+    edges = {
+        i
+        for i, p in enumerate(equity)
+        if i in (0, last)
+        or p.segment != equity[i - 1].segment
+        or p.segment != equity[i + 1].segment
+    }
+    sampled = [p for i, p in enumerate(equity) if i % step == 0 or i in edges]
 
     def trades(run: bt.Run, segment: str) -> list[TradeOut]:
         return [

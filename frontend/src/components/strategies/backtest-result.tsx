@@ -2,7 +2,7 @@
 
 import { cn } from "cn";
 import { ColorType, createChart, LineSeries, LineStyle, type UTCTimestamp } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AssetIcon } from "@/components/common/asset-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +70,7 @@ export function BacktestResultView({ run, strategies }: { run: Backtest; strateg
         </CardContent>
       </Card>
 
-      <EquityCard result={result} locale={locale} />
+      <EquityCard result={result} symbol={run.asset.symbol} locale={locale} />
       <MetricsTable result={result} locale={locale} date={date} />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -97,9 +97,34 @@ export function BacktestResultView({ run, strategies }: { run: Backtest; strateg
   );
 }
 
-function EquityCard({ result, locale }: { result: BacktestResult; locale: Locale }) {
+type ChartView = "equity" | "price";
+
+/** Axis labels: whole units for large prices, cents near 1, significant digits below. */
+function axisNumber(v: number, locale: Locale): string {
+  const abs = Math.abs(v);
+  const options: Intl.NumberFormatOptions =
+    abs >= 1000 ? { maximumFractionDigits: 0 } : abs >= 1 ? { maximumFractionDigits: 2 } : { maximumSignificantDigits: 4 };
+  return v.toLocaleString(locale, options);
+}
+
+/** The asset's own price at the first and last bar of each period (exact: the API keeps the edges). */
+function periodPrices(result: BacktestResult) {
+  return (["train", "validation"] as const).flatMap((segment) => {
+    const points = result.equity.filter((p) => p.segment === segment && p.price != null);
+    if (points.length < 2) return [];
+    const first = points[0];
+    const last = points[points.length - 1];
+    return [{ segment, from: first.price, to: last.price, change: (Number(last.price) / Number(first.price) - 1) * 100 }];
+  });
+}
+
+function EquityCard({ result, symbol, locale }: { result: BacktestResult; symbol: string; locale: Locale }) {
   const container = useRef<HTMLDivElement>(null);
   const palette = useChartPalette();
+  // Results saved before the price was stored only have the portfolio curve.
+  const hasPrice = result.equity.some((p) => p.price != null);
+  const [view, setView] = useState<ChartView>("equity");
+  const shown: ChartView = hasPrice ? view : "equity";
 
   useEffect(() => {
     const el = container.current;
@@ -111,36 +136,94 @@ function EquityCard({ result, locale }: { result: BacktestResult; locale: Locale
       grid: { vertLines: { visible: false }, horzLines: { color: palette.grid } },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false, fixLeftEdge: true, fixRightEdge: true },
-      localization: { locale, priceFormatter: (v: number) => v.toLocaleString(locale, { maximumFractionDigits: 0 }) },
+      localization: { locale, priceFormatter: (v: number) => axisNumber(v, locale) },
       handleScroll: false,
       handleScale: false,
     });
     const time = (iso: string) => (Date.parse(iso) / 1000) as UTCTimestamp;
-    // Each segment starts from the same capital, so it is drawn as its own pair of lines.
     for (const segment of ["train", "validation"] as const) {
       const points = result.equity.filter((p) => p.segment === segment);
       const dashed = segment === "train";
-      const strategy = chart.addSeries(LineSeries, { color: COLORS.strategy, lineWidth: 2, lineStyle: dashed ? LineStyle.Dashed : LineStyle.Solid, priceLineVisible: false, lastValueVisible: !dashed });
+      const lineStyle = dashed ? LineStyle.Dashed : LineStyle.Solid;
+      if (shown === "price") {
+        // The asset itself, with the same dashed/solid convention for train/validation.
+        const price = chart.addSeries(LineSeries, { color: COLORS.strategy, lineWidth: 2, lineStyle, priceLineVisible: false, lastValueVisible: !dashed });
+        price.setData(points.filter((p) => p.price != null).map((p) => ({ time: time(p.time), value: Number(p.price) })));
+        continue;
+      }
+      // Each segment starts from the same capital, so it is drawn as its own pair of lines.
+      const strategy = chart.addSeries(LineSeries, { color: COLORS.strategy, lineWidth: 2, lineStyle, priceLineVisible: false, lastValueVisible: !dashed });
       strategy.setData(points.map((p) => ({ time: time(p.time), value: Number(p.strategy) })));
-      const bench = chart.addSeries(LineSeries, { color: COLORS.benchmark, lineWidth: 1, lineStyle: dashed ? LineStyle.Dashed : LineStyle.Solid, priceLineVisible: false, lastValueVisible: !dashed });
+      const bench = chart.addSeries(LineSeries, { color: COLORS.benchmark, lineWidth: 1, lineStyle, priceLineVisible: false, lastValueVisible: !dashed });
       bench.setData(points.map((p) => ({ time: time(p.time), value: Number(p.benchmark) })));
     }
     chart.timeScale().fitContent();
     return () => chart.remove();
-  }, [result, locale, palette]);
+  }, [result, locale, palette, shown]);
+
+  const capital = `${formatNumber(result.initial_capital, locale, { digits: 0 })} ${result.quote}`;
+  const prices = periodPrices(result);
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="font-heading text-sm font-medium">Evolução de {formatNumber(result.initial_capital, locale, { digits: 0 })} {result.quote} em cada período</CardTitle>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
+        <CardTitle className="font-heading text-sm font-medium">
+          {shown === "price" ? `Preço do ${symbol} (${result.quote})` : `Evolução de ${capital} em cada período`}
+        </CardTitle>
+        {hasPrice && (
+          <div role="group" aria-label="O que o gráfico mostra" className="inline-flex rounded-[10px] bg-surface-sunken p-0.5">
+            {(
+              [
+                ["equity", "Patrimônio"],
+                ["price", `Preço do ${symbol}`],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={shown === key}
+                onClick={() => setView(key)}
+                className={cn("inline-flex h-8 items-center rounded-[8px] px-3 text-xs font-medium", shown === key ? "bg-surface-raised text-foreground" : "text-muted-foreground hover:text-foreground")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div ref={container} className="h-64 w-full md:h-72" />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <Legend color={LEGEND.strategy} label="Estratégia" />
-          <Legend color={LEGEND.benchmark} label="Comprar e manter" />
-          <span>Tracejado: treino · contínuo: validação (recomeça do capital inicial)</span>
+          {shown === "price" ? (
+            <Legend color={LEGEND.strategy} label={`${symbol}, fechamento de cada candle`} />
+          ) : (
+            <>
+              <Legend color={LEGEND.strategy} label="Estratégia" />
+              <Legend color={LEGEND.benchmark} label="Comprar e manter" />
+            </>
+          )}
+          <span>Tracejado: treino · contínuo: validação{shown === "equity" && " (recomeça do capital inicial)"}</span>
         </div>
+        {shown === "equity" && (
+          <p className="mt-2 text-[11px] text-subtle-foreground">
+            O eixo mostra o valor da carteira simulada, que começa com {capital} em cada período, e não o preço do {symbol}.
+          </p>
+        )}
+        {prices.length > 0 && (
+          <dl className="num mt-3 grid gap-2 border-t border-border pt-3 text-xs sm:grid-cols-2">
+            {prices.map((p) => (
+              <div key={p.segment}>
+                <dt className="text-muted-foreground">
+                  {symbol} no {p.segment === "train" ? "treino" : "período de validação"}
+                </dt>
+                <dd className="text-foreground">
+                  {formatPrice(p.from, "USD", locale)} → {formatPrice(p.to, "USD", locale)}{" "}
+                  <span className={p.change >= 0 ? "text-success" : "text-destructive"}>({formatPercent(p.change, locale, 1)})</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </CardContent>
     </Card>
   );
@@ -289,7 +372,7 @@ function TradesCard({ result, locale, date }: { result: BacktestResult; locale: 
                       </span>
                     </td>
                     <td className="py-2">
-                      {t.exit_time ? date(t.exit_time) : "em aberto"}
+                      {t.exit_time ? date(t.exit_time) : t.segment === "train" ? "aberta no fim do treino" : "aberta no fim do período"}
                       {t.exit_price && <span className="block text-xs text-muted-foreground">{formatPrice(t.exit_price, "USD", locale)}</span>}
                     </td>
                     <td className={cn("py-2 text-right", t.return_pct === null ? "text-muted-foreground" : Number(t.return_pct) >= 0 ? "text-success" : "text-destructive")}>

@@ -25,4 +25,11 @@ test("run a backtest in the worker and read train vs validation results", async 
   await expect(page.getByText("escolhido", { exact: true })).toBeVisible();
   await expect(page.getByText(/sem uso de dados futuros/)).toBeVisible();
   await expect(page.getByRole("button", { name: /BTC · Cruzamento de médias/ })).toBeVisible();
+
+  // The chart says the axis is the simulated portfolio, and can switch to the asset's own price.
+  await expect(page.getByText(/não o preço do BTC/)).toBeVisible();
+  await expect(page.getByText("BTC no período de validação")).toBeVisible();
+  await page.getByRole("button", { name: "Preço do BTC" }).click();
+  await expect(page.getByRole("button", { name: "Preço do BTC" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Preço do BTC (USDT)")).toBeVisible();
 });
