@@ -16,7 +16,9 @@
  * fill (WCAG 2.2 AA, 4.5:1 for body text); the minimum ratio is noted next to each.
  */
 :root {
-  --gradient-brand: linear-gradient(90deg, #4f46e5, #818cf8);
+  --brand-gradient-from: #4f46e5;
+  --brand-gradient-to: #818cf8;
+  --gradient-brand: linear-gradient(90deg, var(--brand-gradient-from), var(--brand-gradient-to));
   /* Light: Apple-style off-white page with white surfaces lifted by soft shadows. */
   --background: #f5f5f7;
   --foreground: #1d1d1f; /* 13.9:1 */

@@ -1,8 +1,8 @@
 import { cn } from "cn";
 
 /**
- * Voryn mark: two converging strokes forming a "V" — signal meeting evidence.
- * The graphite tile is part of the mark (like an app icon), so it stays the same in both themes.
+ * Voryn mark: two converging strokes forming a "V" — signal meeting evidence. The left stroke
+ * carries the brand gradient, the right one the brand violet at 85%. Colors come from the tokens.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
@@ -12,11 +12,14 @@ export function LogoMark({ className }: { className?: string }) {
       aria-hidden="true"
       className={cn("size-7 shrink-0", className)}
     >
-      <rect width="32" height="32" rx="8" fill="#151820" />
-      <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" stroke="rgb(255 255 255 / 0.12)" />
-      <path d="M8.5 9.5 15.2 22.6" stroke="#6366F1" strokeWidth="3" strokeLinecap="round" />
-      <path d="M23.5 9.5 16.8 22.6" stroke="#8B5CF6" strokeWidth="3" strokeLinecap="round" />
-      <circle cx="16" cy="24" r="1.6" fill="#F8FAFC" />
+      <defs>
+        <linearGradient id="voryn-mark" x1="6" y1="6" x2="16" y2="26" gradientUnits="userSpaceOnUse">
+          <stop offset="0" style={{ stopColor: "var(--brand-gradient-from)" }} />
+          <stop offset="1" style={{ stopColor: "var(--brand-gradient-to)" }} />
+        </linearGradient>
+      </defs>
+      <path d="M6.5 6.5 15 25.5" stroke="url(#voryn-mark)" strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M25.5 6.5 17 25.5" style={{ stroke: "var(--brand)" }} strokeOpacity="0.85" strokeWidth="3.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -26,7 +29,7 @@ export function Logo({ className, collapsed = false }: { className?: string; col
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark />
       {!collapsed && (
-        <span className="font-brand text-[15px] font-semibold tracking-[0.24em] text-foreground">
+        <span className="font-brand text-[15px] font-medium tracking-[0.32em] text-foreground">
           VORYN
         </span>
       )}

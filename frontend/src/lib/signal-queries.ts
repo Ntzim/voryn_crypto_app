@@ -17,10 +17,10 @@ import { useHydrationSafe } from "@/lib/use-hydrated";
 
 /** `color` is a CSS variable: use it in `style` (HTML or SVG), not as an SVG attribute. */
 export const SIGNAL_META: Record<SignalClass, { label: string; short: string; tone: string; color: string }> = {
-  buy_potential: { label: "Potencial de compra", short: "Compra", tone: "text-success bg-success/10 border-success/30", color: "var(--chart-up)" },
-  neutral: { label: "Neutro", short: "Neutro", tone: "text-muted-foreground bg-muted border-border-strong", color: "var(--chart-neutral)" },
-  attention: { label: "Atenção", short: "Atenção", tone: "text-warning bg-warning/10 border-warning/30", color: "var(--chart-4)" },
-  sell_potential: { label: "Potencial de venda", short: "Venda", tone: "text-destructive bg-destructive/10 border-destructive/30", color: "var(--chart-down)" },
+  buy_potential: { label: "Potencial de compra", short: "Compra", tone: "text-signal-buy bg-signal-buy-soft border-transparent", color: "var(--signal-buy)" },
+  neutral: { label: "Neutro", short: "Neutro", tone: "text-signal-neutral bg-signal-neutral-soft border-transparent", color: "var(--signal-neutral-dot)" },
+  attention: { label: "Atenção", short: "Atenção", tone: "text-signal-watch bg-signal-watch-soft border-transparent", color: "var(--signal-watch)" },
+  sell_potential: { label: "Potencial de venda", short: "Venda", tone: "text-signal-sell bg-signal-sell-soft border-transparent", color: "var(--signal-sell)" },
 };
 
 export function useSignals(timeframe: Timeframe, watchlistId?: string) {
