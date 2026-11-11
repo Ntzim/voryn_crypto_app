@@ -6211,6 +6211,17 @@
           "benchmark": {
             "type": "string",
             "title": "Benchmark"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
           }
         },
         "type": "object",

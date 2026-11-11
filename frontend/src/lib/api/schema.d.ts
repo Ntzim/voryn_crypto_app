@@ -2137,6 +2137,8 @@ export interface components {
             strategy: string;
             /** Benchmark */
             benchmark: string;
+            /** Price */
+            price?: string | null;
         };
         /** ExchangeAssetListOut */
         ExchangeAssetListOut: {

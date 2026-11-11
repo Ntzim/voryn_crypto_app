@@ -498,13 +498,13 @@ function OpportunityCards({ items, selected, onSelect, locale }: { items: Opport
   return (
     <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
       {items.map((o) => (
-        <li key={o.id}>
+        <li key={o.id} className="min-w-0">
           <button
             type="button"
             aria-pressed={o.symbol === selected}
             onClick={() => onSelect(o.symbol)}
             className={cn(
-              "flex h-full w-full flex-col gap-3 rounded-2xl border bg-surface p-5 text-left shadow-card transition-[transform,box-shadow] motion-safe:hover:-translate-y-px motion-safe:hover:shadow-card-hover",
+              "flex h-full w-full min-w-0 flex-col gap-3 rounded-2xl border bg-surface p-5 text-left shadow-card transition-[transform,box-shadow] motion-safe:hover:-translate-y-px motion-safe:hover:shadow-card-hover",
               o.symbol === selected ? "border-brand" : "border-border",
             )}
           >
@@ -519,21 +519,22 @@ function OpportunityCards({ items, selected, onSelect, locale }: { items: Opport
                 <span className="text-[11px] text-subtle-foreground">score</span>
               </span>
             </span>
-            <span className="flex items-center justify-between gap-2">
+            {/* Tiny prices (e.g. 0,0000045) are long: the price drops below the badge instead of spilling out. */}
+            <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <SignalBadge value={o.signal} />
-              <span className="num text-sm font-medium text-foreground">{o.price === null ? "—" : formatPrice(o.price, o.currency, locale)}</span>
+              <span className="num ml-auto min-w-0 text-sm font-medium break-all text-foreground">{o.price === null ? "—" : formatPrice(o.price, o.currency, locale)}</span>
             </span>
-            <span className="grid grid-cols-3 gap-2 text-[11px]">
-              <span className="rounded-[10px] bg-background p-2">
+            <span className="grid grid-cols-[1fr_0.8fr_1.25fr] gap-2 text-[11px]">
+              <span className="min-w-0 rounded-[10px] bg-background p-2">
                 <span className="block text-subtle-foreground">Tendência</span>
                 <span className="num font-semibold text-foreground">{o.trend ? `${signed(o.trend.saldo)}/${o.trend.total}` : "—"}</span>
               </span>
-              <span className="rounded-[10px] bg-background p-2">
+              <span className="min-w-0 rounded-[10px] bg-background p-2">
                 <span className="block text-subtle-foreground">ATR</span>
                 <span className="num font-semibold text-foreground">{o.atrPct !== undefined ? `${formatNumber(o.atrPct, locale, { digits: 1 })}%` : "—"}</span>
               </span>
-              <span className="rounded-[10px] bg-background p-2">
-                <span className="block text-subtle-foreground">Volatilidade</span>
+              <span className="min-w-0 rounded-[10px] bg-background p-2">
+                <span className="block truncate text-subtle-foreground">Volatilidade</span>
                 <span className="font-semibold text-foreground">{o.volatility ? capitalize(o.volatility.level) : "—"}</span>
               </span>
             </span>

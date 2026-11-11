@@ -146,6 +146,22 @@ def test_optimization_uses_train_only_and_validation_runs_once() -> None:
     )
     validation = [p for p in body["equity"] if p["segment"] == "validation"]
     assert D(validation[0]["strategy"]) == bt.INITIAL_CAPITAL  # starts flat with fresh capital
+    # The asset's own price rides along each point, so the chart can show it next to the equity.
+    closes = {c.open_time: c.close for c in candles}
+    assert all(D(p["price"]) == closes[datetime.fromisoformat(p["time"])] for p in body["equity"])
+
+
+def test_sampled_equity_keeps_each_segment_edges(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(backtests, "MAX_EQUITY_POINTS", 37)
+    candles = wave(400)
+    body = backtests.backtest(candles, "1d", lambda _: bt.EmaCross(9, 21), {}, [], NO_COSTS, 70)
+    split = datetime.fromisoformat(body["split_at"])
+    times = [datetime.fromisoformat(p["time"]) for p in body["equity"]]
+    assert len(times) < 400
+    # First and last bar of each period are exact, so "start → end" prices are true values.
+    for edge in (candles[body["warmup"]].open_time, split, candles[-1].open_time):
+        assert edge in times
+    assert times[times.index(split) - 1] == split - timedelta(days=1)
 
 
 def test_short_history_is_refused() -> None:
