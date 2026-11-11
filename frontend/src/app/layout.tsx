@@ -7,7 +7,7 @@ import { THEME_COLORS, THEME_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
-const sora = Sora({ variable: "--font-sora", subsets: ["latin"], display: "swap" });
+const sora = Sora({ variable: "--font-sora", subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: "Voryn — Intelligence Behind Every Trade", template: "%s · Voryn" },

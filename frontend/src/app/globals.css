@@ -16,6 +16,7 @@
  * fill (WCAG 2.2 AA, 4.5:1 for body text); the minimum ratio is noted next to each.
  */
 :root {
+  --gradient-brand: linear-gradient(90deg, #4f46e5, #818cf8);
   /* Light: Apple-style off-white page with white surfaces lifted by soft shadows. */
   --background: #f5f5f7;
   --foreground: #1d1d1f; /* 13.9:1 */
@@ -26,8 +27,8 @@
   --elevated: #ffffff;
   --popover: #ffffff;
   --popover-foreground: #1d1d1f;
-  --primary: #585bef; /* fill; white text on it 5.1:1 */
-  --primary-ink: #4b4ee0; /* brand color as text or icon, 5.0:1 */
+  --primary: #5457e6;
+  --primary-ink: #4b4ee0;
   --primary-foreground: #ffffff;
   --violet: #7c3aed;
   --secondary: #ececf0;
@@ -43,8 +44,8 @@
   --border: rgb(0 0 0 / 0.08);
   --border-strong: rgb(0 0 0 / 0.14);
   --input: rgb(0 0 0 / 0.12);
-  --ring: #585bef;
-  --chart-1: #585bef;
+  --ring: #5457e6;
+  --chart-1: #5457e6;
   --chart-2: #7c3aed;
   --chart-3: #0f9f6e;
   --chart-4: #d48806;
@@ -60,8 +61,8 @@
   --sidebar-foreground: #56575e;
   --sidebar-primary: #585bef;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ffffff;
-  --sidebar-accent-foreground: #1d1d1f;
+  --sidebar-accent: #ecedff;
+  --sidebar-accent-foreground: #3730a3;
   --sidebar-border: rgb(0 0 0 / 0.06);
   --sidebar-ring: #585bef;
   /* Depth: soft, natural shadows in light; dark relies on surface steps instead. */
@@ -76,75 +77,109 @@
   /* Motion: short and natural (150–300 ms), never on the critical path. */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
   color-scheme: light;
+  --card-shadow-hover: 0 12px 28px rgb(0 0 0 / 0.08);
+  --brand: #6366f1;
+  --brand-soft: #ecedff;
+  --brand-strong-text: #3730a3;
+  --surface-raised: #ffffff;
+  --surface-sunken: #ececf0;
+  --bar: #ffffff;
+  --brand-glow: rgb(99 102 241 / 0.10);
+  --signal-buy: #08734e;
+  --signal-buy-soft: #e3f4ec;
+  --signal-watch: #8c5300;
+  --signal-watch-soft: #f8eedb;
+  --signal-neutral: #5f6068;
+  --signal-neutral-dot: #8a8b93;
+  --signal-neutral-soft: #ececf0;
+  --signal-sell: #c42238;
+  --signal-sell-soft: #fbe6e9;
 }
 
 .dark {
   /* Dark: neutral graphite (never pure black); data and the brand color carry the hue. */
-  --background: #0b0d12;
-  --foreground: #f5f5f7; /* 15.0:1 */
-  --surface: #151820;
-  --card: #151820;
-  --card-foreground: #f5f5f7;
-  --card-hover: #1c2029;
-  --elevated: #1c2029;
-  --popover: #1c2029;
-  --popover-foreground: #f5f5f7;
-  --primary: #585bef; /* white text on it 4.6:1 */
-  --primary-ink: #8b93f8; /* 5.9:1 */
-  --primary-foreground: #f5f5f7;
+  --background: #0b0f14;
+  --foreground: #f8fafc;
+  --surface: #121821;
+  --card: #121821;
+  --card-foreground: #f8fafc;
+  --card-hover: #161d27;
+  --elevated: #1a212c;
+  --popover: #1a212c;
+  --popover-foreground: #f8fafc;
+  --primary: #5457e6;
+  --primary-ink: #a5a8ff;
+  --primary-foreground: #ffffff;
   --violet: #8b5cf6;
-  --secondary: #1c2029;
-  --secondary-foreground: #f5f5f7;
-  --muted: #1c2029;
-  --muted-foreground: #8e919a; /* 5.2:1 */
-  --subtle-foreground: #858893; /* 4.6:1 */
-  --accent: #232733;
-  --accent-foreground: #f5f5f7;
-  --destructive: #ff6678; /* 5.8:1 */
-  --success: #30d19a; /* 8.3:1 */
-  --warning: #f5b041; /* 8.7:1 */
-  --border: rgb(255 255 255 / 0.08);
-  --border-strong: rgb(255 255 255 / 0.14);
-  --input: rgb(255 255 255 / 0.1);
-  --ring: #8b93f8;
+  --secondary: #1a212c;
+  --secondary-foreground: #f8fafc;
+  --muted: #1a212c;
+  --muted-foreground: #a3adbd;
+  --subtle-foreground: #8591a3;
+  --accent: #1a212c;
+  --accent-foreground: #f8fafc;
+  --destructive: #f87171;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --border: #222a36;
+  --border-strong: #2a3341;
+  --input: #64748b;
+  --ring: #a5a8ff;
   --chart-1: #6366f1;
   --chart-2: #8b5cf6;
   --chart-3: #30d19a;
   --chart-4: #f5b041;
   --chart-5: #38bdf8;
-  --chart-up: #30d19a;
-  --chart-down: #ff6678;
+  --chart-up: #34d399;
+  --chart-down: #f87171;
   --chart-neutral: #8e919a;
   --chart-grid: rgb(255 255 255 / 0.06);
   --chart-axis: #8e919a;
   --chart-emphasis: #f5f5f7;
   --chart-label: #1c2029;
   /* The sidebar recedes (same tone as the page) so the content leads. */
-  --sidebar: #0b0d12;
-  --sidebar-foreground: #a4a7b0;
-  --sidebar-primary: #585bef;
-  --sidebar-primary-foreground: #f5f5f7;
-  --sidebar-accent: #1c2029;
-  --sidebar-accent-foreground: #f5f5f7;
-  --sidebar-border: rgb(255 255 255 / 0.06);
-  --sidebar-ring: #8b93f8;
-  --card-shadow: 0 0 #0000; /* not "none": it is composed with ring shadows */
+  --sidebar: #0b0f14;
+  --sidebar-foreground: #a3adbd;
+  --sidebar-primary: #5457e6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e2150;
+  --sidebar-accent-foreground: #a5a8ff;
+  --sidebar-border: #222a36;
+  --sidebar-ring: #a5a8ff;
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.04);
   --raised-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  --glass-bg: rgb(28 32 41 / 0.8);
-  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-bg: rgb(14 19 26 / 0.86);
+  --glass-border: #222a36;
   --glass-highlight: rgb(255 255 255 / 0.06);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / 0.45);
   --selection: rgb(99 102 241 / 0.35);
   color-scheme: dark;
+  --card-shadow-hover: 0 12px 28px rgb(0 0 0 / 0.08);
+  --brand: #6366f1;
+  --brand-soft: #1e2150;
+  --brand-strong-text: #c7c9ff;
+  --surface-raised: #2a3341;
+  --surface-sunken: #1a212c;
+  --bar: #0e131a;
+  --brand-glow: rgb(99 102 241 / 0.14);
+  --signal-buy: #34d399;
+  --signal-buy-soft: #0f2a20;
+  --signal-watch: #fbbf24;
+  --signal-watch-soft: #2e2410;
+  --signal-neutral: #a3adbd;
+  --signal-neutral-dot: #8b8b94;
+  --signal-neutral-soft: #1a212c;
+  --signal-sell: #f87171;
+  --signal-sell-soft: #3a1517;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   /* One typeface for reading and headings (Inter); Sora stays for the brand wordmark. */
-  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sora), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-brand: var(--font-sora), var(--font-inter), ui-sans-serif, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -159,6 +194,24 @@
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-strong-text: var(--brand-strong-text);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--card-hover);
+  --color-bar: var(--bar);
+  --color-signal-buy: var(--signal-buy);
+  --color-signal-buy-soft: var(--signal-buy-soft);
+  --color-signal-watch: var(--signal-watch);
+  --color-signal-watch-soft: var(--signal-watch-soft);
+  --color-signal-neutral: var(--signal-neutral);
+  --color-signal-neutral-dot: var(--signal-neutral-dot);
+  --color-signal-neutral-soft: var(--signal-neutral-soft);
+  --color-signal-sell: var(--signal-sell);
+  --color-signal-sell-soft: var(--signal-sell-soft);
+  --shadow-card-hover: var(--card-shadow-hover);
+  --background-image-brand: var(--gradient-brand);
   --color-chart-1: var(--chart-1);
   --color-chart-up: var(--chart-up);
   --color-chart-down: var(--chart-down);
@@ -201,6 +254,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  :focus-visible {
+    outline: 2px solid var(--primary-ink);
+    outline-offset: 2px;
+  }
   html {
     @apply font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
@@ -224,9 +281,18 @@
 }
 
 @utility num {
-  /* Financial figures: aligned digits, no ligature surprises. */
+  /* Financial figures: aligned digits. Sora has no tabular figures, so numbers use Inter's. */
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum", "cv11";
+}
+
+@utility overline {
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 @utility pb-safe {
