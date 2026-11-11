@@ -14,6 +14,9 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project --no-cache
 
 FROM base AS runtime
+# Debian security updates on top of the base image: its tag is rebuilt on its own schedule, and a
+# fixed library (zlib1g, CVE-2026-76844 / CVE-2026-85091) should not wait for it.
+RUN apt-get update     && apt-get upgrade -y --no-install-recommends     && rm -rf /var/lib/apt/lists/*
 # pip and ensurepip are not used at runtime (uv builds the venv in the deps stage) and they
 # vendor their own urllib3/msgpack/setuptools, which scanners flag (Trivy, HIGH).
 RUN useradd --system --uid 10001 --home /app voryn \
