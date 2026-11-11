@@ -88,7 +88,7 @@ export function OpportunityDetail({
 
       {item.evidence.length > 0 && (
         <section aria-labelledby={`evidence-${item.id}`}>
-          <h3 id={`evidence-${item.id}`} className="overline mb-2 text-subtle-foreground">Evidências</h3>
+          <h3 id={`evidence-${item.id}`} className="eyebrow mb-2 text-subtle-foreground">Evidências</h3>
           <ul className="space-y-2">
             {item.evidence.map((text) => (
               <li key={text} className="flex gap-2 text-sm text-foreground">
@@ -101,7 +101,7 @@ export function OpportunityDetail({
       )}
 
       <section aria-labelledby={`risks-${item.id}`}>
-        <h3 id={`risks-${item.id}`} className="overline mb-2 text-subtle-foreground">Riscos</h3>
+        <h3 id={`risks-${item.id}`} className="eyebrow mb-2 text-subtle-foreground">Riscos</h3>
         {item.risks.length ? (
           <ul className="space-y-2">
             {item.risks.map((text) => (
@@ -118,7 +118,7 @@ export function OpportunityDetail({
 
       {item.invalidation && (
         <section className="rounded-[10px] border border-border p-3">
-          <h3 className="overline mb-1 text-subtle-foreground">Sinal invalidado se</h3>
+          <h3 className="eyebrow mb-1 text-subtle-foreground">Sinal invalidado se</h3>
           <p className="text-sm font-medium text-foreground">{item.invalidation}</p>
         </section>
       )}
@@ -159,7 +159,7 @@ function PriceLevels({ item, locale }: { item: Opportunity; locale: Locale }) {
       : null;
   return (
     <section aria-labelledby={`levels-${item.id}`}>
-      <h3 id={`levels-${item.id}`} className="overline mb-2 text-subtle-foreground">Níveis de preço</h3>
+      <h3 id={`levels-${item.id}`} className="eyebrow mb-2 text-subtle-foreground">Níveis de preço</h3>
       {position !== null && (
         <div className="relative mb-3 h-1.5 rounded-full bg-border" aria-hidden>
           <span className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-brand" style={{ left: `${position}%` }} />

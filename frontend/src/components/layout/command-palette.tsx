@@ -120,7 +120,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             results.map((result, i) => (
               <li key={result.key} id={`command-${i}`} role="option" aria-selected={i === index} data-index={i}>
                 {(i === 0 || results[i - 1].group !== result.group) && (
-                  <p className="overline px-3 pt-2 pb-1 text-subtle-foreground">{result.group}</p>
+                  <p className="eyebrow px-3 pt-2 pb-1 text-subtle-foreground">{result.group}</p>
                 )}
                 <button
                   type="button"

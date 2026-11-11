@@ -77,7 +77,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               <Search className="size-5" strokeWidth={1.5} />
             </button>
-            <HeaderThemeToggle />
+            <span className="hidden min-[360px]:inline-flex">
+              <HeaderThemeToggle />
+            </span>
             <NotificationBell />
             <UserMenu />
             <Suspense fallback={null}>

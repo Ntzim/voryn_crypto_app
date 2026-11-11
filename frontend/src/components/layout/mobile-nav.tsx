@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useThemeSetting } from "@/components/theme/use-theme-setting";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 import { MOBILE_ITEMS, isActive } from "./nav-config";
@@ -56,6 +58,7 @@ export function MobileMenu() {
   const [open, setOpen] = useState(false);
   const logout = useLogout();
   const sections = useNavSections();
+  const { theme, setTheme } = useThemeSetting();
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="inline-flex size-11 items-center justify-center rounded-[10px] text-muted-foreground hover:text-foreground md:hidden" aria-label="Abrir menu">
@@ -69,7 +72,7 @@ export function MobileMenu() {
         <div className="overflow-y-auto px-4 pb-4">
           {sections.map((section) => (
             <div key={section.label} className="mt-4 first:mt-0">
-              <p className="overline mb-1 px-2 text-subtle-foreground">{section.label}</p>
+              <p className="eyebrow mb-1 px-2 text-subtle-foreground">{section.label}</p>
               <ul>
                 {section.items.map((item) => {
                   const Icon = item.icon;
@@ -94,6 +97,10 @@ export function MobileMenu() {
               </ul>
             </div>
           ))}
+          <div className="mt-4 flex items-center justify-between px-2 min-[360px]:hidden">
+            <span className="text-sm text-sidebar-foreground">Tema</span>
+            <ThemeToggle resolved={theme?.resolved} onChange={setTheme} />
+          </div>
           <button
             type="button"
             onClick={() => logout.mutate()}

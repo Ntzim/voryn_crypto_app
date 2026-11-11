@@ -3,18 +3,16 @@ import { expect, test } from "@playwright/test";
 import { login, registerAndVerify, uniqueEmail } from "./helpers";
 
 // The e2e stack runs without an Anthropic key; the assistant must say so instead of failing.
-test("Voryn AI explains when the assistant is not configured", async ({ page }) => {
+test("Voryn AI explains when the assistant is not configured", async ({ page, isMobile }) => {
   const email = uniqueEmail("ai");
   await registerAndVerify(page, email);
   await login(page, email);
 
-  // Desktop: sidebar link. Mobile: the "Mais" sheet of the bottom bar.
-  const sidebarLink = page.getByRole("link", { name: "Voryn AI" }).first();
-  const desktop = await sidebarLink.isVisible();
-  if (desktop) await sidebarLink.click();
+  // Desktop: sidebar link. Mobile: the bottom bar.
+  const desktop = !isMobile;
+  if (desktop) await page.getByRole("complementary", { name: "Navegação principal" }).getByRole("link", { name: "Voryn AI" }).click();
   else {
-    await page.getByRole("button", { name: "Mais" }).click();
-    await page.getByRole("dialog").getByRole("link", { name: /Voryn AI/ }).click();
+    await page.locator("nav.fixed").getByRole("link", { name: "Voryn AI" }).click();
   }
   await expect(page).toHaveURL(/\/voryn-ai$/);
   await expect(page.getByRole("heading", { name: "Voryn AI", level: 1 })).toBeVisible();

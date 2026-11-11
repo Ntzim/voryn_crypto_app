@@ -59,6 +59,21 @@ export type BoardProps = {
 
 const subscribeNever = () => () => {};
 
+const DESKTOP = "(min-width: 1024px)";
+
+/** Panel on desktop, full-screen view below it: only one of the two may be open. */
+function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const media = window.matchMedia(DESKTOP);
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(DESKTOP).matches,
+    () => true,
+  );
+}
+
 function readStoredView(): View | null {
   try {
     const saved = localStorage.getItem(VIEW_KEY);
@@ -121,6 +136,7 @@ export function OpportunitiesBoard(props: BoardProps) {
   const visible = useMemo(() => sortOpportunities(filterOpportunities(items ?? [], signal, query), sort), [items, signal, query, sort]);
   const top = useMemo(() => sortOpportunities((items ?? []).filter((o) => o.hasScore), "score").slice(0, 3), [items]);
   const current = items?.find((o) => o.symbol === selected) ?? null;
+  const desktop = useIsDesktop();
   const select = (symbol: string | null) => update({ ativo: symbol });
 
   return (
@@ -234,7 +250,7 @@ export function OpportunitiesBoard(props: BoardProps) {
           </div>
 
           {/* Below lg the detail is its own full-screen view, with a back button. */}
-          <Sheet open={Boolean(current)} onOpenChange={(open) => !open && select(null)}>
+          <Sheet open={Boolean(current) && !desktop} onOpenChange={(open) => !open && select(null)}>
             <SheetContent side="bottom" className="h-dvh max-h-dvh overflow-y-auto rounded-none p-4 pb-28 lg:hidden" showCloseButton={false}>
               <SheetTitle className="sr-only">{current ? `Detalhe de ${current.symbol}` : "Detalhe"}</SheetTitle>
               <SheetDescription className="sr-only">Score, evidências, riscos e condição de invalidação.</SheetDescription>
@@ -271,7 +287,7 @@ function DistributionCard({
       <div className="min-w-0">
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <h2 id="distribution-title" className="text-[13px] font-semibold text-foreground">Distribuição dos sinais</h2>
-          <span className="num text-xs text-subtle-foreground">{loading ? "" : `${dist.total} ${noun} analisad${noun.endsWith("as") ? "as" : "os"}`}</span>
+          <span className="num text-xs text-subtle-foreground">{loading ? "" : `${dist.total} ${noun} ${noun === "ações" ? "analisadas" : "analisados"}`}</span>
         </div>
         {loading ? (
           <Skeleton className="h-2.5 w-full rounded-full" />
@@ -295,7 +311,7 @@ function DistributionCard({
         </div>
       </div>
       <div className="hidden border-border lg:block lg:border-l lg:pl-5">
-        <h2 className="overline mb-2 text-subtle-foreground">Maiores scores</h2>
+        <h2 className="eyebrow mb-2 text-subtle-foreground">Maiores scores</h2>
         <ol className="space-y-1">
           {top.map((o, i) => (
             <li key={o.id}>

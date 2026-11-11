@@ -289,7 +289,7 @@
   font-feature-settings: "tnum", "cv11";
 }
 
-@utility overline {
+@utility eyebrow {
   font-size: 11px;
   line-height: 16px;
   font-weight: 600;

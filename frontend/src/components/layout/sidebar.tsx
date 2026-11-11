@@ -49,7 +49,7 @@ export function Sidebar() {
           // The account group (alerts, settings) sits at the bottom, apart from the work areas.
           <div key={section.label} className={cn("mt-5 first:mt-2", section.footer && "mt-auto pt-5")}>
             {!section.footer && (
-              <p className={cn("overline mb-1.5 hidden px-2.5 text-subtle-foreground", expanded && "xl:block")}>{section.label}</p>
+              <p className={cn("eyebrow mb-1.5 hidden px-2.5 text-subtle-foreground", expanded && "xl:block")}>{section.label}</p>
             )}
             <ul className="space-y-0.5">
               {section.items.map((item) => (

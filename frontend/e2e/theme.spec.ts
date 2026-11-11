@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { login, registerAndVerify, uniqueEmail } from "./helpers";
 
-const BACKGROUND = { light: "rgb(245, 245, 247)", dark: "rgb(11, 13, 18)" };
+const BACKGROUND = { light: "rgb(245, 245, 247)", dark: "rgb(11, 15, 20)" };
 
 const isDark = (page: Page) => page.evaluate(() => document.documentElement.classList.contains("dark"));
 

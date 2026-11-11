@@ -53,7 +53,9 @@ test("navigation adapts to the viewport", async ({ page, isMobile }) => {
   const bottomBar = page.locator("nav.fixed");
   if (isMobile) {
     await expect(bottomBar).toBeVisible();
-    await bottomBar.getByText("Mais").click();
+    // Five areas in the bottom bar; the full menu opens from the header.
+    await expect(bottomBar.getByRole("link")).toHaveCount(5);
+    await page.getByRole("button", { name: "Abrir menu" }).click();
     await expect(page.getByRole("dialog").getByRole("link", { name: /Configurações/ })).toBeVisible();
   } else {
     await expect(bottomBar).toBeHidden();
